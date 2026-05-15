@@ -1,3 +1,5 @@
 secrets/
 .env
 en.subject.pdf
+logs/
+.pids/

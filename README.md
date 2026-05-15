@@ -1,17 +1,11 @@
-# Transcendence
+# ft_transcender
+Transcendence is a group project (4-5 people), which is intended to boost your creativity, self-confidence, adaptability to new technologies, and teamwork skills.
 
-vite - version 8.0.9
-react - 19.2.5
-npm - version 9.2.0
-nestjs - vresion 11.0.21
+**instrucao:**
 
+make db-init
+make dev
 
-rodar o front no modo desenvolvimento:
-cd app-frontend
-npm install
-npm run dev
-
-rodar o back no modo desenvolvimento:
-cd app-backend
-npm install
-npm run start:dev
+NOTA: Qualquer alteracao da estrutura da bd deve ser definida 
+atraves da migration; E qualquer valor que seja parte da regra
+de negocio, deve ser definida atraves de seeds
