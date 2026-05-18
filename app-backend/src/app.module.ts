@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AuthModule } from './modules/authModule/auth.module';
 import { ExamRankModule } from './modules/examrankModule/examrank.module';
 
 @Module({
@@ -25,6 +26,8 @@ import { ExamRankModule } from './modules/examrankModule/examrank.module';
       }),
     }),
     ExamRankModule,
+    AuthModule,
+
   ],
 })
 export class AppModule {}
