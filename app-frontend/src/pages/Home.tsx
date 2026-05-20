@@ -36,13 +36,13 @@ export default function Home() {
         </p>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {ranks.map((rank) => (  // ✅ chamada normal
+          {ranks.map((rank) => (  
             <div
-              key={rank.id}       // ✅ propriedade normal
+              key={rank.id}       
               className="bg-zinc-950 border border-zinc-800 p-6 rounded-xl hover:border-[#00FF9D] transition-all group"
             >
               <h2 className="text-xl font-black italic text-white group-hover:text-[#00FF9D] mb-2">
-                {rank.name}       {/* ✅ propriedade normal */}
+                {rank.name}       {}
               </h2>
               <div className="flex justify-between items-center bg-zinc-900 p-3 rounded-lg">
                 <span className="text-[10px] text-zinc-500 font-bold uppercase">

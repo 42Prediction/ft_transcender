@@ -28,5 +28,8 @@ export class User {
   is_online: boolean;
 
   @CreateDateColumn()
+  update_at: Date;
+
+  @CreateDateColumn()
   created_at: Date;
 }
