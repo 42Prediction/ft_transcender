@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
@@ -69,7 +69,30 @@ export class UserService {
     return user;
   }
   async create(data: Partial<User>) {
-    const user = this.userRepository.create(data);
+    const username = data.username?.trim();
+    const email = data.email?.trim().toLowerCase();
+
+    if (!username || !email || !data.password) {
+      throw new BadRequestException('username, email e password são obrigatórios');
+    }
+
+    const existingUser = await this.userRepository.findOne({
+      where: [{ username }, { email }],
+    });
+
+    if (existingUser) {
+      if (existingUser.username === username) {
+        throw new ConflictException('username já existe');
+      }
+
+      throw new ConflictException('email já existe');
+    }
+
+    const user = this.userRepository.create({
+      ...data,
+      username,
+      email,
+    });
     return this.userRepository.save(user);
   }
 }

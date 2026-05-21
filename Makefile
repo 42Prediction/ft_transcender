@@ -88,4 +88,26 @@ fclean: dev-stop
 
 re: fclean dev
 
-.PHONY: all help up down wait-db shell-db migrate seed db-init dev dev-status dev-stop clean fclean re
+# Remove containers e volumes, mas preserva imagens e rede global
+clean-containers:
+	$(COMPOSE) down --volumes
+
+# Se quiser limpar tudo o que for do projeto (volumes e pastas de dados) 
+# mas NUNCA rodar um "docker system prune" (que remove imagens):
+fclean-local: down
+	$(COMPOSE) down --volumes
+	sudo rm -rf $(DATA_DIR)
+
+# Remove containers/volumes do projeto e APAGA todas as imagens do PC, EXCETO o postgres
+clean-all-except-postgres: down
+	@echo "Limpando containers e volumes..."
+	$(COMPOSE) down --volumes
+	@echo "Removendo todas as imagens do sistema, exceto postgres:16-alpine..."
+	@IMAGES=$$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -v "postgres:16-alpine"); \
+	if [ -n "$$IMAGES" ]; then \
+		docker rmi $$IMAGES 2>/dev/null || true; \
+	fi
+	@# Remove também imagens sem nome (<none>) que sobram de builds antigos
+	@docker image prune -f
+
+.PHONY: all help up down wait-db shell-db migrate seed db-init dev dev-status dev-stop clean fclean re clean-containers fclean-local clean-all-except-postgres
