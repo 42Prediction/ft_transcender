@@ -61,9 +61,9 @@ dev: wait-db
 	@if [ -f $(BACK_PID_FILE) ]; then kill $$(cat $(BACK_PID_FILE)) 2>/dev/null || true; rm -f $(BACK_PID_FILE); fi
 	@if [ -f $(FRONT_PID_FILE) ]; then kill $$(cat $(FRONT_PID_FILE)) 2>/dev/null || true; rm -f $(FRONT_PID_FILE); fi
 	@cd $(BACK_DIR) && { [ -d node_modules ] || npm install; }
-	@(cd $(BACK_DIR) && npm run start:dev > $(LOG_DIR)/backend.log 2>&1) & echo $$! > $(BACK_PID_FILE)
+	@(cd $(BACK_DIR) && NO_COLOR=true npm run start:dev > $(LOG_DIR)/backend.log 2>&1) & echo $$! > $(BACK_PID_FILE)
 	@cd $(FRONT_DIR) && { [ -d node_modules ] || npm install; }
-	@(cd $(FRONT_DIR) && npm run dev -- --port 5173 --strictPort > $(LOG_DIR)/frontend.log 2>&1) & echo $$! > $(FRONT_PID_FILE)
+	@(cd $(FRONT_DIR) && NO_COLOR=true npm run dev -- --port 5173 --strictPort > $(LOG_DIR)/frontend.log 2>&1) & echo $$! > $(FRONT_PID_FILE)
 	@echo "Backend log: $(LOG_DIR)/backend.log"
 	@echo "Frontend log: $(LOG_DIR)/frontend.log"
 	@echo "Frontend running at: http://localhost:5173/"
