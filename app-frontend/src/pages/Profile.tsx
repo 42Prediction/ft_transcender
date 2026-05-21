@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams} from "react-router-dom";
+import ProfileCard from "../components/ProfileCard";
 
 interface UserProfile {
     id: number;
@@ -49,11 +50,13 @@ export default function Profile () {
             </div>
         )
     }
-    const nemberSince = new Date(profile.created_at).toLocaleDateString("pt-PT",
-        {
-            month: "long",
-            year: "numeric",
-        }
-    )
-    return ();
+   
+    return (
+        <div className="min-h-screen bg-black text-white px-6 py-6 flex flex-col items-center">
+           <div className="w-full max-w-4xl bg-zinc-900 border border-zinc-800 rounded-xl p-8 relative overflow-hidden" >
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-[#00FF9D]" />
+                <ProfileCard profile={profile}/>
+           </div>
+        </div>
+    );
 }
