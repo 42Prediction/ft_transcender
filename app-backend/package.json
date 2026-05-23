@@ -25,6 +25,8 @@
     "seed:run": "ts-node src/seeds/seeds.ts"
   },
   "dependencies": {
+    "@dicebear/collection": "^9.4.2",
+    "@dicebear/core": "^9.4.2",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.1",

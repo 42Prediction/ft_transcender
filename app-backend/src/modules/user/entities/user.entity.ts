@@ -1,5 +1,6 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Role } from "../../../shared/enums/roles.enum";
+import { Bettor } from "../../bettor/entities/bettor.entity";
 
 
 
@@ -28,9 +29,12 @@ export class User {
     })
     state!:      boolean;
 
-    @CreateDateColumn()
-    created_at!: Date;
+    @OneToOne(()=> Bettor, (bettor) => bettor.user)
+    bettor!: Bettor;
 
-     @CreateDateColumn()
-    updated_at!: Date;
+    @CreateDateColumn({name: 'created_at'})
+    createdAt!: Date;
+
+    @UpdateDateColumn({name: 'updated_at'})
+    updatedAt!: Date;
 }

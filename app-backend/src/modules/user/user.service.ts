@@ -9,15 +9,15 @@ import * as bcrypt from 'bcrypt'
 @Injectable()
 export class UserService {
   private SALTROUNDS: number = 10;
-  constructor (
+  constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>
-  ){}
+  ) { }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const { email, password} = createUserDto;
-    const emailAlreadyExists: boolean = await this.userRepository.existsBy({email});
-    if (emailAlreadyExists){
+    const { email, password } = createUserDto;
+    const emailAlreadyExists: boolean = await this.userRepository.existsBy({ email });
+    if (emailAlreadyExists) {
       throw new ConflictException('Email already exists.');
     }
     const hashed: string = await bcrypt.hash(password, this.SALTROUNDS);
@@ -26,6 +26,10 @@ export class UserService {
       password: hashed,
     });
     return await this.userRepository.save(user);
+  }
+
+  async findOneByEmail(email: string): Promise<User | null> {
+    return await this.userRepository.findOneBy({ email });
   }
 
   findAll() {
