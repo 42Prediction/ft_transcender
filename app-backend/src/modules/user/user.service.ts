@@ -32,8 +32,10 @@ export class UserService {
     return await this.userRepository.findOneBy({ email });
   }
 
-  findAll() {
-    return `This action returns all user`;
+  async findAll(): Promise<User[]> {
+    return this.userRepository.find({
+      relations: ['bettor'],
+    });
   }
 
   findOne(id: number) {

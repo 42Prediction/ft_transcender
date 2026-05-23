@@ -52,7 +52,7 @@ export class AuthService{
         return user;
     }
 
-    async signin(siginDto: CredentialsDto): Promise<{access_token: string}>{
+    async signin(siginDto: CredentialsDto): Promise<any>{
         const user = await this.validateUser(
             siginDto.email,
             siginDto.password,
@@ -61,9 +61,20 @@ export class AuthService{
         const payload = { 
             sub: user.id,
             email: user.email,
+            role: user.role,
         }
         return {
-            access_token: this.jwtService.sign(payload)
+            statusCode: 201,
+            message: 'User created successfully.',
+            data: {
+                access_token: this.jwtService.sign(payload),
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                nick: user.bettor.nick,
+                avatar: user.bettor.avatar,
+                isNickSetted: user.bettor.isNickSetted,
+            }
         }
     }
 
