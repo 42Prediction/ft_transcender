@@ -81,7 +81,7 @@ dev-status:
 	@echo "Backend PID: $$(cat $(BACK_PID_FILE) 2>/dev/null || echo not-running)"
 	@echo "Frontend PID: $$(cat $(FRONT_PID_FILE) 2>/dev/null || echo not-running)"
 
-dev-stop: clean
+dev-stop:
 	@if [ -f $(BACK_PID_FILE) ]; then kill $$(cat $(BACK_PID_FILE)) 2>/dev/null || true; rm -f $(BACK_PID_FILE); fi
 	@if [ -f $(BACK_CHILD_PID_FILE) ]; then kill -9 $$(cat $(BACK_CHILD_PID_FILE)) 2>/dev/null || true; rm -f $(BACK_CHILD_PID_FILE); fi
 	@if [ -f $(FRONT_PID_FILE) ]; then kill -9 $$(cat $(FRONT_PID_FILE)) 2>/dev/null || true; rm -f $(FRONT_PID_FILE); fi
