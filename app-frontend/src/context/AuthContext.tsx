@@ -1,12 +1,9 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useState,
   type ReactNode,
 } from "react";
-
-import { useParams } from "react-router-dom";
 
 interface UserProfile {
   id: number;
@@ -33,40 +30,25 @@ export function AuthProvider({
 }: {
   children: ReactNode;
 }) {
-  const { user } = useParams();
+  const [profile, setProfile] = useState<UserProfile | null>(() => {
+    const storedProfile = localStorage.getItem("profile");
 
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+    return storedProfile ? JSON.parse(storedProfile) : null;
+  });
 
   const [token, setToken] = useState<string | null>(
     localStorage.getItem("access_token")
   );
 
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) {
-      setProfile(null);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-
-    fetch(`http://localhost:3000/users/${user}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setProfile(data);
-      })
-      .catch((err) => {
-        console.log(err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [user]);
+  const [loading] = useState(false);
 
   function login(newToken: string, userData: UserProfile) {
     localStorage.setItem("access_token", newToken);
+
+    localStorage.setItem(
+      "profile",
+      JSON.stringify(userData)
+    );
 
     setToken(newToken);
     setProfile(userData);
@@ -74,6 +56,7 @@ export function AuthProvider({
 
   function logout() {
     localStorage.removeItem("access_token");
+    localStorage.removeItem("profile");
 
     setToken(null);
     setProfile(null);
@@ -95,12 +78,13 @@ export function AuthProvider({
   );
 }
 
-// Hook customizado
 export function useAuth() {
   const context = useContext(AuthContext);
 
   if (!context) {
-    throw new Error("useAuth deve estar dentro do AuthProvider");
+    throw new Error(
+      "useAuth deve estar dentro do AuthProvider"
+    );
   }
 
   return context;
