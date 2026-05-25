@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useAuth } from "../context/AuthContext";
 
 // Definimos o que é um Amigo
 interface Friend {
@@ -18,9 +17,9 @@ export default function FriendsList() {
   const removeFriend = (id: number) => {
     setFriends(friends.filter((f) => f.id !== id));
   };
-  const {profile} = useAuth();
 
   return (
+    <div className="md:col-span-1">
     <div className="bg-[#1a1a1a] border border-[#333] p-6 rounded-lg w-full">
       <h3 className="text-[#00ff9d] mb-4 uppercase font-bold tracking-widest">
         Friends List
@@ -54,5 +53,6 @@ export default function FriendsList() {
         />
       </div>
     </div>
+    </div >
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import FriendsList from "../components/FriendsList.tsx";
-import ProfileCard from "../components/ProfileCard.tsx";
+import FriendsList from "../components/profile/FriendsList.tsx";
+import ProfileCard from "../components/profile/ProfileCard.tsx";
 
 interface UserProfile {
     id: number;
@@ -53,16 +53,11 @@ export default function Profile() {
 
     return (
         <div className="p-8 bg-[#121212] min-h-screen text-white flex justify-center items-start">
-            <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-3 gap-6">
-                
+            <div className="max-w-6xl w-ful grid grid-cols-1 md:grid-cols-3 gap-4">          
                 {/* CARTÃO DE PERFIL: COMPONENTE QUE FALTAVA VISUALMENTE */}
                <ProfileCard profile={profile}/>
-
                 {/* COLUNA DOS AMIGOS */}
-                <div className="md:col-span-2">
-                    <FriendsList />
-                </div>
-
+                <FriendsList />
             </div>
         </div>
     );
