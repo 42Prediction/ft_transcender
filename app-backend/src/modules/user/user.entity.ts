@@ -3,6 +3,8 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 
 @Entity('users')
@@ -32,4 +34,12 @@ export class User {
 
   @CreateDateColumn()
   created_at: Date;
+
+  @ManyToMany(() => User)
+  @JoinTable({
+    name: 'user_friends', // Tabela que guarda a relação
+    joinColumn: { name: 'user_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'friend_id', referencedColumnName: 'id' },
+  })
+  friends: User[];
 }

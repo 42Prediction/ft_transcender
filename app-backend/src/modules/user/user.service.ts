@@ -68,6 +68,7 @@ export class UserService {
     user.is_online = true;
     return user;
   }
+
   async create(data: Partial<User>) {
     const username = data.username?.trim();
     const email = data.email?.trim().toLowerCase();
@@ -94,5 +95,16 @@ export class UserService {
       email,
     });
     return this.userRepository.save(user);
+  }
+
+  async getFriends(username: string): Promise<User[]> {
+    const user = await this.userRepository.findOne({
+      where: { username },
+      relations: ['friends'],
+    });
+    if (!user){
+      throw new NotFoundException ('User não encontrado');
+    }
+    return user.friends;
   }
 }

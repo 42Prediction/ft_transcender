@@ -67,7 +67,7 @@ export default function Profile() {
 
                 <div className="md:col-span-2">
 
-                    <FriendsList />
+                    <FriendsList username={profile.username} />
 
                 </div>
 

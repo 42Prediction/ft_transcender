@@ -23,4 +23,9 @@ export class UserController {
   update(@Param('username') username: string, @Body() body) {
     return this.userService.updateUser(username, body);
   }
+
+  @Get(':username/friends')
+  getFriends(@Param('username') username: string){
+    return this.userService.getFriends(username);
+  }
 }

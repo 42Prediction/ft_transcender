@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // Definimos o que é um Amigo
 interface Friend {
@@ -7,12 +7,24 @@ interface Friend {
   isOnline: boolean;
 }
 
-export default function FriendsList() {
+interface FriendsListProps {
+  username: string; // Adicionado prop
+}
+
+export default function FriendsList({ username }: FriendsListProps) {
   // Simulando uma lista inicial de amigos
-  const [friends, setFriends] = useState<Friend[]>([
+  /*const [friends, setFriends] = useState<Friend[]>([
     { id: 1, username: "Code_Hunter", isOnline: true },
     { id: 2, username: "Byte_Knight", isOnline: false },
-  ]);
+  ]);*/
+  const [friends, setFriends] = useState<Friend[]>([]);
+
+  useEffect(() => {
+    fetch(`http://localhost:3000/users/${username}/friends`)
+      .then(res => res.json())
+      .then(data => setFriends(data))
+      .catch(err => console.error("Erro ao carregar amigos:", err));
+  }, [username]);
 
   const removeFriend = (id: number) => {
     setFriends(friends.filter((f) => f.id !== id));
