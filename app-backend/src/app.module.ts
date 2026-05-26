@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AuthModule } from './modules/auth/auth.module';
 import { ExamRankModule } from './modules/examrankModule/examrank.module';
 import { UserModule } from './modules/user/user.module';
+import { BettorModule } from './modules/bettor/bettor.module';
+
 
 
 @Module({
@@ -27,7 +30,9 @@ import { UserModule } from './modules/user/user.module';
       }),
     }),
     ExamRankModule,
+    AuthModule,
     UserModule,
+    BettorModule,
   ],
 })
 export class AppModule {}

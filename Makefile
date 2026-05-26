@@ -6,7 +6,9 @@ BACK_DIR = $(PROJECT_ROOT)/app-backend
 LOG_DIR = $(PROJECT_ROOT)/logs
 PID_DIR = $(PROJECT_ROOT)/.pids
 BACK_PID_FILE = $(PID_DIR)/backend.pid
+BACK_CHILD_PID_FILE = $(PID_DIR)/backend.child.pid
 FRONT_PID_FILE = $(PID_DIR)/frontend.pid
+FRONT_CHILD_PID_FILE = $(PID_DIR)/frontend.child.pid
 
 all: help
 
@@ -59,11 +61,22 @@ dev: wait-db
 	@mkdir -p $(LOG_DIR)
 	@mkdir -p $(PID_DIR)
 	@if [ -f $(BACK_PID_FILE) ]; then kill $$(cat $(BACK_PID_FILE)) 2>/dev/null || true; rm -f $(BACK_PID_FILE); fi
+	@if [ -f $(BACK_CHILD_PID_FILE) ]; then kill -9 $$(cat $(BACK_CHILD_PID_FILE)) 2>/dev/null || true; rm -f $(BACK_CHILD_PID_FILE); fi
 	@if [ -f $(FRONT_PID_FILE) ]; then kill $$(cat $(FRONT_PID_FILE)) 2>/dev/null || true; rm -f $(FRONT_PID_FILE); fi
+	@if [ -f $(FRONT_CHILD_PID_FILE) ]; then kill -9 $$(cat $(FRONT_CHILD_PID_FILE)) 2>/dev/null || true; rm -f $(FRONT_CHILD_PID_FILE); fi
+	@# Limpeza garantida da porta 3000 antes de subir o app
+	@if command -v fuser >/dev/null 2>&1; then fuser -k -n tcp 3000 2>/dev/null || true; else listeners=$$(lsof -t -i:3000 2>/dev/null || true); if [ -n "$$listeners" ]; then kill -9 $$listeners 2>/dev/null || true; fi; fi
+	@# Limpeza garantida da porta 5173 antes de subir o frontend
+	@if command -v fuser >/dev/null 2>&1; then fuser -k -n tcp 5173 2>/dev/null || true; else listeners=$$(lsof -t -i:5173 2>/dev/null || true); if [ -n "$$listeners" ]; then kill -9 $$listeners 2>/dev/null || true; fi; fi
 	@cd $(BACK_DIR) && { [ -d node_modules ] || npm install; }
-	@(cd $(BACK_DIR) && npm run start:dev > $(LOG_DIR)/backend.log 2>&1) & echo $$! > $(BACK_PID_FILE)
+	@# Executa o backend em background
+	@(cd $(BACK_DIR) && NO_COLOR=true npm run start:dev > "$(LOG_DIR)/backend.log" 2>&1 &)
+	@sleep 2
+	@lsof -t -i:3000 > "$(BACK_CHILD_PID_FILE)" 2>/dev/null || true
 	@cd $(FRONT_DIR) && { [ -d node_modules ] || npm install; }
-	@(cd $(FRONT_DIR) && npm run dev -- --port 5173 --strictPort > $(LOG_DIR)/frontend.log 2>&1) & echo $$! > $(FRONT_PID_FILE)
+	@(cd $(FRONT_DIR) && NO_COLOR=true npm run dev -- --port 5173 --strictPort > "$(LOG_DIR)/frontend.log" 2>&1 & echo $$! > "$(FRONT_PID_FILE)")
+	@sleep 2
+	@lsof -t -i:5173 > "$(FRONT_CHILD_PID_FILE)" 2>/dev/null || true
 	@echo "Backend log: $(LOG_DIR)/backend.log"
 	@echo "Frontend log: $(LOG_DIR)/frontend.log"
 	@echo "Frontend running at: http://localhost:5173/"
@@ -74,9 +87,11 @@ dev-status:
 	@echo "Backend PID: $$(cat $(BACK_PID_FILE) 2>/dev/null || echo not-running)"
 	@echo "Frontend PID: $$(cat $(FRONT_PID_FILE) 2>/dev/null || echo not-running)"
 
-dev-stop: clean
+dev-stop:
 	@if [ -f $(BACK_PID_FILE) ]; then kill $$(cat $(BACK_PID_FILE)) 2>/dev/null || true; rm -f $(BACK_PID_FILE); fi
-	@if [ -f $(FRONT_PID_FILE) ]; then kill $$(cat $(FRONT_PID_FILE)) 2>/dev/null || true; rm -f $(FRONT_PID_FILE); fi
+	@if [ -f $(BACK_CHILD_PID_FILE) ]; then kill -9 $$(cat $(BACK_CHILD_PID_FILE)) 2>/dev/null || true; rm -f $(BACK_CHILD_PID_FILE); fi
+	@if [ -f $(FRONT_PID_FILE) ]; then kill -9 $$(cat $(FRONT_PID_FILE)) 2>/dev/null || true; rm -f $(FRONT_PID_FILE); fi
+	@if [ -f $(FRONT_CHILD_PID_FILE) ]; then kill -9 $$(cat $(FRONT_CHILD_PID_FILE)) 2>/dev/null || true; rm -f $(FRONT_CHILD_PID_FILE); fi
 	@echo "Backend and frontend stopped; clean completed"
 
 clean: down
