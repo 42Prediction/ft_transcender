@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import * as bcrypt from 'bcrypt'
 import { AdmUpdateUserDto } from './dto/admin-update-user.dto';
+import { CreateOauthUserDto } from './create-oauth-user.dto';
 
 @Injectable()
 export class UserService {
@@ -70,5 +71,14 @@ export class UserService {
     return {
       message: 'User deleted successfully',
     }
+  }
+
+  createOauthUser(dto:CreateOauthUserDto ):Promise<User>{
+    
+    const user = this.userRepository.create({
+        email:dto.email,
+    });
+
+    return this.userRepository.save(user);
   }
 }

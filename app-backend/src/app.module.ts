@@ -5,8 +5,6 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { BettorModule } from './modules/bettor/bettor.module';
 
-
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -28,6 +26,7 @@ import { BettorModule } from './modules/bettor/bettor.module';
         synchronize: false,
       }),
     }),
+    UserModule,
     AuthModule,
     UserModule,
     BettorModule,

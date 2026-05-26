@@ -23,6 +23,7 @@ export function App(){
             </PrivateRoute>
           } />
 
+
           <Route path="/" element={
             <PrivateRoute>
               <Dashboard/>

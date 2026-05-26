@@ -1,4 +1,5 @@
-import { LoginButton } from "../components/LoginButton";
+import { GoogleLoginButton } from "../components/GoogleLoginButton";
+import { _42schoolLoginButton } from "../components/_42schoolLoginButton";
 import { useAuth } from "../context/AuthContext";
 import {Navigate} from 'react-router-dom';
 
@@ -13,9 +14,18 @@ if (isAuthenticated){
 
 return (
 <div>
-    <h1></h1>
-    <LoginButton/>
+    <div>
+        <h1>OAUTH COM GOOGLE</h1>
+        <GoogleLoginButton/>
+    </div>
+
+    <div>
+        <h1>OAUTH COM 42</h1>
+        <_42schoolLoginButton/>
+    </div>
 </div>
+
+
 );
 
 }
