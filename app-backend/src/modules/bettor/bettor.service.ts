@@ -35,19 +35,16 @@ export class BettorService {
     return await this.bettorRepository.save(bettor);
   }
 
-  findAll() {
-    return `This action returns all bettor`;
-  }
-
   findOne(id: number) {
     return `This action returns a #${id} bettor`;
   }
 
-  update(id: number, updateBettorDto: UpdateBettorDto) {
+  async update(id: number, updateBettorDto: UpdateBettorDto) {
     return `This action updates a #${id} bettor`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} bettor`;
+  async findByNick(nick: string){
+
   }
+
 }

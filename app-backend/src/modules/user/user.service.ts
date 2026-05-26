@@ -33,7 +33,10 @@ export class UserService {
   }
 
   async findOneByEmail(email: string): Promise<User | null> {
-    return await this.userRepository.findOneBy({ email });
+    return await this.userRepository.findOne({
+      where: { email },
+      relations: ['bettor'],
+    });
   }
 
   async findAll(): Promise<User[]> {
