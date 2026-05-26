@@ -33,17 +33,35 @@ export default function ProfileCard({ profile }: ProfileCardProps) {
           />
 
           {/* Botão câmera */}
-          <label htmlFor="file-upload"
-            className="absolute bottom-1 right-1 w-9 h-9 rounded-full bg-white text-black flex items-center justify-center
-                     cursor-pointer shadow-lg  hover:scale-110   transition-all duration-200" >
+          <label   htmlFor="file-upload" className="
+          absolute bottom-1 right-1
+          w-9 h-9 rounded-full
+          bg-white text-black
+          flex items-center justify-center
+          cursor-pointer
+          shadow-lg
+          hover:scale-110
+          transition-all duration-200
+        "
+          >
             <FontAwesomeIcon icon={faCamera} className="text-sm" />
 
-            <input id="file-upload" type="file" className="hidden" />
+            <input
+              id="file-upload"
+              type="file"
+              className="hidden"
+            />
           </label>
 
           {/* Status online */}
-          <span className={`absolute bottom-2 left-2 w-4 h-4 rounded-full border-2 border-[#1a1a1a]
-          ${profile.is_online ? "bg-[#00ff9d]" : "bg-zinc-500"}`} />
+          <span
+            className={`
+          absolute bottom-2 left-2
+          w-4 h-4 rounded-full
+          border-2 border-[#1a1a1a]
+          ${profile.is_online ? "bg-[#00ff9d]" : "bg-zinc-500"}
+        `}
+          />
         </div>
 
         {/* Informações */}
