@@ -1,5 +1,6 @@
 secrets/
 .env
+en.subject.pdf
 logs/
 .pids/
 app-backend/node_modules

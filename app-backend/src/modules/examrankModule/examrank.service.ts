@@ -9,8 +9,8 @@ export class ExamRankService {
 		@InjectRepository(ExamRank)
 		private readonly examRankRepository: Repository<ExamRank>,
 	) {}
-
 	findAll(): Promise<ExamRank[]> {
+		this.examRankRepository.save
 		return this.examRankRepository.find({
 			order: { min_score: 'ASC' },
 		});
