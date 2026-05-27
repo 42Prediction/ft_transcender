@@ -18,7 +18,8 @@ export default function Profile() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        fetch(`http://localhost:3000/users/${user}`)
+        //fetch(`http://localhost:3000/users/${user}`)
+        fetch(`/api/users/${user}`)
             .then((res) => {
                 if (!res.ok) throw new Error("User Não encontrado");
                 return res.json();
@@ -63,12 +64,14 @@ export default function Profile() {
                 {/* CARTÃO DE PERFIL: COMPONENTE QUE FALTAVA VISUALMENTE */}
 
                 <ProfileCard profile={profile} />
+                
                 {/* COLUNA DOS AMIGOS */}
-
                 <div className="md:col-span-2">
-
-                    <FriendsList username={profile.username} />
-
+                    {/* Passamos o userId (número) em vez do username, 
+                      para que o FriendsList consiga fazer as chamadas à API corretamente 
+                      sem passar 'undefined' nos endpoints.
+                    */}
+                    <FriendsList userId={profile.id} />
                 </div>
 
             </div>

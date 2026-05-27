@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 // URL base da tua API no Backend
-const API_URL = 'http://localhost:3000';
-
+//const API_URL = 'http://localhost:3000';
+const API_URL = '/api';
 /**
  * Envia um pedido de amizade POST.
  * Utilizado quando o utilizador clica em "Adicionar Amigo".

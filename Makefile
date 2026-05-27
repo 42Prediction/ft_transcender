@@ -131,6 +131,14 @@ restart-back:
 	@(cd $(BACK_DIR) && npm run start:dev > $(LOG_DIR)/backend.log 2>&1) & echo $$! > $(BACK_PID_FILE)
 	@echo "Backend reiniciado com sucesso. PID: $$(cat $(BACK_PID_FILE))"
 
-.PHONY: all help up down wait-db shell-db migrate seed db-init dev dev-status dev-stop clean fclean re clean-containers fclean-local clean-all-except-postgres clean-keep-pulls clean-volume-keep-image stop-containers restart-back
+# Comando para matar todos os processos de node na porta 3000 e 5173/5174
+kill:
+	@echo "A matar processos nas portas 3000 e 5173/5174..."
+	-fuser -k 3000/tcp 2>/dev/null
+	-fuser -k 5173/tcp 2>/dev/null
+	-fuser -k 5174/tcp 2>/dev/null
+	@echo "Processos terminados."
+
+.PHONY: all help up down wait-db shell-db migrate seed db-init dev dev-status dev-stop clean fclean re clean-containers fclean-local clean-all-except-postgres clean-keep-pulls clean-volume-keep-image stop-containers restart-back kill
 
 clean-keep-pulls: clean-all-except-postgres

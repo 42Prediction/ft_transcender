@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { getPendingRequests, acceptFriendRequest, sendFriendRequest } from "../services/friendService";
 
 // Definimos a interface para garantir o tipo dos dados
 interface Friend {
@@ -14,36 +15,46 @@ interface FriendRequest {
 }
 
 interface FriendsListProps {
-  username: string; // Nota: No futuro, podes preferir usar userId para consistência com o Backend
+  userId: number; // Alterado para receber o ID do utilizador logado
 }
 
-export default function FriendsList({ username }: FriendsListProps) {
+export default function FriendsList({ userId }: FriendsListProps) {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]); // Estado para pedidos
   const [newFriendId, setNewFriendId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Verificação de segurança: Não renderiza o componente se não houver um ID válido
+  if (!userId) {
+    return <div className="text-white p-4">A carregar utilizador...</div>;
+  }
 
   /**
    * Função para carregar a lista de amigos do backend.
    * Utiliza useCallback para evitar que a função seja recriada em cada renderização.
    */
   const loadFriends = useCallback(() => {
-    fetch(`http://localhost:3000/users/${username}/friends`)
+    // Mantemos este fetch, pois é específico de listar amigos de um user
+    fetch(`http://localhost:3000/users/${userId}/friends`)
       .then((res) => res.json())
-      .then((data) => setFriends(data))
+      .then((data) => {
+        // Garantimos que recebemos um array antes de atualizar o estado
+        setFriends(Array.isArray(data) ? data : []);
+      })
       .catch((err) => console.error("Erro ao carregar amigos:", err));
-  }, [username]);
+  }, [userId]);
 
   /**
    * Função para carregar os pedidos de amizade pendentes.
    */
-  const loadPendingRequests = useCallback(() => {
-    // Ajusta o URL conforme o teu controller (ex: passando o ID do user)
-    fetch(`http://localhost:3000/friend-requests/pending/${username}`)
-      .then((res) => res.json())
-      .then((data) => setPendingRequests(data))
-      .catch((err) => console.error("Erro ao carregar pedidos:", err));
-  }, [username]);
+  const loadPendingRequests = useCallback(async () => {
+    try {
+      const response = await getPendingRequests(userId);
+      setPendingRequests(Array.isArray(response) ? response : []);
+    } catch (err) {
+      console.error("Erro ao carregar pedidos:", err);
+    }
+  }, [userId]);
 
   // Efeito para carregar os amigos e pedidos ao montar o componente
   useEffect(() => {
@@ -59,20 +70,15 @@ export default function FriendsList({ username }: FriendsListProps) {
 
     setIsLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/friend-requests`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ senderUsername: username, receiverUsername: newFriendId }),
-      });
-
-      if (res.ok) {
-        setNewFriendId("");
-        alert("Pedido de amizade enviado!");
-      } else {
-        alert("Erro ao enviar pedido.");
-      }
+      // Usamos o serviço de envio e convertemos o input para Number
+      await sendFriendRequest(userId, Number(newFriendId));
+      
+      setNewFriendId("");
+      alert("Pedido de amizade enviado!");
+      loadPendingRequests(); // Atualiza a lista após sucesso
     } catch (err) {
       console.error(err);
+      alert("Erro ao enviar pedido.");
     } finally {
       setIsLoading(false);
     }
@@ -84,13 +90,33 @@ export default function FriendsList({ username }: FriendsListProps) {
   const handleAcceptRequest = async (requestId: number) => {
     setIsLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/friend-requests/${requestId}/accept`, {
-        method: 'PATCH',
+      await acceptFriendRequest(requestId);
+      
+      loadFriends(); // Atualiza lista de amigos
+      loadPendingRequests(); // Atualiza lista de pedidos
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao aceitar pedido.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Recusa um pedido de amizade.
+   */
+  const handleRejectRequest = async (requestId: number) => {
+    setIsLoading(true);
+    try {
+      // Endpoint para recusar (DELETE)
+      const res = await fetch(`http://localhost:3000/friend-requests/${requestId}/reject`, {
+        method: 'DELETE',
       });
 
       if (res.ok) {
-        loadFriends(); // Atualiza lista de amigos
-        loadPendingRequests(); // Atualiza lista de pedidos
+        loadPendingRequests(); // Atualiza a lista de pedidos pendentes
+      } else {
+        alert("Erro ao recusar pedido.");
       }
     } catch (err) {
       console.error(err);
@@ -103,18 +129,19 @@ export default function FriendsList({ username }: FriendsListProps) {
    * Remove um amigo através de uma requisição DELETE.
    */
   const removeFriend = async (friendUsername: string) => {
+    // Validação de segurança
     if (!window.confirm(`Tens a certeza que queres remover ${friendUsername} da tua lista?`)) {
       return;
     }
 
     setIsLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/users/${username}/friends/${friendUsername}`, {
+      const res = await fetch(`http://localhost:3000/users/${userId}/friends/${friendUsername}`, {
         method: 'DELETE',
       });
 
       if (res.ok) {
-        loadFriends();
+        loadFriends(); // Atualiza a lista após sucesso
       } else {
         alert("Erro ao remover amigo.");
       }
@@ -136,7 +163,7 @@ export default function FriendsList({ username }: FriendsListProps) {
 
       {/* Lista renderizada dinamicamente baseada no estado 'friends' */}
       <div className="space-y-3">
-        {friends.map((friend) => (
+        {Array.isArray(friends) && friends.map((friend) => (
           <div key={friend.id} className="flex justify-between items-center bg-black p-3 rounded border border-[#333]">
             
             {/* Informação do utilizador e estado online */}
@@ -145,31 +172,39 @@ export default function FriendsList({ username }: FriendsListProps) {
               <span className="text-white text-sm">{friend.username}</span>
             </div>
 
-            {/* Botão de remoção */}
+            {/* Botão de remoção (ativo apenas quando não está a carregar) */}
             <button
               onClick={() => removeFriend(friend.username)}
               disabled={isLoading}
               className={`text-red-500 hover:text-red-400 text-xs uppercase ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              Remover
+              {isLoading ? "..." : "Remover"}
             </button>
           </div>
         ))}
       </div>
 
       {/* Nova Secção: Pedidos Pendentes */}
-      {pendingRequests.length > 0 && (
+      {Array.isArray(pendingRequests) && pendingRequests.length > 0 && (
         <div className="mt-6 border-t border-[#333] pt-4">
           <h4 className="text-white text-xs uppercase mb-2">Pedidos Pendentes</h4>
           {pendingRequests.map((req) => (
             <div key={req.id} className="flex justify-between items-center bg-[#222] p-2 rounded mb-2">
               <span className="text-white text-sm">{req.sender.username}</span>
-              <button 
-                onClick={() => handleAcceptRequest(req.id)}
-                className="text-[#00ff9d] text-xs uppercase font-bold"
-              >
-                Aceitar
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => handleAcceptRequest(req.id)}
+                  className="text-[#00ff9d] text-xs uppercase font-bold"
+                >
+                  Aceitar
+                </button>
+                <button 
+                  onClick={() => handleRejectRequest(req.id)}
+                  className="text-red-500 text-xs uppercase font-bold"
+                >
+                  Recusar
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -181,9 +216,9 @@ export default function FriendsList({ username }: FriendsListProps) {
           type="text"
           value={newFriendId}
           onChange={(e) => setNewFriendId(e.target.value)}
-          placeholder="Username para adicionar"
+          placeholder="ID do amigo"
           className="bg-black border border-[#333] text-white p-2 rounded text-sm w-full"
-          disabled={isLoading}
+          disabled={isLoading} // Desativar durante loading para evitar envios duplicados
         />
 
         {/* Botão de envio (Add) */}
@@ -192,7 +227,7 @@ export default function FriendsList({ username }: FriendsListProps) {
           disabled={isLoading}
           className={`bg-[#00ff9d] text-black font-bold p-2 rounded text-xs uppercase hover:bg-green-400 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          {isLoading ? "Enviando..." : "Add"}
+          {isLoading ? "Adicionando..." : "Add"}
         </button>
       </div>
     </div>

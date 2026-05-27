@@ -4,14 +4,10 @@ import { UserService } from './user.service';
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
+
   @Get()
   getAll() {
     return this.userService.findAll();
-  }
-
-  @Get(':username')
-  getProfile(@Param('username') username: string) {
-    return this.userService.getProfile(username);
   }
 
   @Post()
@@ -28,6 +24,20 @@ export class UserController {
   getFriends(@Param('username') username: string){
     return this.userService.getFriends(username);
   }
+
+  // adicionado para lidar com string 1. Rota para o perfil (MANTÉM ESTA)
+  @Get(':username') // Mantemos :username como string
+  getProfile(@Param('username') username: string) {
+    // Se o username for numérico, a lógica abaixo deve tratar
+    // ou podes verificar:
+    return this.userService.getProfile(username);
+  }
+
+  // Substitui este método:
+  /*@Get(':id/friends')
+  getFriends(@Param('id') id: string){ // O Param continua como string na rota, mas vamos tratar como ID
+    return this.userService.getFriends(Number(id)); // Converte para número
+  }*/
 
   @Post(':username/friends/:friendUsername')
   async addFriend(

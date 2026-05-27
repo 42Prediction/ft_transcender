@@ -23,6 +23,7 @@ export class UserService {
     if (!user) throw new NotFoundException('User não encontrado');
     return user;
   }
+  
   async updateProfile(
     username: string,
     dto: UpdateProfileDto,
@@ -46,6 +47,7 @@ export class UserService {
     const { password, ...result } = user;
     return result;
   }
+
   async updateUser(username: string, data: Partial<User>) {
     await this.userRepository.update(username, data);
     return this.findOne(username);
@@ -56,9 +58,26 @@ export class UserService {
     user.is_online = false;
     return user;
   }
-
+  
+  /*
   async getProfile(username: string): Promise<Omit<User, 'password'>> {
     const user = await this.findOne(username);
+    const { password, ...result } = user;
+    return result;
+  }*/
+  // Novo adicionado para lidar com id ou nome substituir o acima
+  async getProfile(usernameOrId: string) {
+    // Se for um número (ID), procura por ID. Se for string, procura por username.
+    const isId = !isNaN(Number(usernameOrId));
+    
+    // CORREÇÃO AQUI: userRepository em vez de userRepo
+    const user = await this.userRepository.findOne({
+      where: isId ? { id: Number(usernameOrId) } : { username: usernameOrId }
+    });
+
+    if (!user) throw new NotFoundException('User não encontrado');
+
+    // MANTEMOS A SEGURANÇA: omitimos a password da resposta
     const { password, ...result } = user;
     return result;
   }
@@ -96,7 +115,8 @@ export class UserService {
     });
     return this.userRepository.save(user);
   }
-
+  
+/*
   async getFriends(username: string): Promise<User[]> {
     const user = await this.userRepository.findOne({
       where: { username },
@@ -105,6 +125,22 @@ export class UserService {
     if (!user){
       throw new NotFoundException ('User não encontrado');
     }
+    return user.friends;
+  }
+*/
+  // Novo
+  async getFriends(usernameOrId: string) {
+    // Tenta converter para número
+    const id = Number(usernameOrId);
+    const isNumeric = !isNaN(id);
+
+    // CORREÇÃO AQUI: userRepository em vez de userRepo
+    const user = await this.userRepository.findOne({
+      where: isNumeric ? { id: id } : { username: usernameOrId },
+      relations: ['friends']
+    });
+
+    if (!user) throw new NotFoundException('Utilizador não encontrado');
     return user.friends;
   }
 

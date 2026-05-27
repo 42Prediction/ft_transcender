@@ -30,12 +30,17 @@ export class FriendRequestService {
     });
   }
 
-  // Aceitar pedido
+  // Aceitar pedido amizade
   async acceptRequest(requestId: number): Promise<FriendRequest> {
     const request = await this.requestRepo.findOneBy({ id: requestId });
     if (!request) throw new NotFoundException('Pedido não encontrado');
 
     request.status = FriendRequestStatus.ACCEPTED;
     return await this.requestRepo.save(request);
+  }
+
+  // rejeitar pedido de amizade
+  async rejectRequest(requestId: number): Promise<void> {
+    await this.requestRepo.delete(requestId);
   }
 }
