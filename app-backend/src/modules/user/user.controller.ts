@@ -55,6 +55,8 @@ export class UserController {
   }
 
   @Get('profile')
-  profile(@Req() req, @Res() res:Response ){
+  @UseGuards(JwtAuthGuard)
+  profile(@Req() req){
+    return req.user;
   }
 }
