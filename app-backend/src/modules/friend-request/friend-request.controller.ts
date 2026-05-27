@@ -6,22 +6,22 @@ export class FriendRequestController {
   constructor(private readonly service: FriendRequestService) {}
 
   @Post()
-  async create(@Body() body: { senderId: number; receiverId: number }) {
+  async create(@Body() body: { senderId: number; receiverId: string | number }) {
     return await this.service.sendRequest(body.senderId, body.receiverId);
   }
 
   @Get('pending/:userId')
   async getPending(@Param('userId') userId: number) {
-    return await this.service.getPendingRequests(userId);
+    return await this.service.getPendingRequests(Number(userId));
   }
 
   @Patch(':id/accept')
   async accept(@Param('id') id: number) {
-    return await this.service.acceptRequest(id);
+    return await this.service.acceptRequest(Number(id));
   }
 
   @Delete(':id/reject')
   async reject(@Param('id') id: number) {
-    return await this.service.rejectRequest(id);
+    return await this.service.rejectRequest(Number(id));
   }
 }
