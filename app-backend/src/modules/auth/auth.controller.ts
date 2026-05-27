@@ -55,10 +55,9 @@ export class AuthController {
     @Get('42luanda/callback')
     async _42schoolAuthCallBack(@Req() req, @Res() res:Response){
     
-        const {access_token} = await this.authService.accessToken42School(req.query.code as string);
-        const { name, email } = await this.authService.profileOauth42School(access_token);
-        res.send({ name, email });
-        
+        const {access_token} = await this.authService._42SchoolLogin(req.query.code as string);
+        const frontendUrl = this.configService.get('FRONTEND_URL');
+        res.redirect(`${frontendUrl}/auth/callback?token=${access_token}`);
     }
 
 }
