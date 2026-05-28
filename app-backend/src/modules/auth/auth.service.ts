@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import * as bcrypt from 'bcrypt'
@@ -7,6 +7,8 @@ import { CredentialsDto } from '../../shared/dto/Credentials.dto';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { BettorService } from '../bettor/bettor.service';
 import { Bettor } from '../bettor/entities/bettor.entity';
+import { ConfigService } from '@nestjs/config';
+import { BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class AuthService{
@@ -14,26 +16,8 @@ export class AuthService{
         private readonly jwtService: JwtService,
         private readonly userService: UserService,
         private readonly bettorService: BettorService,
+        private readonly configService: ConfigService,
     ){}
-
-    async googleLogin(user: any){
-        if (!user){
-            throw new Error('User not found');
-        }
-
-        const payload = {
-            sub: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-        };
-
-    return {
-      message: 'Login efectuado com sucesso',
-      user,
-      access_token: this.jwtService.sign(payload),
-        };
-    }
 
     async validateUser(email: string, password: string): Promise<User>{
         const user: User | null = await this.userService.findOneByEmail(email);
@@ -63,7 +47,6 @@ export class AuthService{
             email: user.email,
             role: user.role,
         }
-        console.log(user.bettor);
         return {
             statusCode: 201,
             message: 'User created successfully.',
@@ -72,9 +55,6 @@ export class AuthService{
                 id: user.id,
                 email: user.email,
                 role: user.role,
-                nick: user.bettor.nick,
-                avatar: user.bettor.avatar,
-                isNickSetted: user.bettor.isNickSetted,
             }
         }
     }
@@ -99,4 +79,79 @@ export class AuthService{
         }
     }
 
+    async googleLogin(userGoogle: any){
+        if (!userGoogle){
+            throw new NotFoundException('User not found');
+        }
+        
+        let user = await this.userService.findOneByEmail(userGoogle.email);
+
+        if (user === null){
+            user = await this.userService.createOauthUser({
+                email: userGoogle.email,
+            });
+            this.bettorService.create(user);
+        }
+
+
+        const payload = {
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+        };
+
+        return {
+            access_token:this.jwtService.sign(payload)
+        };
+    }
+
+
+    async accessToken42School(code:string){
+
+        if (!code)
+            throw new BadRequestException("Missing code from 42 callback");
+
+        const url = this.configService.getOrThrow('_42SCHOOL_API_URL_TOKEN');
+        const body = new URLSearchParams({
+            grant_type:'authorization_code',
+            client_id:this.configService.getOrThrow('_42SCHOOL_CLIENT_ID'),
+            client_secret:this.configService.getOrThrow('_42SCHOOL_CLIENT_SECRET'),
+            code,
+            redirect_uri:this.configService.getOrThrow<string>('_42SCHOOL_CALLBACK_URL'),
+            state:'xyz'
+        });
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString()
+        });
+
+        if (!response.ok){
+            const errorText = await response.text();
+            throw new BadRequestException(
+            `42 token error: ${response.status} ${errorText}`,
+        );
+        }
+
+    const responseData = await response.json();
+    return {access_token: responseData.access_token};
+    }
+
+    async profileOauth42School(token:string){
+    const endpoint = this.configService.getOrThrow('_42SCHOOL_API_URL_OAUTH_PROFILE');
+    const profileResponse = await fetch(endpoint,{
+        method: 'GET',
+        headers:{
+            Authorization: 'Bearer '+token,
+        }
+    });
+
+    if (!profileResponse.ok)
+            throw new BadRequestException("Can't get user profile of API");
+
+    const profileData = await profileResponse.json();
+
+    return {name: profileData.login, email:profileData.email};
+    }
 }

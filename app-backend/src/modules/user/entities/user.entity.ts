@@ -3,8 +3,6 @@ import { Role } from "../../../shared/enums/roles.enum";
 import { Bettor } from "../../bettor/entities/bettor.entity";
 import { Exclude } from "class-transformer";
 
-
-
 @Entity('users')
 export class User {
     @PrimaryGeneratedColumn('uuid')
@@ -30,9 +28,6 @@ export class User {
         default: false,
     })
     state!:      boolean;
-
-    @OneToOne(()=> Bettor, (bettor) => bettor.user)
-    bettor!: Bettor;
 
     @CreateDateColumn({name: 'created_at'})
     createdAt!: Date;

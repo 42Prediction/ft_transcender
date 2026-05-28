@@ -8,7 +8,7 @@ export function Dashboard(){
 
     useEffect(() => {
         api.getProfile().then(setProfile);
-    }, []);
+    },[]);
 
     return (
     <div>

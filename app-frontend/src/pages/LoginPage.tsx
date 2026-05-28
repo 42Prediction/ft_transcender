@@ -1,5 +1,6 @@
+import { GoogleLoginButton } from "../components/GoogleLoginButton";
+import { _42schoolLoginButton } from "../components/_42schoolLoginButton";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { LoginButton } from "../components/LoginButton";
 import { useAuth } from "../context/AuthContext";
 import {Navigate} from 'react-router-dom';
 import { faGoogle } from "@fortawesome/free-brands-svg-icons";
@@ -16,6 +17,7 @@ if (isAuthenticated){
 }
 
 return (
+
 <main className="min-h-screen bg-black text-white flex items-center justify-center p-8">
     <div className="w-full max-w-md">
         <header className="mb-10 text-center">
@@ -37,6 +39,8 @@ return (
                 <FontAwesomeIcon icon={faGoogle} />
                 Entrar com Google
             </button>
+            <GoogleLoginButton/>
+            <_42schoolLoginButton/>
         </div>
     </div>
 </main>

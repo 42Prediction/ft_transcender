@@ -11,9 +11,10 @@ import { BettorModule } from '../bettor/bettor.module';
 
 @Module({
     imports:[
-        UserModule,
         BettorModule,
+        ConfigModule,
         PassportModule,
+        UserModule,
         JwtModule.registerAsync({
             imports: [ConfigModule],
             useFactory: async (configService: ConfigService) => ({

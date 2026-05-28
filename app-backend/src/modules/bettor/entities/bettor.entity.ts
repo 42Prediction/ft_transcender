@@ -27,7 +27,7 @@ export class Bettor {
     })
     isNickSetted!: boolean;
 
-    @OneToOne(()=> User, (user) => user.bettor, {onDelete: 'CASCADE'})
+    @OneToOne(()=> User, {onDelete: 'CASCADE'})
     @JoinColumn({ name: 'user_id' })
     user!: User;
 

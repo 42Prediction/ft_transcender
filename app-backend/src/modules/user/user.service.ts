@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import * as bcrypt from 'bcrypt'
 import { AdmUpdateUserDto } from './dto/admin-update-user.dto';
+import { CreateOauthUserDto } from './create-oauth-user.dto';
 
 @Injectable()
 export class UserService {
@@ -33,22 +34,16 @@ export class UserService {
   }
 
   async findOneByEmail(email: string): Promise<User | null> {
-    return await this.userRepository.findOne({
-      where: { email },
-      relations: ['bettor'],
-    });
+    return await this.userRepository.findOne({where: { email }});
   }
 
   async findAll(): Promise<User[]> {
-    return await this.userRepository.find({
-      relations: ['bettor'],
-    });
+    return await this.userRepository.find();
   }
 
   async findOne(id: string): Promise<User> {
     const user : User | null = await this.userRepository.findOne({
       where: { id },
-      relations: ['bettor']
     });
     if (!user){
       throw new NotFoundException("User Not Found");
@@ -59,7 +54,6 @@ export class UserService {
   async update(id: string, updateUserDto: UpdateUserDto | AdmUpdateUserDto): Promise<User> {
     const user : User | null = await this.userRepository.findOne({
       where: { id },
-      relations: ['bettor']
     });
     if (!user){
       throw new NotFoundException("User Not Found");
@@ -77,5 +71,14 @@ export class UserService {
     return {
       message: 'User deleted successfully',
     }
+  }
+
+  createOauthUser(dto:CreateOauthUserDto ):Promise<User>{
+    
+    const user = this.userRepository.create({
+        email:dto.email,
+    });
+
+    return this.userRepository.save(user);
   }
 }

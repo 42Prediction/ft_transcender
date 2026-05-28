@@ -2,18 +2,18 @@ import { config } from 'dotenv';
 config();
 
 import { AppDataSource } from '../data-source';
-import { seedExamRanks } from './examrank.seed';
+import { adminSeed } from './admin.seed';
 
 async function runSeeds(){
 
     await AppDataSource.initialize();
-    await seedExamRanks(AppDataSource);
+    await adminSeed(AppDataSource);
 
     await AppDataSource.destroy();
-    console.log('Seeds concluídos!');
+    console.log('Seeds OK!');
 }
 
 runSeeds().catch((err) => {
-    console.error('Erro ao correr seeds:', err);
+    console.error('Error seeds:', err);
     process.exit(1);
 });
