@@ -11,6 +11,7 @@ import {
   NotFoundException,
   UseGuards,
   Req,
+  Put,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -63,5 +64,47 @@ export class UserController {
   @Roles('admin')
   admRemove(@Param('id') id: string) {
     return this.userService.remove(id);
+  }
+
+  // Mudar de users para Better a lincagem
+  @Get(':username/friends')
+  getFriends(@Param('username') username: string){
+
+    return this.userService.getFriends(username);
+  }
+  // adicionado para lidar com string 1. Rota para o perfil (MANTÉM ESTA)
+  @Get(':username') // Mantemos :username como string
+  getProfile(@Param('username') username: string) {
+    // Se o username for numérico, a lógica abaixo deve tratar
+    // ou podes verificar:
+    return this.userService.getProfile(username);
+  }
+
+  // Substitui este método:
+  /*@Get(':id/friends')
+  getFriends(@Param('id') id: string){ // O Param continua como string na rota, mas vamos tratar como ID
+    return this.userService.getFriends(Number(id)); // Converte para número
+  }*/
+
+  @Post(':username/friends/:friendUsername')
+  async addFriend(
+    @Param('username') username: string, 
+    @Param('friendUsername') friendUsername: string // Mudou de number para string
+  ) {
+    return this.userService.addFriend(username, friendUsername);
+  }
+
+  @Delete(':username/friends/:friendUsername')
+  async removeFriend(
+    @Param('username') username: string,
+    @Param('friendUsername') friendUsername: string
+  ) {
+    return this.userService.removeFriend(username, friendUsername);
+  }
+
+  // Temporario para testar o online e offline usando POST
+  @Patch(':username/status')
+  async setStatus(@Param('username') username: string, @Body() body: { is_online: boolean }) {
+    return this.userService.updateStatus(username, body.is_online);
   }
 }

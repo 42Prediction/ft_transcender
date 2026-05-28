@@ -24,6 +24,9 @@ help:
 	@echo "  make down       - Stop database container"
 	@echo "  make shell-db   - Open psql shell in postgres container"
 	@echo "  make clean      - Stop containers and prune docker resources"
+	@echo "  make clean-all-except-postgres - Stop containers, volumes and images except postgres"
+	@echo "  make clean-keep-pulls - Alias for clean-all-except-postgres"
+	@echo "  make clean-volume-keep-image - Stop containers and remove the project volume only"
 	@echo "  make fclean     - clean + remove volumes + data dir"
 	@echo "  make re         - Full reset and start"
 

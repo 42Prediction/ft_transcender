@@ -1,3 +1,3 @@
-import { CredentialsAuthDto } from '../../auth/dto/credentials.auth.dto';
+import { CredentialsDto } from '../../../shared/dto/Credentials.dto';
 
-export class CreateUserDto extends CredentialsAuthDto  { }
+export class CreateUserDto extends CredentialsDto  { }
