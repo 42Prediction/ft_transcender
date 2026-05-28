@@ -11,7 +11,7 @@ import { createAvatar } from '@dicebear/core';
 import { avataaarsNeutral } from '@dicebear/collection';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { publicBettorDto } from './dto/public-bettor-dto';
+
 
 @Injectable()
 export class BettorService {
@@ -43,24 +43,21 @@ export class BettorService {
     return await this.bettorRepository.save(bettor);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} bettor`;
+  async findOne(id: string ): Promise<Bettor | null>{
+    return this.bettorRepository.findOne({
+      where: { user: { id } },
+      relations: ['user'],
+    });
   }
 
   // async update(id: number, updateBettorDto: UpdateBettorDto) {
   //   return `This action updates a #${id} bettor`;
   // }
 
-  async findByNick(nick: string): Promise<publicBettorDto> {
+  async findByNick(nick: string): Promise<Bettor> {
     const bettor = await this.bettorRepository.findOne({ where: { nick } });
     if (!bettor) throw new NotFoundException('Bettor not found');
-    return {
-      id: bettor.id,
-      nick: bettor.nick,
-      bio: bettor.bio,
-      avatar: bettor.avatar,
-      createdAt: bettor.createdAt,
-    };
+    return bettor;
   }
 
   async update(userId: string, updateBettorDto: UpdateBettorDto) {
@@ -83,6 +80,7 @@ export class BettorService {
         throw new ConflictException('Nick already in use, chose another');
       bettor.isNickSetted = true;
     }
+    if (updateBettorDto)
     Object.assign(bettor, updateBettorDto);
     return await this.bettorRepository.save(bettor);
   }

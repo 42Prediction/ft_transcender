@@ -11,7 +11,7 @@ async function authFetch(path: string){
         },
     });
 
-    if (response.status == 401){
+    if (response.status == 404){
         localStorage.removeItem('access_token');
         window.location.href = '/login';
         throw new Error('Sessão expirada');
@@ -21,5 +21,5 @@ async function authFetch(path: string){
 }
 
 export const api = {
-    getProfile: () => authFetch('/auth/profile'),
+    getProfile: () => authFetch('/bettor/me'),
 };
