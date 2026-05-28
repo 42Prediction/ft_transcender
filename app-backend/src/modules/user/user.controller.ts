@@ -1,4 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, ClassSerializerInterceptor, NotFoundException, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseInterceptors,
+  ClassSerializerInterceptor,
+  NotFoundException,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -13,14 +26,12 @@ import { AdmUpdateUserDto } from './dto/admin-update-user.dto';
 @UseInterceptors(ClassSerializerInterceptor)
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UserController {
-  constructor(
-    private readonly userService: UserService,
-  ) {}
-  
+  constructor(private readonly userService: UserService) {}
+
   @Post()
   @Roles('admin')
   async create(@Body() createUserDto: AdmUpdateUserDto) {
-    return  await this.userService.create(createUserDto);
+    return await this.userService.create(createUserDto);
   }
 
   @Get()
