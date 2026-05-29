@@ -12,7 +12,7 @@ export function Dashboard(){
 
     return (
     <div>
-        <h1>Olá, {user?.name}</h1>
+        <h1>Olá, {user?.email}</h1>
         <pre>{JSON.stringify(profile, null, 2)}</pre>
         <button onClick={logout}>Sair</button>
     </div>
