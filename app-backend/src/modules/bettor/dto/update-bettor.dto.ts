@@ -13,8 +13,4 @@ export class UpdateBettorDto extends PartialType(CreateBettorDto) {
   @IsString()
   @MaxLength(255)
   bio?: string;
-
-  @IsOptional()
-  @IsString()
-  avatar?: string;
 }
