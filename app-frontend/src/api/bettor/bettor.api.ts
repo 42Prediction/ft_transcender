@@ -4,25 +4,15 @@ import type { UpdateBettorDto } from "./update-bettor.dto"
 
 export const bettor = {
     getMe() {
-        return api({
-            method: 'GET',
-            url: '/bettor/me',
-        })
+        return api.get('/bettor/me',)
     },
 
     updateMe(dto: UpdateBettorDto) {
-        return api({
-            method: 'PATCH',
-            url: '/bettor/me',
-            data: toFormData(dto),
-        })
+        return api.patch('/bettor/me', toFormData(dto))
     },
 
     getByNick(nick: string){
         const url = `/bettor/@${nick}`
-        return api({
-            method: 'GET',
-            url,
-        })
+        return api.get(url)
     }
 }

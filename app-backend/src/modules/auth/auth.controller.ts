@@ -41,6 +41,12 @@ export class AuthController {
         return await this.authService.signup(signinAuthDto);
     }
 
+    @Post('logout')
+    async logout(@Res({ passthrough: true }) res: Response) {
+        res.clearCookie('access_token', { path: '/' });
+        return { message: 'Logged out' };
+    }
+
     @Get('school')
     _42schoolAuth(@Res() res:Response){
     const url=this.configService.getOrThrow('_42SCHOOL_API_URL_AUTHORIRIZE');
@@ -62,7 +68,7 @@ export class AuthController {
         const { access_token } = await this.authService.googleLogin(req.user);
         this.setAuthCookie(res, access_token);
         const frontendUrl = this.configService.get('FRONTEND_URL');
-        res.redirect(`${frontendUrl}/auth/callback?token=${access_token}`);
+        res.redirect(`${frontendUrl}/auth/callback`);
     
     }
 
@@ -72,7 +78,7 @@ export class AuthController {
         const {access_token} = await this.authService._42SchoolLogin(req.query.code as string);
         this.setAuthCookie(res, access_token);
         const frontendUrl = this.configService.get('FRONTEND_URL');
-        res.redirect(`${frontendUrl}/auth/callback?token=${access_token}`);
+        res.redirect(`${frontendUrl}/auth/callback`);
     }
 
 }

@@ -1,9 +1,12 @@
 import {
   createContext,
+  useEffect,
   useContext,
   useState,
   type ReactNode,
 } from "react";
+import { bettor } from "../api/bettor/bettor.api";
+import { auth } from "../api/auth/auth.api";
 
 interface User{
     sub: string;
@@ -13,48 +16,56 @@ interface User{
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
   loading: boolean;
   isAuthenticated: boolean;
-  login: (token: string, user:User) => void;
-  logout: () => void;
+  login: (user: User) => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({children}:{children: ReactNode}){
 
-
-  const [token, setToken] = useState<string | null>(
-    localStorage.getItem("access_token")
-  );
-
   const [user, setUser] = useState<User | null>(null);
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  function login(newToken: string, userData:User) {
-    localStorage.setItem("access_token", newToken);
-    setToken(newToken);
+  useEffect(() => {
+    bettor.getMe()
+      .then(({ data }) => {
+        setUser({
+          sub: data.user.id,
+          email: data.user.email,
+          role: data.user.role,
+        });
+      })
+      .catch(() => {
+        setUser(null);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  function login(userData: User) {
     setUser(userData);
   }
 
-  function logout() {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("profile");
-
-    setToken(null);
+  async function logout() {
+    try {
+      await auth.logout();
+    } finally {
     setUser(null);
+    }
   }
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        token,
         loading,
         login,
         logout,
-        isAuthenticated: !!token,
+        isAuthenticated: !!user,
       }}
     >
       {children}
