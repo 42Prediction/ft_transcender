@@ -106,7 +106,7 @@ export class AuthService{
     }
 
 
-    async accessToken42School(code:string){
+    async _42SchoolLogin(code:string){
 
         if (!code)
             throw new BadRequestException("Missing code from 42 callback");
@@ -134,24 +134,48 @@ export class AuthService{
         );
         }
 
-    const responseData = await response.json();
-    return {access_token: responseData.access_token};
+        const responseData = await response.json();
+        const {email} = await this.profileOauth42School(responseData.access_token);
+        const {token} = await this.generateToken(email);
+        return {access_token: token};
     }
 
     async profileOauth42School(token:string){
-    const endpoint = this.configService.getOrThrow('_42SCHOOL_API_URL_OAUTH_PROFILE');
-    const profileResponse = await fetch(endpoint,{
-        method: 'GET',
-        headers:{
-            Authorization: 'Bearer '+token,
+        const endpoint = this.configService.getOrThrow('_42SCHOOL_API_URL_OAUTH_PROFILE');
+        const profileResponse = await fetch(endpoint,{
+            method: 'GET',
+            headers:{
+                Authorization: 'Bearer '+token,
+            }
+        });
+
+        if (!profileResponse.ok)
+                throw new BadRequestException("Can't get user profile of API");
+
+        const profileData = await profileResponse.json();
+
+        return {name: profileData.login, email:profileData.email};
+    }
+
+    async generateToken(email:string){
+        let user = await this.userService.findOneByEmail(email);
+
+        if (user === null){
+            user = await this.userService.createOauthUser({
+                email: email,
+            });
+            this.bettorService.create(user);
         }
-    });
 
-    if (!profileResponse.ok)
-            throw new BadRequestException("Can't get user profile of API");
 
-    const profileData = await profileResponse.json();
+        const payload = {
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+        };
 
-    return {name: profileData.login, email:profileData.email};
+        return {
+            token:this.jwtService.sign(payload)
+        };
     }
 }

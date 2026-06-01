@@ -4,9 +4,11 @@ function getToken(){
     return localStorage.getItem('access_token');
 }
 
-async function authFetch(path: string){
+async function authFetch(path: string, options?: RequestInit){
     const response = await fetch(`${API_URL}${path}`,{
+        ...options,
         headers: {
+            ...options?.headers,
             Authorization: `Bearer ${getToken()}`
         },
     });
@@ -22,4 +24,18 @@ async function authFetch(path: string){
 
 export const api = {
     getProfile: () => authFetch('/bettor/me'),
+
+    getPublicProfile: (nick: string) => authFetch(`bettor/@${nick}`),
+
+    updateProfile: (data: {nick?: string, bio?: string}, avatar?: File) => {
+        const form = new FormData();
+        if (data.nick) form.append('nick', data.nick);
+        if (data.bio) form.append('bio', data.bio);
+        if (avatar) form.append ('avatar', avatar);
+        
+        return authFetch('bettor/me', {
+            method: 'PATCH',
+            body: form
+        })
+    }
 };
