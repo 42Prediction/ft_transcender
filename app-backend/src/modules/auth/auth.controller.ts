@@ -1,4 +1,4 @@
-import { Controller, Get, Res, Req, UseGuards, Post, Body } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
@@ -11,6 +11,18 @@ export class AuthController {
 
     constructor(private authService: AuthService, private configService: ConfigService) { }
 
+    private setAuthCookie(res: Response, accessToken: string) {
+        const isProduction = this.configService.get('NODE_ENV') === 'production';
+
+        res.cookie('access_token', accessToken, {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            path: '/',
+        });
+    }
+
     @Get('google')
     @UseGuards(GoogleAuthGuard)
     async googleAuth() {
@@ -18,8 +30,10 @@ export class AuthController {
 
 
     @Post('signin')
-    async signin(@Body() signinDto: CredentialsAuthDto) {
-        return await this.authService.signin(signinDto);
+    async signin(@Body() signinDto: CredentialsAuthDto, @Res({ passthrough: true }) res: Response) {
+        const { access_token, ...result } = await this.authService.signin(signinDto);
+        this.setAuthCookie(res, access_token);
+        return result;
     }
 
     @Post('signup')
@@ -46,6 +60,7 @@ export class AuthController {
     async googleAuthCallBack(@Req() req, @Res() res:Response){
         
         const { access_token } = await this.authService.googleLogin(req.user);
+        this.setAuthCookie(res, access_token);
         const frontendUrl = this.configService.get('FRONTEND_URL');
         res.redirect(`${frontendUrl}/auth/callback?token=${access_token}`);
     
@@ -55,6 +70,7 @@ export class AuthController {
     async _42schoolAuthCallBack(@Req() req, @Res() res:Response){
     
         const {access_token} = await this.authService._42SchoolLogin(req.query.code as string);
+        this.setAuthCookie(res, access_token);
         const frontendUrl = this.configService.get('FRONTEND_URL');
         res.redirect(`${frontendUrl}/auth/callback?token=${access_token}`);
     }

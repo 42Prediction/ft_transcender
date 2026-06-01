@@ -48,14 +48,16 @@ export class AuthService{
             role: user.role,
         }
         return {
-            statusCode: 201,
-            message: 'User created successfully.',
-            data: {
-                access_token: this.jwtService.sign(payload),
-                id: user.id,
-                email: user.email,
-                role: user.role,
-            }
+            access_token: this.jwtService.sign(payload),
+            result: {
+                statusCode: 201,
+                message: 'User created successfully.',
+                data: {
+                    id: user.id,
+                    email: user.email,
+                    role: user.role,
+                },
+            },
         }
     }
 
@@ -101,7 +103,12 @@ export class AuthService{
         };
 
         return {
-            access_token:this.jwtService.sign(payload)
+            access_token:this.jwtService.sign(payload),
+            result:{
+                id: user.id,
+                email: user.email,
+                role: user.role,
+            }
         };
     }
 
