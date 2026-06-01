@@ -16,25 +16,33 @@ export class UserService {
     private readonly userRepository: Repository<User>
   ) { }
 
+  private normalizeEmail(email: string | undefined): string {
+    if (!email) {
+      throw new BadRequestException('Email is required.');
+    }
+    return email.trim().toLowerCase();
+  }
+
   async create(createUserDto: CreateUserDto | AdmUpdateUserDto): Promise<User> {
     const { email, password } = createUserDto;
+    const normalizedEmail = this.normalizeEmail(email);
     if (!password) {
       throw new BadRequestException('Password is required.');
     }
-    const emailAlreadyExists: boolean = await this.userRepository.existsBy({ email });
+    const emailAlreadyExists: boolean = await this.userRepository.existsBy({ email: normalizedEmail });
     if (emailAlreadyExists) {
       throw new ConflictException('Email already exists.');
     }
     const hashed: string = await bcrypt.hash(password, this.SALTROUNDS);
     const user = this.userRepository.create({
-      email,
+      email: normalizedEmail,
       password: hashed,
     });
     return await this.userRepository.save(user);
   }
 
   async findOneByEmail(email: string): Promise<User | null> {
-    return await this.userRepository.findOne({where: { email }});
+    return await this.userRepository.findOne({where: { email: this.normalizeEmail(email) }});
   }
 
   async findAll(): Promise<User[]> {
@@ -52,13 +60,32 @@ export class UserService {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto | AdmUpdateUserDto): Promise<User> {
+    console.log(id)
     const user : User | null = await this.userRepository.findOne({
       where: { id },
     });
     if (!user){
       throw new NotFoundException("User Not Found");
     }
-    this.userRepository.merge(user, updateUserDto)
+
+    const updateData: Partial<User> = { ...updateUserDto };
+
+    if (updateData.email) {
+      const normalizedEmail = this.normalizeEmail(updateData.email);
+      if (normalizedEmail !== user.email) {
+        const emailAlreadyExists = await this.userRepository.existsBy({ email: normalizedEmail });
+        if (emailAlreadyExists) {
+          throw new ConflictException('Email already exists.');
+        }
+      }
+      updateData.email = normalizedEmail;
+    }
+
+    if (updateData.password) {
+      updateData.password = await bcrypt.hash(updateData.password, this.SALTROUNDS);
+    }
+
+    this.userRepository.merge(user, updateData)
     return this.userRepository.save(user);
   };
 
@@ -74,9 +101,9 @@ export class UserService {
   }
 
   createOauthUser(dto:CreateOauthUserDto ):Promise<User>{
-    
+    const normalizedEmail = this.normalizeEmail(dto.email);
     const user = this.userRepository.create({
-        email:dto.email,
+        email: normalizedEmail,
     });
 
     return this.userRepository.save(user);
