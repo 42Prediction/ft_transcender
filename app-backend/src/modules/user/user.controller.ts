@@ -8,9 +8,9 @@ import {
   Delete,
   UseInterceptors,
   ClassSerializerInterceptor,
-  NotFoundException,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -21,41 +21,31 @@ import { AdmUpdateUserDto } from './dto/admin-update-user.dto';
 
 @Controller('users')
 @UseInterceptors(ClassSerializerInterceptor)
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
-  @UseGuards(RolesGuard)
   @Roles('admin')
   async create(@Body() createUserDto: AdmUpdateUserDto) {
     return await this.userService.create(createUserDto);
   }
 
   @Get()
-  @UseGuards(RolesGuard)
   @Roles('admin')
   async findAll() {
     return await this.userService.findAll();
   }
 
   @Get(':id')
-  @UseGuards(RolesGuard)
   @Roles('admin')
   async findOne(@Param('id') id: string) {
     return await this.userService.findOne(id);
   }
 
   @Patch('me')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.update(id, updateUserDto);
-  }
-
-  @Patch(':id')
-  @UseGuards(RolesGuard)
-  @Roles('admin')
-  admUpdate(@Param('id') id: string, @Body() dto: AdmUpdateUserDto) {
-    return this.userService.update(id, dto);
+  async updateMe(@Req() req, @Body() dto: UpdateUserDto) {
+    return await this.userService.update(req.user.id, dto);
   }
 
   @Delete('me')
@@ -63,13 +53,13 @@ export class UserController {
     return this.userService.remove(req.user.id);
   }
 
-  @Patch('me')
-  updateMe(@Req() req, @Body dto: ) {
-    return this.userService.remove(req.user.id);
+  @Patch(':id')
+  @Roles('admin')
+  async admUpdate(@Param('id') id: string, @Body() dto: AdmUpdateUserDto) {
+    return await this.userService.update(id, dto);
   }
-
+  
   @Delete(':id')
-  @UseGuards(RolesGuard)
   @Roles('admin')
   admRemove(@Param('id') id: string) {
     return this.userService.remove(id);

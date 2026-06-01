@@ -58,7 +58,6 @@ export class AuthController {
         const {access_token} = await this.authService.accessToken42School(req.query.code as string);
         const { name, email } = await this.authService.profileOauth42School(access_token);
         res.send({ name, email });
-        
     }
 
 }
