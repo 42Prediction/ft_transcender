@@ -54,7 +54,7 @@ export default function Navbar() {
           {open && (
             <div className="absolute mt-3 w-44 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
               <Link
-                to={`users/${profile?.nick}`}
+                to={`bettor/me`}
                 className="flex items-center gap-1.5 text-sm capitalize p-3 text-zinc-300 hover:bg-zinc-800 transition-colors"
                 onClick={() => setOpen(false)}
               >
