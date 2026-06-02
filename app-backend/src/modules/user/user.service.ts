@@ -86,7 +86,7 @@ export class UserService {
     }
 
     this.userRepository.merge(user, updateData)
-    return this.userRepository.save(user);
+    return await this.userRepository.save(user);
   };
 
   async remove(id: string) {

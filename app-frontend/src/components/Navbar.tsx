@@ -1,19 +1,19 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useEffect, useRef, useState } from "react";
-import { api } from "../services/api";
+import { bettor } from "../api/bettor/bettor.api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGear, faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
 
 export default function Navbar() {
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const drownDownRef = useRef<HTMLDivElement>(null);
-  const [profile, setProfile] = useState(null)
+  const [profile, setProfile] = useState<any>(null)
   const [open, setOpen] = useState(false);
   const isActive = (path: string) => location.pathname === path;
   useEffect(() => {
-    api.getProfile().then(setProfile);
+    bettor.getMe().then(({ data }) => setProfile(data));
   }, []);
 
   useEffect(() => {
@@ -49,12 +49,12 @@ export default function Navbar() {
             onClick={() => setOpen(!open)}
             className="text-zinc-500 hover:text-white transition-colors uppercase"
           >
-            {profile?.firstName}
+            {profile?.nick}
           </button>
           {open && (
             <div className="absolute mt-3 w-44 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
               <Link
-                to={`users/${profile?.firstName}`}
+                to={`users/${profile?.nick}`}
                 className="flex items-center gap-1.5 text-sm capitalize p-3 text-zinc-300 hover:bg-zinc-800 transition-colors"
                 onClick={() => setOpen(false)}
               >

@@ -1,17 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  UseInterceptors,
-  ClassSerializerInterceptor,
-  NotFoundException,
-  UseGuards,
-  Req,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, ClassSerializerInterceptor, UseGuards, Req} from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -45,24 +32,25 @@ export class UserController {
   }
 
   @Patch('me')
-  updateMe(@Req() req, @Body() dto: UpdateUserDto) {
-    return this.userService.update(req.user.id, dto);
+  async updateMe(@Req() req, @Body() dto: UpdateUserDto) {
+    return await this.userService.update(req.user.id, dto);
   }
 
   @Delete('me')
-  remove(@Req() req) {
-    return this.userService.remove(req.user.id);
+  async remove(@Req() req) {
+    return await this.userService.remove(req.user.id);
   }
 
   @Patch(':id')
   @Roles('admin')
-  admUpdate(@Param('id') id: string, @Body() dto: AdmUpdateUserDto) {
-    return this.userService.update(id, dto);
+  async admUpdate(@Param('id') id: string, @Body() dto: AdmUpdateUserDto) {
+    return await this.userService.update(id, dto);
   }
   
   @Delete(':id')
   @Roles('admin')
-  admRemove(@Param('id') id: string) {
-    return this.userService.remove(id);
+  async admRemove(@Param('id') id: string) {
+    return await this.userService.remove(id);
   }
+
 }
