@@ -6,9 +6,7 @@ BACK_DIR = $(PROJECT_ROOT)/app-backend
 LOG_DIR = $(PROJECT_ROOT)/logs
 PID_DIR = $(PROJECT_ROOT)/.pids
 BACK_PID_FILE = $(PID_DIR)/backend.pid
-BACK_CHILD_PID_FILE = $(PID_DIR)/backend.child.pid
 FRONT_PID_FILE = $(PID_DIR)/frontend.pid
-FRONT_CHILD_PID_FILE = $(PID_DIR)/frontend.child.pid
 
 all: help
 
@@ -64,22 +62,11 @@ dev: wait-db
 	@mkdir -p $(LOG_DIR)
 	@mkdir -p $(PID_DIR)
 	@if [ -f $(BACK_PID_FILE) ]; then kill $$(cat $(BACK_PID_FILE)) 2>/dev/null || true; rm -f $(BACK_PID_FILE); fi
-	@if [ -f $(BACK_CHILD_PID_FILE) ]; then kill -9 $$(cat $(BACK_CHILD_PID_FILE)) 2>/dev/null || true; rm -f $(BACK_CHILD_PID_FILE); fi
 	@if [ -f $(FRONT_PID_FILE) ]; then kill $$(cat $(FRONT_PID_FILE)) 2>/dev/null || true; rm -f $(FRONT_PID_FILE); fi
-	@if [ -f $(FRONT_CHILD_PID_FILE) ]; then kill -9 $$(cat $(FRONT_CHILD_PID_FILE)) 2>/dev/null || true; rm -f $(FRONT_CHILD_PID_FILE); fi
-	@# Limpeza garantida da porta 3000 antes de subir o app
-	@if command -v fuser >/dev/null 2>&1; then fuser -k -n tcp 3000 2>/dev/null || true; else listeners=$$(lsof -t -i:3000 2>/dev/null || true); if [ -n "$$listeners" ]; then kill -9 $$listeners 2>/dev/null || true; fi; fi
-	@# Limpeza garantida da porta 5173 antes de subir o frontend
-	@if command -v fuser >/dev/null 2>&1; then fuser -k -n tcp 5173 2>/dev/null || true; else listeners=$$(lsof -t -i:5173 2>/dev/null || true); if [ -n "$$listeners" ]; then kill -9 $$listeners 2>/dev/null || true; fi; fi
 	@cd $(BACK_DIR) && { [ -d node_modules ] || npm install; }
-	@# Executa o backend em background
-	@(cd $(BACK_DIR) && NO_COLOR=true npm run start:dev > "$(LOG_DIR)/backend.log" 2>&1 &)
-	@sleep 2
-	@lsof -t -i:3000 > "$(BACK_CHILD_PID_FILE)" 2>/dev/null || true
+	@(cd $(BACK_DIR) && npm run start:dev > $(LOG_DIR)/backend.log 2>&1) & echo $$! > $(BACK_PID_FILE)
 	@cd $(FRONT_DIR) && { [ -d node_modules ] || npm install; }
-	@(cd $(FRONT_DIR) && NO_COLOR=true npm run dev -- --port 5173 --strictPort > "$(LOG_DIR)/frontend.log" 2>&1 & echo $$! > "$(FRONT_PID_FILE)")
-	@sleep 2
-	@lsof -t -i:5173 > "$(FRONT_CHILD_PID_FILE)" 2>/dev/null || true
+	@(cd $(FRONT_DIR) && npm run dev -- --port 5173 --strictPort > $(LOG_DIR)/frontend.log 2>&1) & echo $$! > $(FRONT_PID_FILE)
 	@echo "Backend log: $(LOG_DIR)/backend.log"
 	@echo "Frontend log: $(LOG_DIR)/frontend.log"
 	@echo "Frontend running at: http://localhost:5173/"
@@ -90,11 +77,9 @@ dev-status:
 	@echo "Backend PID: $$(cat $(BACK_PID_FILE) 2>/dev/null || echo not-running)"
 	@echo "Frontend PID: $$(cat $(FRONT_PID_FILE) 2>/dev/null || echo not-running)"
 
-dev-stop:
+dev-stop: clean
 	@if [ -f $(BACK_PID_FILE) ]; then kill $$(cat $(BACK_PID_FILE)) 2>/dev/null || true; rm -f $(BACK_PID_FILE); fi
-	@if [ -f $(BACK_CHILD_PID_FILE) ]; then kill -9 $$(cat $(BACK_CHILD_PID_FILE)) 2>/dev/null || true; rm -f $(BACK_CHILD_PID_FILE); fi
-	@if [ -f $(FRONT_PID_FILE) ]; then kill -9 $$(cat $(FRONT_PID_FILE)) 2>/dev/null || true; rm -f $(FRONT_PID_FILE); fi
-	@if [ -f $(FRONT_CHILD_PID_FILE) ]; then kill -9 $$(cat $(FRONT_CHILD_PID_FILE)) 2>/dev/null || true; rm -f $(FRONT_CHILD_PID_FILE); fi
+	@if [ -f $(FRONT_PID_FILE) ]; then kill $$(cat $(FRONT_PID_FILE)) 2>/dev/null || true; rm -f $(FRONT_PID_FILE); fi
 	@echo "Backend and frontend stopped; clean completed"
 
 clean: down
@@ -106,4 +91,54 @@ fclean: dev-stop
 
 re: fclean dev
 
-.PHONY: all help up down wait-db shell-db migrate seed db-init dev dev-status dev-stop clean fclean re
+# Remove containers e volumes, mas preserva imagens e rede global
+clean-containers:
+	$(COMPOSE) down --volumes
+
+# Se quiser limpar tudo o que for do projeto (volumes e pastas de dados) 
+# mas NUNCA rodar um "docker system prune" (que remove imagens):
+fclean-local: down
+	$(COMPOSE) down --volumes
+	sudo rm -rf $(DATA_DIR)
+
+# Remove containers and the project volume, but keep pulled images like postgres:16-alpine
+clean-volume-keep-image: down
+	$(COMPOSE) down --volumes
+	@sudo rm -rf $(DATA_DIR)/postgresql
+
+# Remove containers/volumes do projeto e APAGA todas as imagens do PC, EXCETO o postgres
+clean-all-except-postgres: down
+	@echo "Limpando containers e volumes..."
+	$(COMPOSE) down --volumes
+	@sudo rm -rf $(DATA_DIR)/postgresql
+	@echo "Removendo todas as imagens do sistema, exceto postgres:16-alpine..."
+	@IMAGES=$$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -v "postgres:16-alpine"); \
+	if [ -n "$$IMAGES" ]; then \
+		docker rmi $$IMAGES 2>/dev/null || true; \
+	fi
+	@# Remove também imagens sem nome (<none>) que sobram de builds antigos
+	@docker image prune -f
+
+# Para parar e remover apenas os containers definidos no docker-compose
+stop-containers:
+	$(COMPOSE) down
+
+# Para reiniciar apenas o processo do backend (sem mexer na base de dados)
+restart-back:
+	@echo "Reiniciando o Backend..."
+	@if [ -f $(BACK_PID_FILE) ]; then kill $$(cat $(BACK_PID_FILE)) 2>/dev/null || true; rm -f $(BACK_PID_FILE); fi
+	@cd $(BACK_DIR) && { [ -d node_modules ] || npm install; }
+	@(cd $(BACK_DIR) && npm run start:dev > $(LOG_DIR)/backend.log 2>&1) & echo $$! > $(BACK_PID_FILE)
+	@echo "Backend reiniciado com sucesso. PID: $$(cat $(BACK_PID_FILE))"
+
+# Comando para matar todos os processos de node na porta 3000 e 5173/5174
+kill:
+	@echo "A matar processos nas portas 3000 e 5173/5174..."
+	-fuser -k 3000/tcp 2>/dev/null
+	-fuser -k 5173/tcp 2>/dev/null
+	-fuser -k 5174/tcp 2>/dev/null
+	@echo "Processos terminados."
+
+.PHONY: all help up down wait-db shell-db migrate seed db-init dev dev-status dev-stop clean fclean re clean-containers fclean-local clean-all-except-postgres clean-keep-pulls clean-volume-keep-image stop-containers restart-back kill
+
+clean-keep-pulls: clean-all-except-postgres

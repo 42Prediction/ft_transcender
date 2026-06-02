@@ -65,7 +65,7 @@ export class UserController {
   admRemove(@Param('id') id: string) {
     return this.userService.remove(id);
   }
-
+/*
   // Mudar de users para Better a lincagem
   @Get(':username/friends')
   getFriends(@Param('username') username: string){
@@ -81,10 +81,10 @@ export class UserController {
   }
 
   // Substitui este método:
-  /*@Get(':id/friends')
+  @Get(':id/friends')
   getFriends(@Param('id') id: string){ // O Param continua como string na rota, mas vamos tratar como ID
     return this.userService.getFriends(Number(id)); // Converte para número
-  }*/
+  }
 
   @Post(':username/friends/:friendUsername')
   async addFriend(
@@ -106,5 +106,6 @@ export class UserController {
   @Patch(':username/status')
   async setStatus(@Param('username') username: string, @Body() body: { is_online: boolean }) {
     return this.userService.updateStatus(username, body.is_online);
-  }
+  }*/
+  
 }

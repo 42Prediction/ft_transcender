@@ -94,6 +94,7 @@ export class UserService {
     return user.friends;
   }
 */
+  /*
   // Novo
   async getFriends(usernameOrId: string) {
     // Tenta converter para número
@@ -153,4 +154,5 @@ export class UserService {
     user.is_online = is_online;
     return await this.userRepository.save(user);
   }
+  */
 }

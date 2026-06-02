@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn, ManyToMany, JoinTable } from "typeorm";
 import { User } from "../../user/entities/user.entity";
 
 @Entity('bettors')
@@ -30,6 +30,22 @@ export class Bettor {
     @OneToOne(()=> User, {onDelete: 'CASCADE'})
     @JoinColumn({ name: 'user_id' })
     user!: User;
+
+    // Marco começa aqui Relação auto-referenciada de amizade puramente dentro do perfil Bettor
+    @Column({
+        name: 'is_online',
+        default: false,
+    })
+    isOnline!: boolean;
+
+    @ManyToMany(() => Bettor)
+    @JoinTable({
+        name: 'bettor_friends',
+        joinColumn: { name: 'bettor_id', referencedColumnName: 'id' },
+        inverseJoinColumn: { name: 'friend_id', referencedColumnName: 'id' }
+    })
+    friends!: Bettor[];
+    //Marco - termino aqui
 
     @CreateDateColumn({name: 'created_at'})
     createdAt!: Date;

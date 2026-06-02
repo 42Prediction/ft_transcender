@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { UpdateBettorDto } from './dto/update-bettor.dto';
 import { User } from '../user/entities/user.entity';
@@ -84,4 +85,89 @@ export class BettorService {
     Object.assign(bettor, updateBettorDto);
     return await this.bettorRepository.save(bettor);
   }
+
+  /* ======================================================================== */
+  /* COMANDOS DE AMIZADE E ESTADO TOTALMENTE ISOLADOS DENTRO DO BETTOR  Marco */
+  /* ======================================================================== */
+
+  // Lista os amigos do utilizador autenticado recorrendo ao userId do JWT
+  async getMyFriends(userId: string): Promise<Bettor[]> {
+    const bettor = await this.bettorRepository.findOne({
+      where: { user: { id: userId } },
+      relations: ['friends'],
+    });
+    if (!bettor) throw new NotFoundException('Perfil não encontrado');
+    return bettor.friends || [];
+  }
+
+  // Lista os amigos de um perfil público qualquer usando o Nick dele
+  async getPublicFriends(nick: string): Promise<Bettor[]> {
+    const bettor = await this.bettorRepository.findOne({
+      where: { nick },
+      relations: ['friends'],
+    });
+    if (!bettor) throw new NotFoundException('Perfil não encontrado');
+    return bettor.friends || [];
+  }
+
+  // Adiciona amigo usando o ID seguro do JWT do remetente e o Nick do alvo
+  async addFriend(userId: string, friendNick: string): Promise<void> {
+    const bettor = await this.bettorRepository.findOne({
+      where: { user: { id: userId } },
+      relations: ['friends'],
+    });
+    const friendBettor = await this.bettorRepository.findOne({
+      where: { nick: friendNick },
+    });
+
+    if (!bettor || !friendBettor) {
+      throw new NotFoundException('Perfil ou amigo não encontrado');
+    }
+    if (bettor.id === friendBettor.id) {
+      throw new BadRequestException('Não podes adicionar-te a ti mesmo');
+    }
+
+    if (!bettor.friends) bettor.friends = [];
+
+    const alreadyFriend = bettor.friends.find(f => f.id === friendBettor.id);
+    if (!alreadyFriend) {
+      bettor.friends.push(friendBettor);
+      await this.bettorRepository.save(bettor);
+    }
+  }
+
+  // Remove amigo usando o ID seguro do JWT e o Nick do alvo
+  async removeFriend(userId: string, friendNick: string): Promise<void> {
+    const bettor = await this.bettorRepository.findOne({
+      where: { user: { id: userId } },
+      relations: ['friends'],
+    });
+    const friendBettor = await this.bettorRepository.findOne({
+      where: { nick: friendNick },
+    });
+
+    if (!bettor || !friendBettor) {
+      throw new NotFoundException('Perfil ou amigo não encontrado');
+    }
+
+    if (bettor.friends) {
+      bettor.friends = bettor.friends.filter(f => f.id !== friendBettor.id);
+      await this.bettorRepository.save(bettor);
+    }
+  }
+
+  // Atualiza o estado online/offline do perfil do utilizador correspondente ao JWT
+  async updateStatus(userId: string, isOnline: boolean): Promise<Bettor> {
+    const bettor = await this.bettorRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!bettor) throw new NotFoundException('Perfil não encontrado');
+    
+    bettor.isOnline = isOnline;
+    return await this.bettorRepository.save(bettor);
+  }
+  /* ======================================================================== */
+  /* COMANDOS DE AMIZADE E ESTADO TOTALMENTE ISOLADOS DENTRO DO BETTOR Marco  */
+  /* ======================================================================== */
+
 }
