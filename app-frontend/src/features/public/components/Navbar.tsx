@@ -142,7 +142,7 @@ export default function Navbar() {
 
           {/* Menu Dropdown - Também ajustado para bg-background/70 com efeito blur */}
           {open && (
-            <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl border border-border/60 bg-background/30 backdrop-blur-xl p-1.5 shadow-xl z-50">
+            <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl border border-border/60 bg-background backdrop-blur-xl p-1.5 shadow-xl z-50">
               <Link
                 to="/settings"
                 onClick={() => setOpen(false)}
