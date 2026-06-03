@@ -41,13 +41,19 @@ make dev
 
 Useful commands:
 - `make dev-status` to check running processes
-- `make dev-stop` to stop apps and clean up
+- `make dev-stop` to stop backend/frontend and the DB container
 - `make migrate` to run migrations only
 - `make seed` to run seeds only
+- `make clean` to stop apps and remove containers, volumes, and data dir
+- `make fclean` to remove images as well
+- `make re` to re-create everything and start dev
 
 Notes:
 - Any database schema change must be done via migrations.
 - Any business rule default values must be defined via seeds.
+- Logs are written to `logs/backend.log` and `logs/frontend.log`.
+- Default ports are 3000 (backend) and 5173 (frontend). Override with `BACK_PORT` and `FRONT_PORT`.
+- Database data is stored in `/home/$USER/data` and is removed by `make clean`.
 
 ## Technical Stack
 
