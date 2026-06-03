@@ -26,45 +26,65 @@ export class BettorController {
     return await this.bettorService.findByNick(nick);
   }
 
-  /* ======================================================================== */
-  /* ENDPOINTS ADICIONADOS DA MIGRAÇÃO - Marco                                */
-  /* ======================================================================== */
+/* ========================================================================== */
+  /* [MARCO] - SISTEMA DE AMIZADES E ESTADOS                                    */
+  /* Endpoints REST para interagir com pedidos e lista de amigos                */
+  /* ========================================================================== */
 
-  // Rota para ver a minha própria lista de amigos
   @Get('me/friends')
   @UseGuards(JwtAuthGuard)
   async getMyFriends(@Req() req: any) {
     return await this.bettorService.getMyFriends(req.user.id);
   }
 
-  // Rota para ver a lista de amigos de um perfil público através do nick
   @Get('@:nick/friends')
   async getPublicFriends(@Param('nick') nick: string) {
     return await this.bettorService.getPublicFriends(nick);
   }
 
-  // Rota para adicionar um amigo de forma segura (Usa o teu JWT + o nick do amigo)
-  @Post('me/friends/:friendNick')
+  // Enviar pedido de amizade
+  @Post('me/friend-requests/:nick/send')
   @UseGuards(JwtAuthGuard)
-  async addFriend(@Req() req: any, @Param('friendNick') friendNick: string) {
-    return await this.bettorService.addFriend(req.user.id, friendNick);
+  async sendFriendRequest(@Req() req: any, @Param('nick') nick: string) {
+    return await this.bettorService.sendFriendRequest(req.user.id, nick);
   }
 
-  // Rota para remover um amigo de forma segura (Usa o teu JWT + o nick do amigo)
-  @Delete('me/friends/:friendNick')
+  // Cancelar um pedido que tu enviaste por engano
+  @Delete('me/friend-requests/:nick/cancel')
   @UseGuards(JwtAuthGuard)
-  async removeFriend(@Req() req: any, @Param('friendNick') friendNick: string) {
-    return await this.bettorService.removeFriend(req.user.id, friendNick);
+  async cancelFriendRequest(@Req() req: any, @Param('nick') nick: string) {
+    return await this.bettorService.cancelFriendRequest(req.user.id, nick);
   }
 
-  // Rota para atualizar o estado online/offline do utilizador autenticado
+  // Aceitar um pedido que recebeste
+  @Patch('me/friend-requests/:nick/accept')
+  @UseGuards(JwtAuthGuard)
+  async acceptFriendRequest(@Req() req: any, @Param('nick') nick: string) {
+    return await this.bettorService.acceptFriendRequest(req.user.id, nick);
+  }
+
+  // Rejeitar um pedido que recebeste
+  @Delete('me/friend-requests/:nick/reject')
+  @UseGuards(JwtAuthGuard)
+  async rejectFriendRequest(@Req() req: any, @Param('nick') nick: string) {
+    return await this.bettorService.rejectFriendRequest(req.user.id, nick);
+  }
+
+  // Desfazer amizade
+  @Delete('me/friends/:nick')
+  @UseGuards(JwtAuthGuard)
+  async removeFriend(@Req() req: any, @Param('nick') nick: string) {
+    return await this.bettorService.removeFriend(req.user.id, nick);
+  }
+
+  // Atualizar estado
   @Patch('me/status')
   @UseGuards(JwtAuthGuard)
   async setStatus(@Req() req: any, @Body() body: { is_online: boolean }) {
     return await this.bettorService.updateStatus(req.user.id, body.is_online);
   }
 
-  /* ======================================================================== */
-  /* ENDPOINTS ADICIONADOS DA MIGRAÇÃO - FIM - Marco                          */
-  /* ======================================================================== */
+  /* ========================================================================== */
+  /* [MARCO] - FIM DO BLOCO DE AMIZADES E ESTADOS                               */
+  /* ========================================================================== */
 }
