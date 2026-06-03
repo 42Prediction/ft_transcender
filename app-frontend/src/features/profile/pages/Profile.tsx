@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useLoaderData, useParams } from "react-router-dom";
 
-import FriendsList from "../components/profile/FriendsList.tsx";
-import ProfileCard from "../components/profile/ProfileCard.tsx";
-import EditProfileModal from '../components/profile/EditProfileModal.tsx';
+import FriendsList from "../../../components/profile/FriendsList.tsx";
+import ProfileCard from "../../../components/profile/ProfileCard.tsx";
+import EditProfileModal from '../../../components/profile/EditProfileModal.tsx';
 
-import { bettor } from "../api/bettor/bettor.api.ts";
+import { bettor } from "../../../api/bettor/bettor.api.ts";
 
 interface Bettor {
   nick: string;

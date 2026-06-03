@@ -1,6 +1,6 @@
-import Navbar from './components/Navbar';
+import Navbar from './features/public/components/Navbar.tsx';
 import Home from './pages/Home';
-import Profile from './pages/Profile.tsx';
+import Profile from './features/profile/pages/Profile.tsx';
 import Notfound from './components/NotFound';
 import Footer from './components/Footer';
 import { Outlet, useNavigation, RouterProvider, createBrowserRouter } from 'react-router-dom';
@@ -10,7 +10,7 @@ import { LoginPage } from './pages/LoginPage';
 import { AuthCallback } from './pages/AuthCallback';
 import { Dashboard } from './pages/Dashboard';
 import { AuthProvider } from './context/AuthContext.tsx';
-import { publicProfileLoader, privateProfileLoader } from './pages/Profile.tsx';
+import { publicProfileLoader, privateProfileLoader } from './features/profile/pages/Profile.tsx';
 
 function ProtectedLayout() {
   const navigation = useNavigation();
@@ -20,7 +20,7 @@ function ProtectedLayout() {
       <Navbar />
       {/* barra de loading no topo enquanto loader roda */}
       {navigation.state === 'loading' && (
-        <div className="fixed top-0 left-0 h-0.5 w-full bg-[#00FF9D] z-50 animate-pulse" />
+        <div className="fixed top-0 left-0 h-0.5 w-full bg-primary z-50 animate-pulse" />
       )}
       <Outlet />
       <Footer />
