@@ -39,9 +39,6 @@ wait-db: up
 	done; \
 	echo " ready"
 
-shell-db:
-	$(COMPOSE) exec postgres psql -U postgres transcendence_db
-
 migrate:
 	@if [ -z "$$($(COMPOSE) ps -q postgres 2>/dev/null)" ]; then \
 		echo "Database container is not running. Run 'make dev' first."; \
@@ -122,4 +119,4 @@ fclean: clean
 
 re: fclean dev
 
-.PHONY: all help up down wait-db shell-db migrate seed dev dev-status dev-stop clean fclean re
+.PHONY: all help up down wait-db migrate seed dev dev-status dev-stop clean fclean re

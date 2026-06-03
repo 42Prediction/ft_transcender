@@ -79,6 +79,16 @@ src/
 - src/styles/
   - Estilos globais e tokens (reset, variables, themes).
 
+## Onde ficam os estilos (CSS)
+
+- Estilos de paginas e componentes de um dominio ficam junto do arquivo de UI
+  - Exemplo: src/features/profile/pages/Profile.tsx e Profile.css no mesmo folder
+  - Exemplo: src/features/auth/components/LoginForm.tsx e LoginForm.css no mesmo folder
+- Estilos reutilizaveis entre dominios ficam em src/shared
+  - Exemplo: src/shared/components/Button.tsx e Button.css
+- Estilos globais (reset, tokens, temas) ficam em src/styles
+  - Exemplo: src/styles/reset.css, src/styles/tokens.css
+
 ## Regras de organizacao
 
 - O frontend e organizado por feature/dominio (assunto do negocio), nao por tipo de arquivo.
