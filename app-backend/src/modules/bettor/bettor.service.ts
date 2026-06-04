@@ -11,12 +11,14 @@ import { createAvatar } from '@dicebear/core';
 import { avataaarsNeutral } from '@dicebear/collection';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { AvatarService } from './avatar.service';
 
 @Injectable()
 export class BettorService {
   constructor(
     @InjectRepository(Bettor)
     private readonly bettorRepository: Repository<Bettor>,
+    private readonly avatarService: AvatarService,
   ) {}
 
   async create(user: User): Promise<Bettor> {
@@ -59,7 +61,9 @@ export class BettorService {
     return bettor;
   }
 
-  async update(userId: string, updateBettorDto: UpdateBettorDto) {
+  async update(userId: string,
+    updateBettorDto: UpdateBettorDto, 
+    avatarFile?:Express.Multer.File ) {
     const bettor = await this.bettorRepository.findOne({
     where: {
         user: {
@@ -79,8 +83,13 @@ export class BettorService {
         throw new ConflictException('Nick already in use, chose another');
       bettor.isNickSetted = true;
     }
-    if (updateBettorDto)
-    Object.assign(bettor, updateBettorDto);
+    if (avatarFile) {
+      const oldFilename = this.avatarService.extractFilename(bettor.avatar);
+      const filename = await this.avatarService.processAndSave(avatarFile);
+      bettor.avatar = `avatar/${filename}`;
+      this.avatarService.deleteOldAvatar(oldFilename);
+    }
+    if (updateBettorDto) Object.assign(bettor, updateBettorDto);
     return await this.bettorRepository.save(bettor);
   }
 

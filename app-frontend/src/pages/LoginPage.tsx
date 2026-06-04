@@ -8,10 +8,13 @@ import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 
 export function LoginPage(){
 
-const {isAuthenticated} = useAuth();
+const {isAuthenticated, loading} = useAuth();
 const handleLogin = () => {
     window.location.href = 'http://localhost:3000/auth/google';
 };
+if (loading){
+    return <p className="min-h-screen flex items-center justify-center text-[#00FF9D]">A verificar sessão...</p>
+}
 if (isAuthenticated){
     return <Navigate to='/dashboard' replace/>
 }

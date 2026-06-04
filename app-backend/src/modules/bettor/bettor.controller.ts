@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Delete, Body, Patch, Param, Req, UseInterceptors, ClassSerializerInterceptor, UseGuards } from '@nestjs/common';
+import { Controller, Get, Body, Patch, Param, Req, UseInterceptors, ClassSerializerInterceptor, UseGuards, UploadedFile } from '@nestjs/common';
 import { BettorService } from './bettor.service';
 import { FriendService } from './friend.service';
 import { CreateBettorDto } from './dto/create-bettor.dto';
 import { UpdateBettorDto } from './dto/update-bettor.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { avatarUploadConfig } from '../../config/multer.config';
 
 @Controller('bettor')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -15,13 +17,17 @@ export class BettorController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   async findMyProfile(@Req() req: any) {
-    return  await this.bettorService.findOne(req.user.id);
+    return await this.bettorService.findOne(req.user.id);
   }
 
   @Patch('me')
   @UseGuards(JwtAuthGuard)
-  updateProfile(@Req() req: any, @Body() updateBettorDto: UpdateBettorDto) {
-    return this.bettorService.update(req.user.id, updateBettorDto);
+  @UseInterceptors(FileInterceptor('avatar', avatarUploadConfig))
+  updateProfile(@Req() req: any,
+  @Body() updateBettorDto: UpdateBettorDto,
+  @UploadedFile() avatarFile?: Express.Multer.File,
+) {
+    return this.bettorService.update(req.user.id, updateBettorDto, avatarFile);
   }
 
   @Get('@:nick')
@@ -57,7 +63,7 @@ export class BettorController {
     return await this.friendService.acceptFriendRequest(req.user.id, nick);
   }
 
-@Delete('me/friend-requests/:nick/cancel')
+  @Delete('me/friend-requests/:nick/cancel')
   @UseGuards(JwtAuthGuard)
   async cancelRequest(@Req() req: any, @Param('nick') nick: string) {
     // Chama a função específica de cancelar (quando és o Remetente)

@@ -7,11 +7,12 @@ import { User } from '../user/entities/user.entity';
 // 1. Importa a nova entidade aqui - Marco
 import { BettorFriendRequest } from './entities/bettor-friend-request.entity';
 import { FriendService } from './friend.service';
+import { AvatarService } from './avatar.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Bettor, User, BettorFriendRequest])],
   controllers: [BettorController],
-  providers: [BettorService, FriendService],
+  providers: [BettorService, FriendService, AvatarService],
   exports: [BettorService, FriendService],
 })
 export class BettorModule {}

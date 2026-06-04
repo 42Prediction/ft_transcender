@@ -1,34 +1,28 @@
 import { useAuth } from "../context/AuthContext";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
-import { api } from "../services/api";
+import { bettor } from "../api/bettor/bettor.api";
 
 export function AuthCallback(){
 
-    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const {login} = useAuth();
 
     useEffect(() => {
-        const token = searchParams.get('token');
-
-        if (!token){
-            navigate('/login?error=auth_failed');
-            return;
-        }
-
-        localStorage.setItem('access_token', token);
-
-        api.getProfile()
-        .then((user) =>{
-            login(token, user);
+        bettor.getMe()
+        .then(({ data }) =>{
+            login({
+                sub: data.user.id,
+                email: data.user.email,
+                role: data.user.role,
+            });
             navigate('/dashboard');
         })
         .catch(() => {
             navigate('/login?error=auth_failed');
         });
 
-    }, []);
+    }, [login, navigate]);
 
     return <p>A autenticar</p>
 
