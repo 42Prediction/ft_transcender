@@ -1,16 +1,13 @@
 import Navbar from './features/public/components/Navbar.tsx';
-import Home from './pages/Home';
-import Profile from './features/profile/pages/Profile.tsx';
+import { Home } from './features/public/pages/Home.tsx';
 import Notfound from './components/NotFound';
 import Footer from './components/Footer';
 import { Outlet, useNavigation, RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { PrivateRoute } from './components/PrivateRoute';
-import { HomePage } from './pages/HomePage';
-import { LoginPage } from './pages/LoginPage';
-import { AuthCallback } from './pages/AuthCallback';
-import { Dashboard } from './pages/Dashboard';
+import { LoginPage } from './features/public/pages/LoginPage.tsx';
+import { AuthCallback } from './features/public/pages/AuthCallback.tsx';
 import { AuthProvider } from './context/AuthContext.tsx';
-import { publicProfileLoader, privateProfileLoader } from './features/profile/pages/Profile.tsx';
+import { profileRoute, protectedProfileRoute } from './features/profile/route.tsx';
 
 function ProtectedLayout() {
   const navigation = useNavigation();
@@ -31,12 +28,8 @@ function ProtectedLayout() {
 const router = createBrowserRouter([
   {path: 'login', element: <LoginPage />},
   { path: 'auth/callback', element: <AuthCallback />},
-  {
-    path: 'bettor/:@nick',
-    element: <Profile />,
-    loader: publicProfileLoader,
-  },
-  { path: '/', element: <Home /> },
+  ...profileRoute,
+  // { path: '/', element: <Home /> },
   {
     element: (
       <PrivateRoute>
@@ -45,12 +38,8 @@ const router = createBrowserRouter([
     ),
     children:
       [
-        { path: 'homepage', element: <HomePage /> },
-        { path: '/dashboard',  element: <Dashboard /> },
-        { path: 'bettor/me',
-          element: <Profile />,
-          loader: privateProfileLoader,
-        },
+        { path: '/', element: <Home /> },
+        ...protectedProfileRoute
       ]
   },
   { path: '*', element: <Notfound />}
