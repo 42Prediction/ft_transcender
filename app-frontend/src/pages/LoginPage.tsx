@@ -21,7 +21,7 @@ if (isAuthenticated){
 
 return (
 
-<main className="min-h-screen bg-black text-white flex items-center justify-center p-8">
+<main className="min-h-screen bg-background text-foreground flex items-center justify-center p-8">
     <div className="w-full max-w-md">
         <header className="mb-10 text-center">
             <h1 className="text-5xl italic font-black uppercase text-[#00FF9D] tracking-tighter">
@@ -31,13 +31,13 @@ return (
                 Bem Vindos ao Exam Bet
             </p>
         </header>
-        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-8 hover:border-[#00FF9D] transition-all duration-300">
+        <div className="bg-surface-elevated border border-zinc-800 rounded-2xl p-8 hover:border-[#00FF9D] transition-all duration-300">
             <h2 className="text-2xl font-black italic mb-2 uppercase">
                 Login
             </h2>
             <p className="text-zinc-500 text-sm" >Autenque-se para entrar</p>
             <button onClick={handleLogin} className="flex justify-center items-center gap-1 w-full py-4 rounded-xl
-                                cursor-pointer m-2 uppercase tracking-wide bg-[#00FF9D] text-black font-black
+                                cursor-pointer m-2 uppercase tracking-wide bg-gradient-brand text-black font-black
                                 hover:scale-[1.03] transition-all duration-300" >
                 <FontAwesomeIcon icon={faGoogle} />
                 Entrar com Google

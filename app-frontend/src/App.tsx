@@ -1,58 +1,65 @@
-import Navbar from './components/Navbar';
+import Navbar from './features/public/components/Navbar.tsx';
 import Home from './pages/Home';
-import Profile from './pages/Profile.tsx';
+import Profile from './features/profile/pages/Profile.tsx';
 import Notfound from './components/NotFound';
 import Footer from './components/Footer';
-import { Routes, Route, Outlet } from 'react-router-dom';
+import { Outlet, useNavigation, RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { PrivateRoute } from './components/PrivateRoute';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { AuthCallback } from './pages/AuthCallback';
 import { Dashboard } from './pages/Dashboard';
+import { AuthProvider } from './context/AuthContext.tsx';
+import { publicProfileLoader, privateProfileLoader } from './features/profile/pages/Profile.tsx';
 
-function ProtectedLayout () {
+function ProtectedLayout() {
+  const navigation = useNavigation();
+
   return (
     <>
       <Navbar />
+      {/* barra de loading no topo enquanto loader roda */}
+      {navigation.state === 'loading' && (
+        <div className="fixed top-0 left-0 h-0.5 w-full bg-primary z-50 animate-pulse" />
+      )}
       <Outlet />
       <Footer />
     </>
   );
 }
 
+const router = createBrowserRouter([
+  {path: 'login', element: <LoginPage />},
+  { path: 'auth/callback', element: <AuthCallback />},
+  {
+    path: 'bettor/:@nick',
+    element: <Profile />,
+    loader: publicProfileLoader,
+  },
+  { path: '/', element: <Home /> },
+  {
+    element: (
+      <PrivateRoute>
+        <ProtectedLayout />
+      </PrivateRoute>
+    ),
+    children:
+      [
+        { path: 'homepage', element: <HomePage /> },
+        { path: '/dashboard',  element: <Dashboard /> },
+        { path: 'bettor/me',
+          element: <Profile />,
+          loader: privateProfileLoader,
+        },
+      ]
+  },
+  { path: '*', element: <Notfound />}
+])
 
-    export default function App() {
+export default function App() {
   return (
-    <div className="min-h-screen bg-black flex flex-col">
-      <div className="flex-1">
-        <Routes>
-
-          {/* Públicas */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-
-          {/* Protegidas */}
-          <Route
-            element={
-              <PrivateRoute>
-                <ProtectedLayout />
-              </PrivateRoute>
-            }
-          >
-            <Route path="/" element={<Home />} />
-            <Route path="/users/:user" element={<Profile />} />
-            <Route path="/homepage" element={<HomePage />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/private" element={<Dashboard />} />
-          </Route>
-
-          {/* 404 */}
-          <Route path="*" element={<Notfound />} />
-        </Routes>
-      </div>
-
-    
-    </div>
-
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   );
 }

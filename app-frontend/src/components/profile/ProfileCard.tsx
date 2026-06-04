@@ -1,108 +1,59 @@
-import { faCamera, faEdit, faPen, faPenToSquare } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-
-interface UserProfile {
-  id: number;
-  username: string
-  email: string;
-  avatar_url: string;
-  is_online: boolean;
-  created_at: string
+interface Bettor {
+  nick: string;
+  bio: string;
+  avatar: string | null;
 }
-interface ProfileCardProps {
-  profile: UserProfile;
-}
-export default function ProfileCard({ profile }: ProfileCardProps) {
 
-  const memberSince = new Date(profile.created_at).toLocaleDateString("pt-BR", {
-    month: "long",
-    year: "numeric",
-  });
+interface Props {
+  bettor: Bettor;
+  isOwnProfile: boolean;
+  onEditClick: () => void;
+}
+
+export default function ProfileCard({ bettor, isOwnProfile, onEditClick }: Props) {
+  const avatarUrl = bettor.avatar
+    ? `${import.meta.env.VITE_API_URL}${bettor.avatar}`
+    : null;
+  console.log("avatar:", bettor.avatar);
+
   return (
-    <div className="md:col-span-2 bg-[#1a1a1a] border border-[#333] rounded-lg p-6">
+    <div className="flex flex-col items-center gap-5 p-10 max-w-sm mx-auto mt-16 bg-zinc-900 border border-zinc-800 rounded-2xl">
 
-      <div className="flex items-center gap-6">
-
-        {/* Avatar */}
-        <div className="relative w-32 h-32 shrink-0">
-
+      {/* Avatar */}
+      {/* Avatar */}
+      <div className="w-24 h-24 rounded-full border-2 border-zinc-700 bg-zinc-800 overflow-hidden flex items-center justify-center">
+        {bettor.avatar ? (
           <img
-            src={profile.avatar_url || "https://github.com/marccarv.png"}
-            alt={profile.username}
-            className="w-full h-full rounded-full object-cover border-4 border-[#2a2a2a]"
+            src={bettor.avatar}
+            alt={bettor.nick}
+            className="w-full h-full object-cover"
           />
-
-          {/* Botão câmera */}
-          <label   htmlFor="file-upload" className="
-          absolute bottom-1 right-1
-          w-9 h-9 rounded-full
-          bg-white text-black
-          flex items-center justify-center
-          cursor-pointer
-          shadow-lg
-          hover:scale-110
-          transition-all duration-200
-        "
-          >
-            <FontAwesomeIcon icon={faCamera} className="text-sm" />
-
-            <input
-              id="file-upload"
-              type="file"
-              className="hidden"
-            />
-          </label>
-
-          {/* Status online */}
-          <span
-            className={`
-          absolute bottom-2 left-2
-          w-4 h-4 rounded-full
-          border-2 border-[#1a1a1a]
-          ${profile.is_online ? "bg-[#00ff9d]" : "bg-zinc-500"}
-        `}
-          />
-        </div>
-
-        {/* Informações */}
-        <div className="flex-1 min-w-0">
-
-          <h2 className="text-2xl font-black text-white uppercase tracking-wide truncate">
-            {profile.username}
-          </h2>
-
-          <p className="text-zinc-500 text-sm mb-4 truncate">
-            {profile.email}
-          </p>
-
-          <div className="border-t border-[#333] pt-4 space-y-2 text-sm text-zinc-400">
-
-            <div className="flex justify-between">
-              <span>Status:</span>
-
-              <span
-                className={
-                  profile.is_online
-                    ? "text-[#00ff9d]"
-                    : "text-zinc-500"
-                }
-              >
-                {profile.is_online ? "Online" : "Offline"}
-              </span>
-            </div>
-
-            <div className="flex justify-between">
-              <span>Membro desde:</span>
-
-              <span className="text-white capitalize">
-                {memberSince}
-              </span>
-            </div>
-
-          </div>
-        </div>
-
+        ) : (
+          <span className="text-3xl font-black text-[#00FF9D]">
+            {bettor.nick?.[0]?.toUpperCase()}
+          </span>
+        )}
       </div>
+
+      {/* Info */}
+      <div className="text-center">
+        <h2 className="text-white font-black text-xl tracking-tight">
+          @{bettor.nick}
+        </h2>
+        <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
+          {bettor.bio || 'Sem bio.'}
+        </p>
+      </div>
+
+      {/* Botão só no próprio perfil */}
+      {isOwnProfile && (
+        <button
+          onClick={onEditClick}
+          className="mt-1 px-5 py-2 text-[10px] font-black uppercase tracking-[0.2em] border border-zinc-700 rounded-lg text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors cursor-pointer"
+        >
+          Editar perfil
+        </button>
+      )}
     </div>
   );
 }
