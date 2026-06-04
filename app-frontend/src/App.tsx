@@ -1,121 +1,53 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import Navbar from './features/public/components/Navbar.tsx';
+import { Home } from './features/public/pages/Home.tsx';
+import Notfound from './components/NotFound';
+import Footer from './components/Footer';
+import { Outlet, useNavigation, RouterProvider, createBrowserRouter } from 'react-router-dom';
+import { PrivateRoute } from './components/PrivateRoute';
+import { LoginPage } from './features/auth/pages/LoginPage.tsx';
+import { AuthCallback } from './features/public/pages/AuthCallback.tsx';
+import { AuthProvider } from './context/AuthContext.tsx';
+import { profileRoute, protectedProfileRoute } from './features/profile/route.tsx';
 
-function App() {
-  const [count, setCount] = useState(0)
+function ProtectedLayout() {
+  const navigation = useNavigation();
 
   return (
     <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
+      <Navbar />
+      {/* barra de loading no topo enquanto loader roda */}
+      {navigation.state === 'loading' && (
+        <div className="fixed top-0 left-0 h-0.5 w-full bg-primary z-50 animate-pulse" />
+      )}
+      <Outlet />
+      <Footer />
     </>
-  )
+  );
 }
 
-export default App
+const router = createBrowserRouter([
+  {path: 'login', element: <LoginPage />},
+  { path: 'auth/callback', element: <AuthCallback />},
+  ...profileRoute,
+  {
+    element: (
+      <PrivateRoute>
+        <ProtectedLayout />
+      </PrivateRoute>
+    ),
+    children:
+      [
+        { path: '/', element: <Home /> },
+        ...protectedProfileRoute
+      ]
+  },
+  { path: '*', element: <Notfound />}
+])
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
+}
