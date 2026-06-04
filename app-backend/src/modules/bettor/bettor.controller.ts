@@ -1,4 +1,4 @@
-import { Controller, Get, Body, Patch, Param, Req, UseInterceptors, ClassSerializerInterceptor, UseGuards, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Body, Patch, Param, Req, UseInterceptors, ClassSerializerInterceptor, UseGuards, UploadedFile, Post, Delete } from '@nestjs/common';
 import { BettorService } from './bettor.service';
 import { FriendService } from './friend.service';
 import { CreateBettorDto } from './dto/create-bettor.dto';
@@ -10,8 +10,9 @@ import { avatarUploadConfig } from '../../config/multer.config';
 @Controller('bettor')
 @UseInterceptors(ClassSerializerInterceptor)
 export class BettorController {
-  constructor(private readonly bettorService: BettorService,
-  private readonly friendService: FriendService
+  constructor(
+    private readonly bettorService: BettorService,
+    private readonly friendService: FriendService
   ) {}
 
   @Get('me')
@@ -23,10 +24,12 @@ export class BettorController {
   @Patch('me')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('avatar', avatarUploadConfig))
-  updateProfile(@Req() req: any,
-  @Body() updateBettorDto: UpdateBettorDto,
-  @UploadedFile() avatarFile?: Express.Multer.File,
-) {
+  updateProfile(
+      @Req() req: any,
+      @Body() updateBettorDto: UpdateBettorDto,
+      @UploadedFile() avatarFile?: Express.Multer.File
+  )
+  {
     return this.bettorService.update(req.user.id, updateBettorDto, avatarFile);
   }
 
@@ -34,11 +37,6 @@ export class BettorController {
   async publicProfile(@Param('nick') nick: string) {
     return await this.bettorService.findByNick(nick);
   }
-
-  /* ========================================================================== */
-  /* [MARCO] - SISTEMA DE AMIZADES                                              */
-  /* Endpoints REST para interagir com pedidos e lista de amigos                */
-  /* ========================================================================== */
 
   @Get('me/friends')
   @UseGuards(JwtAuthGuard)
@@ -82,8 +80,4 @@ export class BettorController {
   async removeFriend(@Req() req: any, @Param('nick') nick: string) {
     return await this.friendService.removeFriend(req.user.id, nick);
   }
-
-  /* ========================================================================== */
-  /* [MARCO] - FIM DO BLOCO DE AMIZADES                                         */
-  /* ========================================================================== */
 }
