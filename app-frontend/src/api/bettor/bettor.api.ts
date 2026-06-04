@@ -1,6 +1,6 @@
 import api from "../api"
-import { toFormData } from "./update-bettor.dto"
-import type { UpdateBettorDto } from "./update-bettor.dto"
+import { toFormData } from "./dto/update-bettor.dto"
+import type { UpdateBettorDto } from "./dto/update-bettor.dto"
 
 export const bettor = {
     getMe() {
