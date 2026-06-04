@@ -13,7 +13,6 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AvatarService } from './avatar.service';
 
-
 @Injectable()
 export class BettorService {
   constructor(
@@ -93,4 +92,5 @@ export class BettorService {
     if (updateBettorDto) Object.assign(bettor, updateBettorDto);
     return await this.bettorRepository.save(bettor);
   }
+
 }
