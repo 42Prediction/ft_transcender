@@ -86,7 +86,7 @@ export default function Navbar() {
             <Sparkles className="h-4 w-4 text-primary-foreground" />
           </div>
           <span className="font-display text-xl font-bold tracking-tight">
-            Exam<span className="text-gradient-brand">Bet</span>
+            Exam<span className="text-gradient-brand">Prediction</span>
           </span>
           <span className="ml-2 hidden rounded-md border border-border/60 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground md:inline">42</span>
         </Link>

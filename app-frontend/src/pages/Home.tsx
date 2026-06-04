@@ -8,15 +8,10 @@ type ExamRank = {
 };
 
 export default function Home() {
-  const [ranks, setRanks] = useState<ExamRank[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'
-    fetch(`${apiBaseUrl}/examrank`)
-      .then(res => res.json())
-      .then(data => setRanks(data))
-      .finally(() => setLoading(false));
+
   }, []);
 
   return (
@@ -36,24 +31,7 @@ export default function Home() {
         </p>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {ranks.map((rank) => (  
-            <div
-              key={rank.id}       
-              className="bg-zinc-950 border border-zinc-800 p-6 rounded-xl hover:border-[#00FF9D] transition-all group"
-            >
-              <h2 className="text-xl font-black italic text-white group-hover:text-[#00FF9D] mb-2">
-                {rank.name}       {}
-              </h2>
-              <div className="flex justify-between items-center bg-zinc-900 p-3 rounded-lg">
-                <span className="text-[10px] text-zinc-500 font-bold uppercase">
-                  Range de Score
-                </span>
-                <span className="text-[#00FF9D] font-mono">
-                  {rank.min_score} - {rank.max_score}
-                </span>
-              </div>
-            </div>
-          ))}
+          
         </div>
       )}
     </main>
