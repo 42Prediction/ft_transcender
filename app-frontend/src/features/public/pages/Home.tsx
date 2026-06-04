@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext";
-import { bettor } from "../api/bettor/bettor.api";
+import { useAuth } from "../../../context/AuthContext";
+import { bettor } from "../../../api/bettor/bettor.api";
 
-export function Dashboard(){
+export function Home(){
     const {user, logout } = useAuth();
     const [profile, setProfile] = useState(null);
 

@@ -1,12 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-<<<<<<< HEAD
-import FriendsList from "../components/profile/FriendsList.tsx";
-import ProfileCard from "../components/profile/ProfileCard.tsx";
-=======
-import FriendsList from "../components/FriendsList.tsx";
-import ProfileCard from "../components/ProfileCard.tsx";
->>>>>>> feat/standard_user_management_and_authentication-marccarv
+import FriendsList from "../../../components/profile/FriendsList.tsx";
+import ProfileCard from "../../../components/profile/ProfileCard.tsx";
 
 interface UserProfile {
     id: number;
