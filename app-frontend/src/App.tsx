@@ -4,7 +4,7 @@ import Notfound from './components/NotFound';
 import Footer from './components/Footer';
 import { Outlet, useNavigation, RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { PrivateRoute } from './components/PrivateRoute';
-import { LoginPage } from './features/public/pages/LoginPage.tsx';
+import { LoginPage } from './features/auth/pages/LoginPage.tsx';
 import { AuthCallback } from './features/public/pages/AuthCallback.tsx';
 import { AuthProvider } from './context/AuthContext.tsx';
 import { profileRoute, protectedProfileRoute } from './features/profile/route.tsx';
@@ -29,7 +29,6 @@ const router = createBrowserRouter([
   {path: 'login', element: <LoginPage />},
   { path: 'auth/callback', element: <AuthCallback />},
   ...profileRoute,
-  // { path: '/', element: <Home /> },
   {
     element: (
       <PrivateRoute>

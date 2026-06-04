@@ -1,4 +1,6 @@
+import { useAuth } from "@/context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Navigate } from "react-router-dom";
 
 export function LoginButton({
     text,
@@ -9,7 +11,6 @@ export function LoginButton({
     const handleLogin = () => {
         window.location.href = redirectUrl;
     };
-
     return (
         <button
             onClick={handleLogin}
