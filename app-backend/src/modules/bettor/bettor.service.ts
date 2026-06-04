@@ -90,7 +90,7 @@ export class BettorService {
     return await this.bettorRepository.save(bettor);
   }
 
-/* ========================================================================== */
+  /* ========================================================================== */
   /* [MARCO] - SISTEMA DE AMIZADES E ESTADOS                                    */
   /* Lógica de negócio para gerir pedidos (Requests) e conexões entre jogadores */
   /* ========================================================================== */
@@ -193,26 +193,40 @@ export class BettorService {
 
   // 5. Remover uma Amizade já existente
   async removeFriend(userId: string, friendNick: string): Promise<void> {
+    // 1. Carrega o teu perfil e os teus amigos
     const bettor = await this.bettorRepository.findOne({
       where: { user: { id: userId } },
       relations: ['friends'],
     });
-    const friendBettor = await this.bettorRepository.findOne({ where: { nick: friendNick } });
+    
+    // 2. Carrega o perfil do amigo e os amigos DELE
+    const friendBettor = await this.bettorRepository.findOne({ 
+      where: { nick: friendNick },
+      relations: ['friends'], // <- ISTO FALTAVA!
+    });
 
     if (!bettor || !friendBettor) throw new NotFoundException('Perfil ou amigo não encontrado');
 
+    // 3. Remove o amigo da tua lista
     if (bettor.friends) {
       bettor.friends = bettor.friends.filter(f => f.id !== friendBettor.id);
-      await this.bettorRepository.save(bettor);
-      
-      // Apaga também o registo antigo da tabela de pedidos para limpeza (Opcional, mas limpo)
-      await this.requestRepository.delete({
-        sender: { id: bettor.id }, receiver: { id: friendBettor.id }
-      });
-      await this.requestRepository.delete({
-        sender: { id: friendBettor.id }, receiver: { id: bettor.id }
-      });
     }
+    
+    // 4. Remove-te a ti da lista do amigo
+    if (friendBettor.friends) {
+      friendBettor.friends = friendBettor.friends.filter(f => f.id !== bettor.id);
+    }
+
+    // 5. Guarda os dois perfis atualizados na BD de uma só vez
+    await this.bettorRepository.save([bettor, friendBettor]);
+      
+    // 6. Apaga também o registo antigo da tabela de pedidos para limpeza
+    await this.requestRepository.delete({
+      sender: { id: bettor.id }, receiver: { id: friendBettor.id }
+    });
+    await this.requestRepository.delete({
+      sender: { id: friendBettor.id }, receiver: { id: bettor.id }
+    });
   }
 
   // Atualiza o estado online/offline
