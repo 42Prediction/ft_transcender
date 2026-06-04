@@ -31,12 +31,10 @@ export class Bettor {
     @JoinColumn({ name: 'user_id' })
     user!: User;
 
-    // Marco começa aqui Relação auto-referenciada de amizade puramente dentro do perfil Bettor
-    @Column({
-        name: 'is_online',
-        default: false,
-    })
-    isOnline!: boolean;
+    /* ========================================================================== */
+    /* [MARCO] - SISTEMA DE AMIZADES                                              */
+    /* Relação auto-referenciada de amizade puramente dentro do perfil Bettor     */
+    /* ========================================================================== */
 
     @ManyToMany(() => Bettor)
     @JoinTable({
@@ -45,7 +43,10 @@ export class Bettor {
         inverseJoinColumn: { name: 'friend_id', referencedColumnName: 'id' }
     })
     friends!: Bettor[];
-    //Marco - termino aqui
+    
+    /* ========================================================================== */
+    /* [MARCO] - FIM DO BLOCO                                                     */
+    /* ========================================================================== */
 
     @CreateDateColumn({name: 'created_at'})
     createdAt!: Date;

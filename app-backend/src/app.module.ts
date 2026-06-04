@@ -4,8 +4,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { BettorModule } from './modules/bettor/bettor.module';
-// Importação do módulo de pedidos de amizade
-import { FriendRequestModule } from './modules/friend-request/friend-request.module'; 
 
 @Module({
   imports: [
@@ -32,7 +30,6 @@ import { FriendRequestModule } from './modules/friend-request/friend-request.mod
     AuthModule,
     UserModule,
     BettorModule,
-    FriendRequestModule, // Registo do módulo de Friend Request no sistema
   ],
 })
 export class AppModule {}
