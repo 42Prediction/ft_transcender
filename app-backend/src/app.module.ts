@@ -23,7 +23,7 @@ import { BettorModule } from './modules/bettor/bettor.module';
         database: config.get<string>('DB_NAME'),
         entities: [__dirname + '/modules/**/*.entity{.ts,.js}'],
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
-        synchronize: true, // Nota: Mantido como true para desenvolvimento rápido
+        synchronize: false,
       }),
     }),
     UserModule,
