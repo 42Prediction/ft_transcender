@@ -7,7 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Bettor } from './entities/bettor.entity';
-import { BettorFriendRequest, RequestStatus } from './entities/bettor-friend-request.entity';
+import { BettorFriendRequest, RequestStatus } from './entities/friend.entity';
 
 @Injectable()
 export class FriendService {

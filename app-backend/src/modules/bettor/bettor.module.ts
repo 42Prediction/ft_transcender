@@ -5,7 +5,7 @@ import { BettorController } from './bettor.controller';
 import { Bettor } from './entities/bettor.entity';
 import { User } from '../user/entities/user.entity';
 // 1. Importa a nova entidade aqui - Marco
-import { BettorFriendRequest } from './entities/bettor-friend-request.entity';
+import { BettorFriendRequest } from './entities/friend.entity';
 import { FriendService } from './friend.service';
 import { AvatarService } from './avatar.service';
 
