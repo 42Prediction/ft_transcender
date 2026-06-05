@@ -5,6 +5,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { BettorModule } from './modules/bettor/bettor.module';
 
+console.log(process.env.SYN);
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -23,7 +24,7 @@ import { BettorModule } from './modules/bettor/bettor.module';
         database: config.get<string>('DB_NAME'),
         entities: [__dirname + '/modules/**/*.entity{.ts,.js}'],
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
-        synchronize: true, // Nota: Mantido como true para desenvolvimento rápido
+        synchronize: process.env.SYN === 'true', // Nota: Mantido como true para desenvolvimento rápido
       }),
     }),
     UserModule,

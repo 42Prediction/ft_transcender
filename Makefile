@@ -85,7 +85,7 @@ dev: wait-db
 	@if command -v fuser >/dev/null 2>&1; then fuser -k -n tcp $(FRONT_PORT) 2>/dev/null || true; else listeners=$$(lsof -t -i:$(FRONT_PORT) 2>/dev/null || true); if [ -n "$$listeners" ]; then kill -9 $$listeners 2>/dev/null || true; fi; fi
 	@cd $(BACK_DIR) && { [ -d node_modules ] || npm install; }
 	@# Executa o backend em background
-	@(cd $(BACK_DIR) && NO_COLOR=true npm run start:dev > "$(LOG_DIR)/backend.log" 2>&1 & echo $$! > "$(BACK_PID_FILE)")
+	@(cd $(BACK_DIR) && NO_COLOR=true  SYN=true npm run start:dev > "$(LOG_DIR)/backend.log" 2>&1 & echo $$! > "$(BACK_PID_FILE)")
 	@sleep 2
 	@lsof -t -i:$(BACK_PORT) > "$(BACK_CHILD_PID_FILE)" 2>/dev/null || true
 	@cd $(FRONT_DIR) && { [ -d node_modules ] || npm install; }
