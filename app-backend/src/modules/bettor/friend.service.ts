@@ -158,6 +158,29 @@ export class FriendService {
     });
   }
 
+  // 6. Listar Pedidos Recebidos (Pendentes)
+  async getReceivedRequests(userId: string): Promise<BettorFriendRequest[]> {
+    return await this.requestRepository.find({
+      where: { 
+        receiver: { user: { id: userId } }, 
+        status: RequestStatus.PENDING 
+      },
+      // Trazemos os dados do 'sender' para sabermos quem nos enviou o convite
+      relations: ['sender'], 
+    });
+  }
+
+  // 7. Listar Pedidos Enviados (Pendentes)
+  async getSentRequests(userId: string): Promise<BettorFriendRequest[]> {
+    return await this.requestRepository.find({
+      where: { 
+        sender: { user: { id: userId } }, 
+        status: RequestStatus.PENDING 
+      },
+      // Trazemos os dados do 'receiver' para sabermos a quem enviámos
+      relations: ['receiver'], 
+    });
+  }
   /* ========================================================================== */
   /* [MARCO] - FIM DO BLOCO DE AMIZADES                                         */
   /* ========================================================================== */

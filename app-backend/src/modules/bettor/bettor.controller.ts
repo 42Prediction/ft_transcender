@@ -80,4 +80,18 @@ export class BettorController {
   async removeFriend(@Req() req: any, @Param('nick') nick: string) {
     return await this.friendService.removeFriend(req.user.id, nick);
   }
+
+  @Get('me/friend-requests/received')
+  @UseGuards(JwtAuthGuard)
+  async getReceivedRequests(@Req() req: any) {
+    // Lista os pedidos que outras pessoas enviaram para mim e estão pendentes
+    return await this.friendService.getReceivedRequests(req.user.id);
+  }
+
+  @Get('me/friend-requests/sent')
+  @UseGuards(JwtAuthGuard)
+  async getSentRequests(@Req() req: any) {
+    // Lista os pedidos que eu enviei para os outros e ainda estão pendentes
+    return await this.friendService.getSentRequests(req.user.id);
+  }
 }
