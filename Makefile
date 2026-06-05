@@ -40,35 +40,18 @@ wait-db: up
 	echo " ready"
 
 migrate:
-	@if [ -z "$$($(COMPOSE) ps -q postgres 2>/dev/null)" ]; then \
-		echo "Database container is not running. Run 'make dev' first."; \
-		exit 1; \
-	fi
-	@if ! $(COMPOSE) exec -T postgres pg_isready -U $${DB_USER:-postgres} -d $${DB_NAME:-transcendence_db} >/dev/null 2>&1; then \
-		echo "Database is not ready. Check if PostgreSQL is up and accepting connections."; \
-		exit 1; \
-	fi
-	@if ! $(COMPOSE) exec -T postgres psql -U $${DB_USER:-postgres} -d $${DB_NAME:-transcendence_db} -c "\\q" >/dev/null 2>&1; then \
-		echo "Database '$${DB_NAME:-transcendence_db}' does not exist or credentials are invalid."; \
-		exit 1; \
-	fi
-	@cd $(BACK_DIR) && { [ -d node_modules ] || npm install; }
+	@echo "Generating migration..."
+	@cd $(BACK_DIR) && \
+	NAME=migration && \
+	COUNT=$$(ls -1 src/migrations/*.ts 2>/dev/null | wc -l | tr -d ' ') && \
+	NEXT=$$((COUNT + 1)) && \
+	npm run migration:generate -- "src/migrations/$${NAME}$${NEXT}"
+	@echo "Migration generated"
+	@echo "Running migration"
 	@cd $(BACK_DIR) && npm run migration:run
+	@echo "Migration runned"
 
 seed:
-	@if [ -z "$$($(COMPOSE) ps -q postgres 2>/dev/null)" ]; then \
-		echo "Database container is not running. Run 'make dev' first."; \
-		exit 1; \
-	fi
-	@if ! $(COMPOSE) exec -T postgres pg_isready -U $${DB_USER:-postgres} -d $${DB_NAME:-transcendence_db} >/dev/null 2>&1; then \
-		echo "Database is not ready. Check if PostgreSQL is up and accepting connections."; \
-		exit 1; \
-	fi
-	@if ! $(COMPOSE) exec -T postgres psql -U $${DB_USER:-postgres} -d $${DB_NAME:-transcendence_db} -c "\\q" >/dev/null 2>&1; then \
-		echo "Database '$${DB_NAME:-transcendence_db}' does not exist or credentials are invalid."; \
-		exit 1; \
-	fi
-	@cd $(BACK_DIR) && { [ -d node_modules ] || npm install; }
 	@cd $(BACK_DIR) && npm run seed:run
 
 dev: wait-db
@@ -83,12 +66,12 @@ dev: wait-db
 	@if command -v fuser >/dev/null 2>&1; then fuser -k -n tcp $(BACK_PORT) 2>/dev/null || true; else listeners=$$(lsof -t -i:$(BACK_PORT) 2>/dev/null || true); if [ -n "$$listeners" ]; then kill -9 $$listeners 2>/dev/null || true; fi; fi
 	@# Limpeza garantida da porta do frontend antes de subir o frontend
 	@if command -v fuser >/dev/null 2>&1; then fuser -k -n tcp $(FRONT_PORT) 2>/dev/null || true; else listeners=$$(lsof -t -i:$(FRONT_PORT) 2>/dev/null || true); if [ -n "$$listeners" ]; then kill -9 $$listeners 2>/dev/null || true; fi; fi
-	@cd $(BACK_DIR) && { [ -d node_modules ] || npm install; }
+	@cd $(BACK_DIR) && npm install
 	@# Executa o backend em background
 	@(cd $(BACK_DIR) && NO_COLOR=true npm run start:dev > "$(LOG_DIR)/backend.log" 2>&1 & echo $$! > "$(BACK_PID_FILE)")
 	@sleep 2
 	@lsof -t -i:$(BACK_PORT) > "$(BACK_CHILD_PID_FILE)" 2>/dev/null || true
-	@cd $(FRONT_DIR) && { [ -d node_modules ] || npm install; }
+	@cd $(FRONT_DIR) && npm install
 	@(cd $(FRONT_DIR) && NO_COLOR=true npm run dev -- --port $(FRONT_PORT) --strictPort > "$(LOG_DIR)/frontend.log" 2>&1 & echo $$! > "$(FRONT_PID_FILE)")
 	@sleep 2
 	@lsof -t -i:$(FRONT_PORT) > "$(FRONT_CHILD_PID_FILE)" 2>/dev/null || true
