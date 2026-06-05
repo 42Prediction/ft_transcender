@@ -5,7 +5,6 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { BettorModule } from './modules/bettor/bettor.module';
 
-console.log(process.env.SYN);
 @Module({
   imports: [
     ConfigModule.forRoot({
