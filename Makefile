@@ -23,6 +23,7 @@ help:
 	@echo "  make dev-status - Show backend/frontend process IDs"
 	@echo "  make migrate    - Run backend migrations"
 	@echo "  make seed       - Run backend seeds"
+	@echo "  make test       - Run backend unit/e2e tests and frontend build/lint"
 	@echo "  make clean      - Stop apps and remove containers, volumes, and data dir"
 	@echo "  make fclean     - clean + remove images"
 	@echo "  make re         - clean + make dev"
@@ -53,6 +54,19 @@ migrate:
 
 seed:
 	@cd $(BACK_DIR) && npm run seed:run
+
+test-backend: wait-db
+	@cd $(BACK_DIR) && npm ci
+	@cd $(BACK_DIR) && npm test
+	@cd $(BACK_DIR) && npm run test:e2e
+
+test-frontend:
+	@cd $(FRONT_DIR) && npm ci
+	@cd $(FRONT_DIR) && npm run build
+	@cd $(FRONT_DIR) && npm run lint
+
+test: test-backend test-frontend
+	@echo "All project tests and checks passed"
 
 dev: wait-db
 	@echo "Starting backend and frontend..."
@@ -102,4 +116,4 @@ fclean: clean
 
 re: fclean dev
 
-.PHONY: all help up down wait-db migrate seed dev dev-status dev-stop clean fclean re
+.PHONY: all help up down wait-db migrate seed test-backend test-frontend test dev dev-status dev-stop clean fclean re
