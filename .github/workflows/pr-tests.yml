@@ -1,0 +1,32 @@
+name: Testes do Pull Request
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  test-project:
+    runs-on: ubuntu-latest
+
+    env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USER: transcender
+        DB_NAME: transcendence_db
+        DB_PASS: ${{ secrets.DB_PASS }}
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configura Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            app-backend/package-lock.json
+            app-frontend/package-lock.json
+
+      - name: Executa os testes completos do projeto
+        run: make test-all

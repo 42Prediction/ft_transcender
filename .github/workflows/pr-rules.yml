@@ -7,14 +7,6 @@ on:
 jobs:
   validate-pr:
     runs-on: ubuntu-latest
-
-    env:
-      DB_HOST: localhost
-      DB_PORT: 5432
-      DB_USER: nfigueir
-      DB_PASS: 1234
-      DB_NAME: transcendence_db
-
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
@@ -63,9 +55,6 @@ jobs:
           fi
 
           echo "✅ Nome da branch OK"
-
-      - name: Executa testes e validações do projeto
-        run: make test
 
       - name: Valida mensagem de commits
         uses: actions/github-script@v7
