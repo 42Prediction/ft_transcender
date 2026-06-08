@@ -27,6 +27,9 @@ jobs:
           cache-dependency-path: |
             app-backend/package-lock.json
             app-frontend/package-lock.json
-
+      - name: Criar arquivo de secret
+        run: |
+          mkdir -p secrets
+          echo "${{ secrets.FT_TRANSCENDER_DB_PASSWORD }}" > secrets/db_password.txt  
       - name: Executa os testes completos do projeto
         run: make test-all
