@@ -5,7 +5,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { Roles } from '../auth/roles/roles.decorator';
 import { AdmUpdateUserDto } from './dto/admin-update-user.dto';
-import { Role } from '../../shared/enums/roles.enum';
 
 @Controller('users')
 @UseInterceptors(ClassSerializerInterceptor)
