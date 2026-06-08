@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -79,7 +78,7 @@
   --popover-foreground: oklch(0.97 0.01 250);
 
   /* Electric lime/chartreuse primary (BC.Game energy) */
-  --primary: oklch(0.88 0.22 130);
+  --primary: oklch(0.8356 0.2038 154.04);
   --primary-foreground: oklch(0.15 0.04 270);
 
   --secondary: oklch(0.28 0.06 275);
@@ -141,12 +140,19 @@
 
 @layer utilities {
   .bg-gradient-brand { background-image: var(--gradient-brand); }
+  .bg-brand { background-color: var(--primary); }
   .bg-gradient-hero { background-image: var(--gradient-hero); }
   .bg-gradient-card { background-image: var(--gradient-card); }
   .bg-gradient-glow { background-image: var(--gradient-glow); }
   .bg-gradient-violet { background-image: var(--gradient-violet); }
   .text-gradient-brand {
     background-image: var(--gradient-brand);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+  .text-brand {
+    background-color: var(--primary);
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;
