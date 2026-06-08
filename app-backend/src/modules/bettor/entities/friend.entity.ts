@@ -8,7 +8,7 @@ export enum RequestStatus {
   REJECTED = 'REJECTED',
 }
 
-@Entity('bettor_friend_requests')
+@Entity('friend')
 export class BettorFriendRequest {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
