@@ -3,7 +3,7 @@ import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { AdmUpdateUserDto } from './dto/admin-update-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity'; // Ajuste o caminho da entidade se necessário
+import { User } from './entities/user.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 
@@ -51,7 +51,7 @@ describe('UserController', () => {
         it('should call service.create with correct payload', async () => {
             const dto: AdmUpdateUserDto = { email: 'admin@test.com', password: 'securePassword123' };
             const expectedResult = { id: 'uuid-1', email: 'admin@test.com' } as User;
-            
+
             mockUserService.create.mockResolvedValue(expectedResult);
 
             const result = await controller.create(dto);
@@ -105,7 +105,7 @@ describe('UserController', () => {
         it('should delete the authenticated user using req.user.id', async () => {
             const mockReq = { user: { id: 'delete-my-account-id' } };
             const expectedResult = { message: 'User deleted successfully' };
-            
+
             mockUserService.remove.mockResolvedValue(expectedResult);
 
             const result = await controller.remove(mockReq);

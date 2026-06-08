@@ -1,18 +1,10 @@
 import { ArrowRight, TrendingUp, Users, Zap } from "lucide-react";
-
-const ticker = [
-  "ft_transcendence • 72% YES",
-  "Exam Rank 06 • 41% YES",
-  "Rush 02 • 88% YES",
-  "minishell outstanding • 33% YES",
-  "C-Piscine Aug → CC • 56% YES",
-  "Internship < M4 • 64% YES",
-];
+import { MarketCard } from "./MarketCard";
+import { markets } from "./mock/data";
 
 export function Hero() {
   return (
     <section className="relative overflow-hidden">
-      <div className="absolute inset-0 grid-bg opacity-40" />
       <div className="relative mx-auto grid max-w-[1400px] gap-12 px-6 pb-24 pt-20 lg:grid-cols-[1.1fr_0.9fr] lg:pt-28">
         <div className="flex flex-col justify-center">
           <span className="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-xs uppercase tracking-wider text-primary">
@@ -24,11 +16,11 @@ export function Hero() {
             <span className="text-brand">42 success story.</span>
           </h1>
           <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-            ExamBet is the community prediction market for 42 students. Bet on peer evaluations, project defenses, exam outcomes and milestones, backed by real performance data from the 42 ecosystem.
+            42 Prediction is the community prediction market for 42 students. Trade on peer evaluations, project defenses, exam outcomes and milestones, backed by real performance data from the 42 ecosystem.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <button className="group inline-flex items-center gap-2 rounded-xl bg-brand px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-glow transition hover:opacity-95">
+            <button className="group inline-flex items-center gap-2 rounded-xl bg-brand px-6 py-3.5 text-sm font-semibold text-primary-foreground transition hover:opacity-80">
               Start predicting
               <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
             </button>
@@ -51,10 +43,10 @@ export function Hero() {
             ))}
           </dl>
         </div>
-
-        <div className="relative grid place-items-center">
-          <div className="absolute inset-0 bg-gradient-glow opacity-60 blur-2xl" />
-         
+         <div className="relative flex items-center justify-center">
+          <div className="relative w-full max-w-md">
+            <MarketCard key={markets[1].id} m={markets[1]} />
+          </div>
         </div>
       </div>
     </section>
