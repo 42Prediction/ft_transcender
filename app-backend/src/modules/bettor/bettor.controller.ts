@@ -64,14 +64,12 @@ export class BettorController {
   @Delete('me/friend-requests/:nick/cancel')
   @UseGuards(JwtAuthGuard)
   async cancelRequest(@Req() req: any, @Param('nick') nick: string) {
-    // Chama a função específica de cancelar (quando és o Remetente)
     return await this.friendService.cancelFriendRequest(req.user.id, nick);
   }
 
   @Delete('me/friend-requests/:nick/reject')
   @UseGuards(JwtAuthGuard)
   async rejectRequest(@Req() req: any, @Param('nick') nick: string) {
-    // Chama a função específica de rejeitar (quando és o Destinatário)
     return await this.friendService.rejectFriendRequest(req.user.id, nick);
   }
 
@@ -84,14 +82,12 @@ export class BettorController {
   @Get('me/friend-requests/received')
   @UseGuards(JwtAuthGuard)
   async getReceivedRequests(@Req() req: any) {
-    // Lista os pedidos que outras pessoas enviaram para mim e estão pendentes
     return await this.friendService.getReceivedRequests(req.user.id);
   }
 
   @Get('me/friend-requests/sent')
   @UseGuards(JwtAuthGuard)
   async getSentRequests(@Req() req: any) {
-    // Lista os pedidos que eu enviei para os outros e ainda estão pendentes
     return await this.friendService.getSentRequests(req.user.id);
   }
 }

@@ -51,10 +51,6 @@ export class BettorService {
     });
   }
 
-  // async update(id: number, updateBettorDto: UpdateBettorDto) {
-  //   return `This action updates a #${id} bettor`;
-  // }
-
   async findByNick(nick: string): Promise<Bettor> {
     const bettor = await this.bettorRepository.findOne({ where: { nick } });
     if (!bettor) throw new NotFoundException('Bettor not found');
@@ -92,5 +88,4 @@ export class BettorService {
     if (updateBettorDto) Object.assign(bettor, updateBettorDto);
     return await this.bettorRepository.save(bettor);
   }
-
 }
