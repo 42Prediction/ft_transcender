@@ -76,7 +76,7 @@ export class BettorService {
         },
       });
       if (nickAlreadyExists)
-        throw new ConflictException('Nick already in use, chose another');
+        throw new ConflictException('Nick already in use, choose another');
       bettor.isNickSetted = true;
     }
     if (avatarFile) {

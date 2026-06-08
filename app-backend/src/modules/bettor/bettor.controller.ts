@@ -1,7 +1,6 @@
 import { Controller, Get, Body, Patch, Param, Req, UseInterceptors, ClassSerializerInterceptor, UseGuards, UploadedFile, Post, Delete } from '@nestjs/common';
 import { BettorService } from './bettor.service';
 import { FriendService } from './friend.service';
-import { CreateBettorDto } from './dto/create-bettor.dto';
 import { UpdateBettorDto } from './dto/update-bettor.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
