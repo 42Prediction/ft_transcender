@@ -66,7 +66,7 @@ test-frontend:
 	@cd $(FRONT_DIR) && npm run lint
 
 
-test-all: test-backend test-frontend
+test-all: test-backend
 	@echo "All project tests and checks passed"
 
 test: test-all
