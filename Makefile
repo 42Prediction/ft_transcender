@@ -56,10 +56,12 @@ seed:
 	@cd $(BACK_DIR) && npm run seed:run
 
 test-backend: wait-db
+	@cd $(BACK_DIR) && npm ci
 	@cd $(BACK_DIR) && npm test
 	@cd $(BACK_DIR) && npm run test:e2e
 
 test-frontend:
+	@cd $(BACK_DIR) && npm ci
 	@cd $(FRONT_DIR) && npm run build
 	@cd $(FRONT_DIR) && npm run lint
 
