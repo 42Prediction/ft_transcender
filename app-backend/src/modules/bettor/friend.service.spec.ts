@@ -8,7 +8,6 @@ import { BettorFriendRequest, RequestStatus } from './entities/friend.entity';
 describe('FriendService', () => {
   let service: FriendService;
 
-  // Adicionado o método 'add' ao mock do QueryBuilder
   const mockQueryBuilder = {
     relation: jest.fn().mockReturnThis(),
     of: jest.fn().mockReturnThis(),
@@ -36,7 +35,6 @@ const mockTransactionalEntityManager = {
     findOne: jest.fn(),
     save: jest.fn(),
     createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
-    // Simula a execução imediata da função de callback da transação
     manager: {
       transaction: jest.fn().mockImplementation((cb) => cb(mockTransactionalEntityManager)),
     },
@@ -53,7 +51,6 @@ const mockTransactionalEntityManager = {
   };
 
   beforeEach(async () => {
-    // 2. Configuramos o ambiente de teste do NestJS
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FriendService,
@@ -71,7 +68,6 @@ const mockTransactionalEntityManager = {
     service = module.get<FriendService>(FriendService);
   });
 
-  // Limpa o histórico dos falsos repositórios após cada teste
   afterEach(() => {
     jest.clearAllMocks();
   });
@@ -80,25 +76,20 @@ const mockTransactionalEntityManager = {
     expect(service).toBeDefined();
   });
 
-  /* ========================================================================== */
-  /* TESTES: ENVIAR PEDIDO DE AMIZADE                                           */
-  /* ========================================================================== */
   describe('sendFriendRequest', () => {
     const mockSender = { id: 'uuid-1', nick: 'gildo' } as Bettor;
     const mockReceiver = { id: 'uuid-2', nick: 'marcelo' } as Bettor;
 
     beforeEach(() => {
       jest.clearAllMocks();
-      // Setup base para sucesso
       mockBettorRepository.findOne
         .mockResolvedValueOnce(mockSender)
         .mockResolvedValueOnce(mockReceiver);
-      mockQueryBuilder.getCount.mockResolvedValue(0); // Não são amigos
-      mockTransactionalEntityManager.findOne.mockResolvedValue(null); // Nenhum pedido cruzado existente
+      mockQueryBuilder.getCount.mockResolvedValue(0); 
+      mockTransactionalEntityManager.findOne.mockResolvedValue(null);
       mockTransactionalEntityManager.create.mockReturnValue({ id: 'req-1' });
     });
 
-    // CENÁRIO 1: Falha ao encontrar os perfis
     it('deve atirar NotFoundException se sender ou receiver não existirem', async () => {
       mockBettorRepository.findOne.mockReset();
       mockBettorRepository.findOne.mockResolvedValueOnce(mockSender).mockResolvedValueOnce(null);
@@ -106,7 +97,6 @@ const mockTransactionalEntityManager = {
       await expect(service.sendFriendRequest('uuid-1', 'fantasma')).rejects.toThrow(NotFoundException);
     });
 
-    // CENÁRIO 2: Tentar ser amigo de si próprio
     it('deve atirar BadRequestException ao tentar enviar pedido para si mesmo', async () => {
       mockBettorRepository.findOne.mockReset();
       mockBettorRepository.findOne.mockResolvedValueOnce(mockSender).mockResolvedValueOnce(mockSender);
@@ -114,35 +104,29 @@ const mockTransactionalEntityManager = {
       await expect(service.sendFriendRequest('uuid-1', 'gildo')).rejects.toThrow(BadRequestException);
     });
 
-    // CENÁRIO 3: Já são amigos (Testa a nova lógica do QueryBuilder getCount)
     it('deve atirar ConflictException se já forem amigos', async () => {
-      mockQueryBuilder.getCount.mockResolvedValue(1); // Simula que a BD encontrou a amizade
+      mockQueryBuilder.getCount.mockResolvedValue(1);
 
       await expect(service.sendFriendRequest('uuid-1', 'marcelo')).rejects.toThrow(ConflictException);
     });
 
-    // CENÁRIO 4: Pedido cruzado pendente (O marcelo enviou ao mesmo tempo para o gildo)
     it('deve atirar ConflictException se já existir um pedido cruzado (Race Condition de pedidos)', async () => {
       mockTransactionalEntityManager.findOne.mockResolvedValue({ id: 'req-existente' });
 
       await expect(service.sendFriendRequest('uuid-1', 'marcelo')).rejects.toThrow(ConflictException);
     });
 
-    // CENÁRIO 5: Erro 23505 de PostgreSQL (Duplo clique rápido no botão enviar)
     it('deve atirar ConflictException em caso de erro 23505 (PostgreSQL Unique Constraint)', async () => {
       mockTransactionalEntityManager.save.mockRejectedValueOnce({ code: '23505' }); 
 
       await expect(service.sendFriendRequest('uuid-1', 'marcelo')).rejects.toThrow(ConflictException);
     });
 
-    // CENÁRIO 6: Sucesso com isolamento SERIALIZABLE
     it('deve criar e gravar um pedido de amizade com sucesso sob isolamento SERIALIZABLE', async () => {
       await service.sendFriendRequest('uuid-1', 'marcelo');
 
-      // Verifica se a transação foi chamada com SERIALIZABLE
       expect(mockRequestRepository.manager.transaction).toHaveBeenCalledWith('SERIALIZABLE', expect.any(Function));
 
-      // Verifica se confirmou a ausência de pedidos em ambas as direções
       expect(mockTransactionalEntityManager.findOne).toHaveBeenCalledWith(BettorFriendRequest, {
         where: [
           { sender: { id: mockSender.id }, receiver: { id: mockReceiver.id } },
@@ -150,7 +134,6 @@ const mockTransactionalEntityManager = {
         ]
       });
 
-      // Verifica a criação e gravação do pedido
       expect(mockTransactionalEntityManager.create).toHaveBeenCalledWith(BettorFriendRequest, {
         sender: { id: mockSender.id },
         receiver: { id: mockReceiver.id },
@@ -160,9 +143,6 @@ const mockTransactionalEntityManager = {
     });
   });
 
-  /* ========================================================================== */
-  /* TESTES: LISTAR PEDIDOS RECEBIDOS                                           */
-  /* ========================================================================== */
   describe('getReceivedRequests', () => {
     
     it('deve retornar a lista de pedidos pendentes usando as relations corretas', async () => {
@@ -172,15 +152,12 @@ const mockTransactionalEntityManager = {
         { id: 'req-2', status: RequestStatus.PENDING, sender: { nick: 'nelson' } }
       ];
 
-      // O find do repositório de pedidos retorna o array mockado
       mockRequestRepository.find.mockResolvedValue(mockRequests);
 
       const result = await service.getReceivedRequests(mockUserId);
 
-      // Verifica se o resultado é o esperado
       expect(result).toEqual(mockRequests);
-      
-      // Valida se as regras de Lazy Loading/Relations que definimos foram respeitadas
+
       expect(mockRequestRepository.find).toHaveBeenCalledWith({
         where: { receiver: { user: { id: mockUserId } }, status: RequestStatus.PENDING },
         relations: ['sender'],
@@ -188,13 +165,9 @@ const mockTransactionalEntityManager = {
     });
   });
 
-  /* ========================================================================== */
-  /* TESTES: ACEITAR PEDIDO DE AMIZADE                                          */
-  /* ========================================================================== */
   describe('acceptFriendRequest', () => {
 
     it('deve atirar NotFoundException se o perfil ou o remetente não existirem', async () => {
-      // Simula que o receptor existe, mas o remetente (sender) não foi encontrado
       mockBettorRepository.findOne
         .mockResolvedValueOnce({ id: 'uuid-1', nick: 'gildo' } as Bettor)
         .mockResolvedValueOnce(null);
@@ -210,7 +183,6 @@ const mockTransactionalEntityManager = {
         .mockResolvedValueOnce(mockReceiver)
         .mockResolvedValueOnce(mockSender);
 
-      // Simula que nenhuma linha foi atualizada (affected: 0), indicando que o estado mudou concorrentemente
       mockTransactionalEntityManager.update.mockResolvedValueOnce({ affected: 0 });
 
       await expect(service.acceptFriendRequest('uuid-1', 'marcelo')).rejects.toThrow(ConflictException);
@@ -236,16 +208,13 @@ const mockTransactionalEntityManager = {
 
   });
 
-  /* ========================================================================== */
-  /* TESTES: REJEITAR E CANCELAR PEDIDOS DE AMIZADE                             */
-  /* ========================================================================== */
   describe('rejectFriendRequest', () => {
     it('deve remover atómicamente o pedido da base de dados se for rejeitado', async () => {
       mockBettorRepository.findOne
-        .mockResolvedValueOnce({ id: 'uuid-1' } as Bettor) // Receiver
-        .mockResolvedValueOnce({ id: 'uuid-2' } as Bettor); // Sender
+        .mockResolvedValueOnce({ id: 'uuid-1' } as Bettor)
+        .mockResolvedValueOnce({ id: 'uuid-2' } as Bettor);
 
-      mockRequestRepository.delete.mockResolvedValue({ affected: 1 }); // Simula sucesso
+      mockRequestRepository.delete.mockResolvedValue({ affected: 1 });
 
       await service.rejectFriendRequest('uuid-1', 'gildo');
 
@@ -261,7 +230,7 @@ const mockTransactionalEntityManager = {
         .mockResolvedValueOnce({ id: 'uuid-1' } as Bettor) 
         .mockResolvedValueOnce({ id: 'uuid-2' } as Bettor);
         
-      mockRequestRepository.delete.mockResolvedValue({ affected: 0 }); // Zero linhas apagadas
+      mockRequestRepository.delete.mockResolvedValue({ affected: 0 });
 
       await expect(service.rejectFriendRequest('uuid-1', 'gildo')).rejects.toThrow(NotFoundException);
     });
@@ -275,8 +244,8 @@ const mockTransactionalEntityManager = {
   describe('cancelFriendRequest', () => {
     it('deve remover atómicamente o pedido enviado se o utilizador cancelar', async () => {
       mockBettorRepository.findOne
-        .mockResolvedValueOnce({ id: 'uuid-1' } as Bettor) // Sender
-        .mockResolvedValueOnce({ id: 'uuid-2' } as Bettor); // Receiver
+        .mockResolvedValueOnce({ id: 'uuid-1' } as Bettor)
+        .mockResolvedValueOnce({ id: 'uuid-2' } as Bettor);
 
       mockRequestRepository.delete.mockResolvedValue({ affected: 1 });
 
@@ -300,44 +269,32 @@ const mockTransactionalEntityManager = {
     });
   });
 
-  /* ========================================================================== */
-  /* TESTES: REMOVER AMIGO                                                      */
-  /* ========================================================================== */
   describe('removeFriend', () => {
     
     it('deve atirar NotFoundException se um dos perfis não for encontrado', async () => {
       mockBettorRepository.findOne
-        .mockResolvedValueOnce({ id: 'uuid-1', nick: 'gildo' } as Bettor) // Encontra-me
-        .mockResolvedValueOnce(null); // Não encontra o amigo
+        .mockResolvedValueOnce({ id: 'uuid-1', nick: 'gildo' } as Bettor)
+        .mockResolvedValueOnce(null);
 
       await expect(service.removeFriend('uuid-1', 'fantasma')).rejects.toThrow(NotFoundException);
     });
 
     it('deve remover a amizade mutuamente através do queryBuilder e limpar o histórico de pedidos', async () => {
-      // Preparação (Arrange)
       const mockMe = { id: 'uuid-1', nick: 'gildo' } as Bettor;
       const mockFriend = { id: 'uuid-2', nick: 'marcelo' } as Bettor;
 
-      // Configura os mocks para devolver os perfis nas duas procuras sequenciais
       mockBettorRepository.findOne
-        .mockResolvedValueOnce(mockMe)        // 1ª chamada: encontra o utilizador atual
-        .mockResolvedValueOnce(mockFriend);   // 2ª chamada: encontra o amigo pelo nick
+        .mockResolvedValueOnce(mockMe)
+        .mockResolvedValueOnce(mockFriend);
 
-      // Ação (Act)
       await service.removeFriend('uuid-1', 'marcelo');
 
-      // Verificação (Assert)
-      // 1. Valida se as duas queries atómicas do QueryBuilder foram executadas
       expect(mockBettorRepository.createQueryBuilder).toHaveBeenCalledTimes(2);
       expect(mockQueryBuilder.relation).toHaveBeenCalledWith(Bettor, 'friends');
-      
-      // Valida se removeu o amigo da minha lista e vice-versa
       expect(mockQueryBuilder.of).toHaveBeenCalledWith(mockMe.id);
       expect(mockQueryBuilder.remove).toHaveBeenCalledWith(mockFriend.id);
       expect(mockQueryBuilder.of).toHaveBeenCalledWith(mockFriend.id);
       expect(mockQueryBuilder.remove).toHaveBeenCalledWith(mockMe.id);
-
-      // 2. Valida se as duas queries de delete na tabela de histórico foram executadas com as variáveis corretas
       expect(mockRequestRepository.delete).toHaveBeenCalledWith({
         sender: { id: mockMe.id }, receiver: { id: mockFriend.id }
       });
@@ -354,16 +311,11 @@ const mockTransactionalEntityManager = {
         .mockResolvedValueOnce(mockMe)
         .mockResolvedValueOnce(mockFriend);
 
-      // Força o QueryBuilder a lançar um erro de timeout/ligação
       mockQueryBuilder.remove.mockRejectedValueOnce(new Error('Database Connection Lost'));
 
       await expect(service.removeFriend('uuid-1', 'marcelo')).rejects.toThrow('Database Connection Lost');
     });
   });
-
-  /* ========================================================================== */
-  /* TESTES: MÉTODOS DE CONSULTA (GET)                                         */
-  /* ========================================================================== */
 
   describe('getMyFriends', () => {
     it('deve retornar a lista de amigos do utilizador se o perfil existir', async () => {
