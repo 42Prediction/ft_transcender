@@ -1,5 +1,4 @@
 import { useLoaderData, useParams } from "react-router-dom";
-import type { Bettor } from "../route";
 import { ProfileHeader } from "../components/ProfileHeader";
 import { StatsRow } from "../components/StatsRow";
 import { AccuracyChart } from "../components/AccuracyChart";
@@ -12,7 +11,7 @@ import { TopPerformances } from "../components/Topperformances";
 
 export default function ProfilePage (){
 
-  const bettor = useLoaderData() as Bettor;
+  const bettor = useLoaderData();
   const { nick } = useParams<{nick?:string}>();
   const isOwn = !nick;
 

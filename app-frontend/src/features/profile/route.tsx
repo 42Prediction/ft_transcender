@@ -1,6 +1,8 @@
 import {type LoaderFunctionArgs } from "react-router-dom"
 import { bettor } from "../../api/bettor/bettor.api";
 import ProfilePage from "./pages/Profile";
+import { SettingsPage } from "./settings/page/settings";
+
 
 export interface Bettor {
     nick: string;
@@ -21,7 +23,7 @@ async function publicProfileLoader ({params}: LoaderFunctionArgs ): Promise<Bett
 
 
 export const profileRoute = [
-    { path: '/profile/:nick',
+    { path: '/profile/@:nick ',
         element: <ProfilePage />,
         loader: publicProfileLoader
     },
@@ -32,4 +34,8 @@ export const protectedProfileRoute = [
         element: <ProfilePage/>,
         loader: privateProfileLoader,
     },
+    { path: 'profile/settings',
+        element: <SettingsPage />,
+        loader: privateProfileLoader
+    }
 ];

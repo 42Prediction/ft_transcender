@@ -1,13 +1,13 @@
-import { BadgeCheck, UserPlus, Share2, MapPin, Calendar, Sparkles } from "lucide-react";
-import type { Bettor } from "./types";
+import { BadgeCheck, UserPlus, Share2, MapPin, Calendar, UserPen } from "lucide-react";
+import type { Bettor } from "../route";
+
 
 const quickMetrics = [
-  { label: "Accuracy",   value: "73.4%",    trend: "+2.1%", up: true },
-  { label: "Net P&L",    value: "+₳ 12.5k", trend: "+6.2%", up: true },
-  { label: "Reputation", value: "8,420",    trend: "+184",  up: true },
+  { label: "Accuracy", value: "73.4%", trend: "+2.1%", up: true },
+  { label: "Net P&L", value: "+₳ 12.5k", trend: "+6.2%", up: true },
+  { label: "Reputation", value: "8,420", trend: "+184", up: true },
 ];
 
-const staticBadges = ["Elite Strategist", "Trusted Analyst"];
 
 interface Props { bettor: Bettor; isOwn: boolean }
 
@@ -17,21 +17,18 @@ export function ProfileHeader({ bettor, isOwn }: Props) {
     : `https://api.dicebear.com/9.x/glass/svg?seed=${bettor.nick}&backgroundType=gradientLinear`;
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-card p-6 shadow-elevated md:p-8">
-      <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gradient-glow opacity-60" />
-      <div className="absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-accent/20 blur-3xl" />
-
+    <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-card p-6 md:p-8">
       <div className="relative grid gap-6 md:grid-cols-[auto_1fr_auto] md:items-center">
 
         {/* Avatar */}
         <div className="relative">
-          <div className="absolute inset-0 rounded-3xl bg-gradient-brand opacity-50 blur-xl" />
-          <div className="relative grid h-28 w-28 place-items-center rounded-3xl border-2 border-primary/60 bg-surface p-1 shadow-glow">
+          <div className="absolute inset-0 rounded-3xl bg-gradient-brand opacity-50 " />
+          <div className="relative grid h-28 w-28 place-items-center rounded-3xl border-2 border-primary/60 bg-surface p-1">
             <img src={avatarUrl} alt={bettor.nick} className="h-full w-full rounded-2xl object-cover" />
           </div>
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full border border-primary/60 bg-background px-3 py-1 font-mono text-[11px] font-bold text-primary shadow-glow">
+          {/* <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full border border-primary/60 bg-background px-3 py-1 font-mono text-[11px] font-bold text-primary ">
             LVL 27
-          </div>
+          </div> */}
         </div>
 
         {/* Identity */}
@@ -46,24 +43,28 @@ export function ProfileHeader({ bettor, isOwn }: Props) {
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
               <span className="font-mono text-foreground/80">@{bettor.nick}</span>
               <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> 42 Paris</span>
-              <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Joined Sep 2023</span>
+              <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Joined {new Date(bettor.user.createdAt).toLocaleDateString("pt-PT", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+              })}</span>
             </div>
             {bettor.bio && (
               <p className="mt-2 max-w-md text-sm text-muted-foreground">{bettor.bio}</p>
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          {/* <div className="flex flex-wrap gap-2">
             {staticBadges.map((b) => (
               <span key={b} className="flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
                 <Sparkles className="h-3 w-3" /> {b}
               </span>
             ))}
-          </div>
+          </div> */}
 
           <div className="grid grid-cols-3 gap-2 pt-2 sm:max-w-md">
             {quickMetrics.map((m) => (
-              <div key={m.label} className="rounded-xl border border-border/60 bg-surface/60 px-3 py-2 backdrop-blur">
+              <div key={m.label} className="rounded-xl border border-border/60 bg-surface/60 px-3 py-2 ">
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{m.label}</div>
                 <div className="mt-0.5 font-mono text-sm font-semibold">{m.value}</div>
                 <div className={`text-[10px] ${m.up ? "text-[color:var(--yes)]" : "text-[color:var(--no)]"}`}>{m.trend}</div>
@@ -75,10 +76,17 @@ export function ProfileHeader({ bettor, isOwn }: Props) {
         {/* Actions */}
         <div className="flex flex-col gap-2">
           {!isOwn && (
-            <button className="flex items-center justify-center gap-2 rounded-xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow transition hover:opacity-90">
+            <button className="flex items-center justify-center gap-2 rounded-xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90">
               <UserPlus className="h-4 w-4" /> Follow
             </button>
           )}
+          {
+            isOwn && (
+              <button className="flex items-center justify-center gap-2 rounded-xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90">
+                <UserPen className="h-4 w-4" /> Edit
+              </button>
+            )
+          }
           <button className="flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-surface px-5 py-2.5 text-sm font-medium text-foreground transition hover:bg-surface-elevated">
             <Share2 className="h-4 w-4" /> Share
           </button>
