@@ -13,7 +13,7 @@ export function Hero() {
           </span>
           <h1 className="font-display text-5xl font-bold leading-[1.05] tracking-tight md:text-6xl lg:text-7xl">
             Predict the next <br />
-            <span className="text-brand">42 success story.</span>
+            <span className="text-brand">42 success evaluation.</span>
           </h1>
           <p className="mt-6 max-w-xl text-lg text-muted-foreground">
             42 Prediction is the community prediction market for 42 students. Trade on peer evaluations, project defenses, exam outcomes and milestones, backed by real performance data from the 42 ecosystem.
