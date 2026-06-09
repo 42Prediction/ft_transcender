@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinColumn, Unique } from 'typeorm';
 import { Bettor } from './bettor.entity';
 
 export enum RequestStatus {
@@ -8,6 +8,7 @@ export enum RequestStatus {
 }
 
 @Entity('friend')
+@Unique(['sender', 'receiver'])
 export class BettorFriendRequest {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
