@@ -1,27 +1,21 @@
 import { useState } from "react";
 import Logo from "@/components/Logo";
 import { Dialog, DialogContent, DialogTitle} from "@/components/ui/dialog";
-import { Mail, Lock, Eye, EyeOff, KeyRound, ChevronDown, Loader2, Check, X, } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import OAuth from "./OAuth";
+import Field from "./Field";
+import Divider from "./Divider";
 
 type Tab = "signin" | "signup";
 type LoginMethod = "password";
-type FieldState = "default" | "focus" | "error" | "success";
+export type FieldState = "default" | "focus" | "error" | "success";
 
 interface AuthModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultTab?: Tab;
 }
-
-const socialBrands = [
-  { id: "google", label: "G", color: "text-[#EA4335]" },
-  { id: "x", label: "𝕏", color: "text-foreground" },
-  { id: "telegram", label: "✈", color: "text-[#229ED9]" },
-  { id: "steam", label: "▶", color: "text-[#66c0f4]" },
-  { id: "discord", label: "✱", color: "text-[#5865F2]" },
-  { id: "more", label: "•••", color: "text-muted-foreground" },
-];
 
 function LogoAuth() {
   return (
@@ -36,98 +30,41 @@ function LogoAuth() {
   );
 }
 
-function Field({
-  icon: Icon,
-  type = "text",
-  placeholder,
-  value,
-  onChange,
-  state = "default",
-  error,
-  right,
-  required,
-  label,
-}: {
-  icon: React.ElementType;
-  type?: string;
-  placeholder: string;
-  value: string;
-  onChange: (v: string) => void;
-  state?: FieldState;
-  error?: string;
-  right?: React.ReactNode;
-  required?: boolean;
-  label: string;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-foreground/90">
-        {label} {required && <span className="text-primary">*</span>}
-      </label>
-      <div
-        className={cn(
-          "group relative flex items-center rounded-xl border bg-surface/60 transition-all",
-          state === "default" && "border-border/60 hover:border-border",
-          state === "focus" && "border-primary/60 shadow-[0_0_0_3px_oklch(0.88_0.22_130/0.15),0_0_20px_oklch(0.88_0.22_130/0.25)]",
-          state === "error" && "border-destructive/70 shadow-[0_0_0_3px_oklch(0.65_0.24_22/0.18)]",
-          state === "success" && "border-[var(--yes)]/60",
-        )}
-      >
-        <Icon className={cn(
-          "ml-3.5 h-4 w-4 shrink-0",
-          state === "error" ? "text-destructive" : state === "focus" ? "text-primary" : "text-muted-foreground",
-        )} />
-        <input
-          type={type}
-          required={required}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="h-12 w-full bg-transparent px-3 text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none"
-        />
-        {right}
-      </div>
-      {error && <p className="text-xs font-medium text-destructive">{error}</p>}
-    </div>
-  );
-}
-
-function SocialPill({ label, color, full }: { label: string; color: string; full?: boolean }) {
-  return (
-    <button
-      type="button"
-      className={cn(
-        "group flex h-11 items-center justify-center gap-2 rounded-xl border border-border/60 bg-surface/70 text-sm font-medium transition-all hover:border-primary/40 hover:bg-surface hover:shadow-[0_0_20px_oklch(0.88_0.22_130/0.15)]",
-        full ? "w-full" : "h-11 w-11",
-      )}
-    >
-      <span className={cn("font-display text-base font-bold", color)}>{label}</span>
-    </button>
-  );
-}
-
 export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthModalProps) {
   const [tab, setTab] = useState<Tab>(defaultTab);
-  const [loginMethod, setLoginMethod] = useState<LoginMethod>("password");
+  const [loginMethod] = useState<LoginMethod>("password");
   const [showPwd, setShowPwd] = useState(false);
   const [showRegPwd, setShowRegPwd] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
-  const [refCode, setRefCode] = useState("");
-  const [showRef, setShowRef] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+
+  const isValidPassword = (password: string) => PASSWORD_REGEX.test(password);
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$|^\+?\d{6,}$/.test(email);
   const emailState: FieldState = email.length === 0 ? "default" : validEmail ? "success" : "error";
   const regEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$|^\+?\d{6,}$/.test(regEmail);
   const regEmailState: FieldState = regEmail.length === 0 ? "default" : regEmailValid ? "success" : "error";
 
-  const loginValid = validEmail && password.length >= 6;
-  const registerValid = regEmailValid && regPassword.length >= 6 && accepted;
+  const validPassword = isValidPassword(password);
+  const regValidPassword = isValidPassword(regPassword)
+
+  const passwordState: FieldState = password.length === 0
+    ? "default" : validPassword
+    ? "success" : "error";
+
+  const regPasswordState: FieldState = regPassword.length === 0
+    ? "default": regValidPassword
+    ? "success": "error";
+
+  const loginValid = validEmail && validPassword;
+  const registerValid = regEmailValid && regValidPassword && accepted;
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -209,7 +146,6 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
                   placeholder="Enter your password"
                   value={password}
                   onChange={setPassword}
-                  state={password.length === 0 ? "default" : password.length >= 8 ? "success" : "error"}
                   right={
                     <button
                       type="button"
@@ -230,12 +166,8 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
 
               <button
                 type="submit"
-                disabled={!loginValid || loading}
                 className={cn(
                   "relative flex h-12 w-full items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground transition-all",
-                  loginValid && !loading
-                    ? "shadow-[0_0_30px_oklch(0.88_0.22_130/0.4)] hover:opacity-95"
-                    : "cursor-not-allowed opacity-50",
                 )}
               >
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign In"}
@@ -326,14 +258,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
 
               <Divider>or signin with</Divider>
 
-              <div className="grid grid-cols-2 gap-2">
-                <button type="button" className="flex h-11 items-center justify-center gap-2 rounded-xl border border-border/60 bg-surface/70 text-sm font-medium transition hover:border-primary/40">
-                  <span className="font-display font-bold text-primary">42</span> School
-                </button>
-                <button type="button" className="flex h-11 items-center justify-center gap-2 rounded-xl border border-border/60 bg-surface/70 text-sm font-medium transition hover:border-primary/40">
-                  <span className="font-display font-bold text-[#EA4335]">G</span> Google
-                </button>
-              </div>
+              <OAuth/>
 
               <p className="text-center text-sm text-muted-foreground">
                 Do you already have an account?{" "}
@@ -346,15 +271,5 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function Divider({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="relative flex items-center py-1">
-      <div className="h-px flex-1 bg-border/60" />
-      <span className="px-3 text-xs text-muted-foreground">{children}</span>
-      <div className="h-px flex-1 bg-border/60" />
-    </div>
   );
 }
