@@ -5,9 +5,9 @@ import { Link } from "react-router-dom";
 
 export function Navbar() {
   const [authOpen, setAuthOpen] = useState(false);
-  const [authTab, setAuthTab] = useState<"login" | "register">("login");
+  const [authTab, setAuthTab] = useState<"signin" | "signup">("signin");
 
-  const openAuth = (tab: "login" | "register") => {
+  const openAuth = (tab: "signin" | "signup") => {
     setAuthTab(tab);
     setAuthOpen(true);
   };
@@ -57,14 +57,14 @@ export function Navbar() {
         </div>
 
         <button
-          onClick={() => openAuth("login")}
+          onClick={() => openAuth("signin")}
           className="hidden h-10 items-center gap-2 rounded-xl border border-border/60 bg-surface px-4 text-sm font-medium text-foreground transition hover:border-primary/40 hover:text-primary md:flex"
         >
-          Log In
+          Sign In
         </button>
 
         <button
-          onClick={() => openAuth("register")}
+          onClick={() => openAuth("signup")}
           className="flex h-10 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-80"
         >
           <span className="hidden sm:inline">Sign Up</span>

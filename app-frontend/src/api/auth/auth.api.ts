@@ -7,7 +7,7 @@ export interface User {
 }
 
 export const auth = {
-	login: async (credential: Record<string, string>): Promise<User> => {
+	signin: async (credential: Record<string, string>): Promise<User> => {
 		return api.post('/auth/signin', credential);
 	},
 
