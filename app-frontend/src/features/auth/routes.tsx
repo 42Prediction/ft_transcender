@@ -6,7 +6,7 @@ const ProtectedRoute = () => {
     return isAuthenticated ? <Outlet /> :  <Navigate to="/login" replace/>
 }
 
-export const router = createBrowserRouter([
+export const authRouter = createBrowserRouter([
     {
         path: '/login',
         element: <Login />
