@@ -33,6 +33,8 @@ describe('BettorController', () => {
     cancelFriendRequest: jest.fn(),
     rejectFriendRequest: jest.fn(),
     removeFriend: jest.fn(),
+    getReceivedRequests: jest.fn(),
+    getSentRequests: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -189,6 +191,30 @@ describe('BettorController', () => {
       const result = await controller.removeFriend(mockRequest, 'target_nick');
 
       expect(friendService.removeFriend).toHaveBeenCalledWith('user-id-123', 'target_nick');
+      expect(result).toEqual(expectedResponse);
+    });
+  });
+
+  describe('getReceivedRequests', () => {
+    it('should call getReceivedRequests on service', async () => {
+      const expectedResponse = [{ id: 'req-1', status: 'PENDING', sender: { nick: 'gildo' } }];
+      friendService.getReceivedRequests.mockResolvedValue(expectedResponse as any);
+
+      const result = await controller.getReceivedRequests(mockRequest);
+
+      expect(friendService.getReceivedRequests).toHaveBeenCalledWith('user-id-123');
+      expect(result).toEqual(expectedResponse);
+    });
+  });
+
+  describe('getSentRequests', () => {
+    it('should call getSentRequests on service', async () => {
+      const expectedResponse = [{ id: 'req-2', status: 'PENDING', receiver: { nick: 'daniel' } }];
+      friendService.getSentRequests.mockResolvedValue(expectedResponse as any);
+
+      const result = await controller.getSentRequests(mockRequest);
+
+      expect(friendService.getSentRequests).toHaveBeenCalledWith('user-id-123');
       expect(result).toEqual(expectedResponse);
     });
   });
