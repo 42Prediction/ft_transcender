@@ -4,6 +4,8 @@ import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import { CredentialsAuthDto } from './dto/credentials.auth.dto';
+import { User } from '../user/entities/user.entity';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 
 @Controller('auth')
