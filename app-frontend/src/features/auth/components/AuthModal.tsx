@@ -167,7 +167,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
               <button
                 type="submit"
                 className={cn(
-                  "relative flex h-12 w-full items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground transition-all",
+                  "relative flex h-12 w-full items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground transition-all hover:opacity-80",
                 )}
               >
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign In"}
