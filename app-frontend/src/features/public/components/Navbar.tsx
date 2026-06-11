@@ -1,29 +1,23 @@
 import Logo from "@/components/Logo";
-import { AuthModal } from "@/features/auth/components/AuthModal";
 import { Search } from "lucide-react";
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export function Navbar() {
-  const [authOpen, setAuthOpen] = useState(false);
-  const [authTab, setAuthTab] = useState<"signin" | "signup">("signin");
-
-  const openAuth = (tab: "signin" | "signup") => {
-    setAuthTab(tab);
-    setAuthOpen(true);
-  };
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = `${location.pathname}${location.search}${location.hash}`;
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-6 px-6">
-        <a href="/" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2">
           <div className="relative h-15 w-15">
             <Logo/>
           </div>
           <span className="font-display text-xl text-brand font-bold tracking-tight">
            Prediction
           </span>
-        </a>
+        </Link>
 
         <nav className="hidden items-center gap-1 text-sm text-muted-foreground lg:flex">
           <Link to="/" className="rounded-lg px-3 py-1.5 transition hover:bg-surface hover:text-foreground">Markets</Link>
@@ -42,21 +36,19 @@ export function Navbar() {
         </div>
 
         <button
-          onClick={() => openAuth("signin")}
+          onClick={() => navigate("/signin", { state: { from } })}
           className="hidden h-10 items-center gap-2 rounded-xl border border-border/60 bg-surface px-4 text-sm font-medium text-foreground transition hover:border-primary/40 hover:text-primary md:flex"
         >
           Sign In
         </button>
 
         <button
-          onClick={() => openAuth("signup")}
+          onClick={() => navigate("/signup", { state: { from } })}
           className="flex h-10 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-80"
         >
           <span className="hidden sm:inline">Sign Up</span>
         </button>
       </div>
-
-      <AuthModal open={authOpen} onOpenChange={setAuthOpen} defaultTab={authTab} />
     </header>
   );
 }
