@@ -1,8 +1,7 @@
-import Signin from "./pages/Signin";
-import Signup from "./pages/Signup";
 import { signinAction } from "./actions/signin.action";
 import PublicLayout from "@/pages/PublicLayout";
 import { publicLoader } from "@/loader/guards";
+import { Home } from "../public/pages/Home";
 
 export const authRouter = [
     {
@@ -12,12 +11,12 @@ export const authRouter = [
         children: [
             {
                 path: '/signin',
-                Component: Signin,
+                Component: Home,
                 action: signinAction,
             },
             {
                 path: '/signup',
-                Component: Signup,
+                Component: Home,
             },
         ],
     },

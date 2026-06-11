@@ -35,19 +35,21 @@ export function Navbar() {
           </div>
         </div>
 
-        <button
-          onClick={() => navigate("/signin", { state: { from } })}
+        <Link
+          to="/signin"
+          state={from}
           className="hidden h-10 items-center gap-2 rounded-xl border border-border/60 bg-surface px-4 text-sm font-medium text-foreground transition hover:border-primary/40 hover:text-primary md:flex"
         >
           Sign In
-        </button>
+        </Link>
 
-        <button
-          onClick={() => navigate("/signup", { state: { from } })}
+        <Link
+          to="/signup"
+          state={from}
           className="flex h-10 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-80"
         >
           <span className="hidden sm:inline">Sign Up</span>
-        </button>
+        </Link>
       </div>
     </header>
   );

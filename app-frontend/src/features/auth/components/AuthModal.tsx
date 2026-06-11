@@ -7,7 +7,7 @@ import OAuth from "./OAuth";
 import Field from "./Field";
 import Divider from "./Divider";
 
-type Tab = "signin" | "signup";
+export type Tab = "signin" | "signup";
 type LoginMethod = "password";
 export type FieldState = "default" | "focus" | "error" | "success";
 
