@@ -1,18 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ClassSerializerInterceptor } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-//import * as request from 'supertest'; // Ajustado para total compatibilidade com NodeNext / ESM Interop
 import { BettorController } from '../src/modules/bettor/bettor.controller';
 import { BettorService } from '../src/modules/bettor/bettor.service';
 import { FriendService } from '../src/modules/bettor/friend.service';
 import { JwtAuthGuard } from '../src/modules/auth/guards/jwt-auth.guard';
 import request from 'supertest';
 
-// NOTA: Se o teu ambiente de testes com NodeNext exigir caminhos estritos, 
-// adiciona a extensão ".js" nas importações locais acima, ex:
-// import { BettorController } from '../src/modules/bettor/bettor.controller.js';
-
-// Simular upload de avatar para não rebentar os interceptors de ficheiros caso as rotas sejam chamadas
 jest.mock('../src/config/multer.config', () => {
   const originalModule = jest.requireActual('../src/config/multer.config');
   return {
@@ -41,11 +35,9 @@ describe('FriendController via BettorController (E2E)', () => {
     getSentRequests: jest.fn(),
   };
 
-  // Autenticação mockada condizente com o ecossistema do projeto
   const mockJwtAuthGuard = {
     canActivate: (context: any) => {
       const req = context.switchToHttp().getRequest();
-      // Se o header forçado de falha estiver presente, bloqueia o acesso
       if (req.headers['x-bypass-auth'] === 'false') {
         return false;
       }
@@ -68,7 +60,6 @@ describe('FriendController via BettorController (E2E)', () => {
 
     app = moduleFixture.createNestApplication();
 
-    // Garante a execução correta dos interceptores de serialização de entidades (TypeORM)
     app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
     await app.init();
