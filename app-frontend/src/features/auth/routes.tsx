@@ -1,25 +1,24 @@
-import { Navigate, Outlet } from "react-router-dom";
-import { publicRouter } from "../public/routes";
 import Signin from "./pages/Signin";
 import Signup from "./pages/Signup";
 import { signinAction } from "./actions/signin.action";
+import PublicLayout from "@/pages/PublicLayout";
+import { publicLoader } from "@/loader/guards";
 
-const ProtectedRoute = () => {
-    // logica de autenticação
-    // enviar a requisição caso de erro redireciona
-    return isAuthenticated ? <Outlet /> :  <Navigate to="/login" replace/>
-}
-
-export const authRouter = ([
+export const authRouter = [
     {
-        path: '/signin',
-        element: <Signin />,
-        loader: publicRouter,
-        action: signinAction,
+        Component: PublicLayout,
+        loader: publicLoader,
+        id: "public",
+        children: [
+            {
+                path: '/signin',
+                Component: Signin,
+                action: signinAction,
+            },
+            {
+                path: '/signup',
+                Component: Signup,
+            },
+        ],
     },
-    {
-        path: '/',
-        element: <Signup/>,
-        loader: publicRouter
-    }
-])
+];

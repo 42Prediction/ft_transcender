@@ -2,7 +2,7 @@ import { Home } from "./pages/Home";
 
 export const publicRouter = ([
   {
-    path: "/",
-    element: <Home/> 
+    index: true,
+    element: <Home/>
   },
 ])

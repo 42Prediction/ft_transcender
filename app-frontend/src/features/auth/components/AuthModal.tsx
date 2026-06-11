@@ -51,22 +51,16 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
   const regEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$|^\+?\d{6,}$/.test(regEmail);
   const regEmailState: FieldState = regEmail.length === 0 ? "default" : regEmailValid ? "success" : "error";
 
-  const validPassword = isValidPassword(password);
   const regValidPassword = isValidPassword(regPassword)
-
-  const passwordState: FieldState = password.length === 0
-    ? "default" : validPassword
-    ? "success" : "error";
 
   const regPasswordState: FieldState = regPassword.length === 0
     ? "default": regValidPassword
     ? "success": "error";
 
-  const loginValid = validEmail && validPassword;
   const registerValid = regEmailValid && regValidPassword && accepted;
 
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SubmitEvent) => {
     e.preventDefault();
     setLoading(true);
     setTimeout(() => {
@@ -210,14 +204,19 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
                 placeholder="Create a secure password"
                 value={regPassword}
                 onChange={setRegPassword}
-                state={regPassword.length === 0 ? "default" : regPassword.length >= 8 ? "success" : "error"}
+                state={regPasswordState}
+                error={
+                  regPasswordState === "error"
+                  ? "Password must be at least 8 characters long and contain 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character."
+                  : undefined
+                }
                 right={
                   <button
-                    type="button"
-                    onClick={() => setShowRegPwd((s) => !s)}
-                    className="mr-3 text-muted-foreground transition hover:text-foreground"
+                  type="button"
+                  onClick={() => setShowRegPwd((s) => !s)}
+                  className="mr-3 text-muted-foreground transition hover:text-foreground"
                   >
-                    {showRegPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showRegPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 }
               />
