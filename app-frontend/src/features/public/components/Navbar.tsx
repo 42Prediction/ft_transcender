@@ -1,9 +1,8 @@
 import Logo from "@/components/Logo";
 import { Search } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 export function Navbar() {
-  const navigate = useNavigate();
   const location = useLocation();
   const from = `${location.pathname}${location.search}${location.hash}`;
 
