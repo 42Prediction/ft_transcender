@@ -19,7 +19,7 @@ export const auth = {
 
 	getMe: async (): Promise<User | null> => {
 		try {
-			const res = await api.get('/users/me');
+			const res = await api.get('/bettor/me');
 			return res.data;
 		} catch (err: any) {
 			if (err.response?.status === 401)
@@ -28,7 +28,7 @@ export const auth = {
 		}
 	},
 
-	logout: async (): Promise<{ message: string }> => {
+	signout: async (): Promise<{ message: string }> => {
 		const res = await api.post('/auth/logout');
 		return res.data;
 	}

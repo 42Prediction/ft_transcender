@@ -41,8 +41,8 @@ export class AuthController {
         return await this.authService.signup(signinAuthDto);
     }
 
-    @Post('logout')
-    async logout(@Res({ passthrough: true }) res: Response) {
+    @Post('signout')
+    async signout(@Res({ passthrough: true }) res: Response) {
         res.clearCookie('access_token', { path: '/' });
         return { message: 'Logged out' };
     }
