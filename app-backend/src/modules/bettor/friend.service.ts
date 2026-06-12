@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -18,11 +19,6 @@ export class FriendService {
     @InjectRepository(BettorFriendRequest)
     private readonly requestRepository: Repository<BettorFriendRequest>,
   ) {}
-
-  /* ========================================================================== */
-  /* [MARCO] - SISTEMA DE AMIZADES                                              */
-  /* Lógica de negócio para gerir pedidos (Requests) e conexões entre jogadores */
-  /* ========================================================================== */
 
   async getMyFriends(userId: string): Promise<Bettor[]> {
     const bettor = await this.bettorRepository.findOne({
@@ -42,114 +38,149 @@ export class FriendService {
     return bettor.friends || [];
   }
 
-  // 1. Enviar um Pedido de Amizade
-  async sendFriendRequest(userId: string, targetNick: string): Promise<void> {
-    const sender = await this.bettorRepository.findOne({
-      where: { user: { id: userId } },
-      relations: ['friends'],
-    });
-    const receiver = await this.bettorRepository.findOne({ where: { nick: targetNick } });
+async sendFriendRequest(userId: string, receiverNick: string): Promise<void> {
+    const sender = await this.bettorRepository.findOne({ where: { user: { id: userId } } });
+    const receiver = await this.bettorRepository.findOne({ where: { nick: receiverNick } });
 
     if (!sender || !receiver) throw new NotFoundException('Perfil não encontrado');
-    if (sender.id === receiver.id) throw new BadRequestException('Não podes adicionar-te a ti mesmo');
+    if (sender.id === receiver.id) throw new BadRequestException('Não podes enviar um pedido de amizade a ti mesmo');
 
-    // Verifica se já são amigos
-    if (sender.friends && sender.friends.some(f => f.id === receiver.id)) {
-      throw new ConflictException('Vocês já são amigos');
+    const friendsCount = await this.bettorRepository.createQueryBuilder('bettor')
+      .leftJoin('bettor.friends', 'friend')
+      .where('bettor.id = :senderId AND friend.id = :receiverId', { senderId: sender.id, receiverId: receiver.id })
+      .getCount();
+
+    if (friendsCount > 0) throw new ConflictException('Já são amigos');
+
+    try {
+      await this.requestRepository.manager.transaction('SERIALIZABLE', async (transactionalEntityManager) => {
+        
+        const existingRequest = await transactionalEntityManager.findOne(BettorFriendRequest, {
+          where: [
+            { sender: { id: sender.id }, receiver: { id: receiver.id } },
+            { sender: { id: receiver.id }, receiver: { id: sender.id } }
+          ]
+        });
+
+        if (existingRequest) {
+          throw new ConflictException('Já existe um pedido de amizade pendente entre vocês');
+        }
+
+        const newRequest = transactionalEntityManager.create(BettorFriendRequest, {
+          sender: { id: sender.id },
+          receiver: { id: receiver.id },
+          status: RequestStatus.PENDING,
+        });
+
+        await transactionalEntityManager.save(newRequest);
+      });
+    } catch (error) {
+      if (error instanceof ConflictException) throw error;
+    
+      const dbError = error as { code?: string };
+      
+      if (dbError.code === '23505') {
+        throw new ConflictException('O pedido de amizade já foi enviado');
+      }
+      throw new InternalServerErrorException('Erro ao enviar o pedido de amizade');
+    }
+  }
+
+  async acceptFriendRequest(userId: string, senderNick: string): Promise<void> {
+    const receiver = await this.bettorRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    const sender = await this.bettorRepository.findOne({
+      where: { nick: senderNick },
+    });
+
+    if (!receiver || !sender) {
+      throw new NotFoundException('Perfil ou remetente não encontrado');
     }
 
-    // Verifica se já existe um pedido (em qualquer direção)
-    const existingRequest = await this.requestRepository.findOne({
-      where: [
-        { sender: { id: sender.id }, receiver: { id: receiver.id } },
-        { sender: { id: receiver.id }, receiver: { id: sender.id } },
-      ],
+    await this.bettorRepository.manager.transaction(async (transactionalEntityManager) => {
+
+      const updateResult = await transactionalEntityManager.update(
+        BettorFriendRequest,
+        { 
+          sender: { id: sender.id }, 
+          receiver: { id: receiver.id }, 
+          status: RequestStatus.PENDING 
+        },
+        { status: RequestStatus.ACCEPTED }
+      );
+
+      if (updateResult.affected === 0) {
+        throw new ConflictException('O pedido de amizade já não está pendente ou não existe');
+      }
+
+      await transactionalEntityManager.createQueryBuilder()
+        .relation(Bettor, 'friends')
+        .of(sender.id)
+        .add(receiver.id);
+
+      await transactionalEntityManager.createQueryBuilder()
+        .relation(Bettor, 'friends')
+        .of(receiver.id)
+        .add(sender.id);
     });
+  }
 
-    if (existingRequest) throw new ConflictException('Já existe um pedido pendente com este jogador');
+async rejectFriendRequest(userId: string, senderNick: string): Promise<void> {
+    const receiver = await this.bettorRepository.findOne({ where: { user: { id: userId } } });
+    const sender = await this.bettorRepository.findOne({ where: { nick: senderNick } });
 
-    const newRequest = this.requestRepository.create({
-      sender,
-      receiver,
+    if (!receiver || !sender) throw new NotFoundException('Perfil ou remetente não encontrado');
+
+    const deleteResult = await this.requestRepository.delete({
+      receiver: { id: receiver.id },
+      sender: { id: sender.id },
       status: RequestStatus.PENDING,
     });
-    await this.requestRepository.save(newRequest);
+
+    if (deleteResult.affected === 0) {
+      throw new NotFoundException('Pedido de amizade pendente não encontrado');
+    }
   }
 
-  // 2. Aceitar um Pedido de Amizade
-  async acceptFriendRequest(userId: string, senderNick: string): Promise<void> {
-    // Procura o pedido onde tu és o destinatário (receiver) e o alvo é o remetente (sender)
-    const request = await this.requestRepository.findOne({
-      where: { receiver: { user: { id: userId } }, sender: { nick: senderNick }, status: RequestStatus.PENDING },
-      relations: ['sender', 'receiver', 'sender.friends', 'receiver.friends'],
-    });
-
-    if (!request) throw new NotFoundException('Pedido de amizade pendente não encontrado');
-
-    // Inicializa os arrays se estiverem nulos
-    if (!request.sender.friends) request.sender.friends = [];
-    if (!request.receiver.friends) request.receiver.friends = [];
-
-    // Adiciona a relação cruzada nos dois perfis
-    request.sender.friends.push(request.receiver);
-    request.receiver.friends.push(request.sender);
-
-    // Marca o pedido como aceite e guarda as alterações
-    request.status = RequestStatus.ACCEPTED;
-    await this.requestRepository.save(request);
-    await this.bettorRepository.save([request.sender, request.receiver]);
-  }
-
-  // 3. Rejeitar um Pedido de Amizade (Apaga a linha da BD)
-  async rejectFriendRequest(userId: string, senderNick: string): Promise<void> {
-    const request = await this.requestRepository.findOne({
-      where: { receiver: { user: { id: userId } }, sender: { nick: senderNick }, status: RequestStatus.PENDING },
-    });
-
-    if (!request) throw new NotFoundException('Pedido de amizade não encontrado');
-    await this.requestRepository.remove(request);
-  }
-
-  // 4. Cancelar um Pedido Enviado por engano
   async cancelFriendRequest(userId: string, targetNick: string): Promise<void> {
-    const request = await this.requestRepository.findOne({
-      where: { sender: { user: { id: userId } }, receiver: { nick: targetNick }, status: RequestStatus.PENDING },
+    const sender = await this.bettorRepository.findOne({ where: { user: { id: userId } } });
+    const receiver = await this.bettorRepository.findOne({ where: { nick: targetNick } });
+
+    if (!sender || !receiver) throw new NotFoundException('Perfil ou destinatário não encontrado');
+
+    const deleteResult = await this.requestRepository.delete({
+      sender: { id: sender.id },
+      receiver: { id: receiver.id },
+      status: RequestStatus.PENDING,
     });
 
-    if (!request) throw new NotFoundException('Pedido de amizade não encontrado');
-    await this.requestRepository.remove(request);
+    if (deleteResult.affected === 0) {
+      throw new NotFoundException('Pedido de amizade pendente não encontrado');
+    }
   }
 
-  // 5. Remover uma Amizade já existente
   async removeFriend(userId: string, friendNick: string): Promise<void> {
-    // 1. Carrega o perfil e os teus amigos
     const bettor = await this.bettorRepository.findOne({
       where: { user: { id: userId } },
-      relations: ['friends'],
     });
-    
-    // 2. Carrega o perfil do amigo e os amigos DELE
+
     const friendBettor = await this.bettorRepository.findOne({ 
       where: { nick: friendNick },
-      relations: ['friends'], 
     });
 
     if (!bettor || !friendBettor) throw new NotFoundException('Perfil ou amigo não encontrado');
 
-    // 3. Remove o amigo da tua lista
-    if (bettor.friends) {
-      bettor.friends = bettor.friends.filter(f => f.id !== friendBettor.id);
-    }
-    
-    // 4. Remove-te a ti da lista do amigo
-    if (friendBettor.friends) {
-      friendBettor.friends = friendBettor.friends.filter(f => f.id !== bettor.id);
-    }
+    await this.bettorRepository.createQueryBuilder()
+      .relation(Bettor, 'friends')
+      .of(bettor.id)
+      .remove(friendBettor.id);
 
-    // 5. Guarda os dois perfis atualizados na BD de uma só vez
-    await this.bettorRepository.save([bettor, friendBettor]);
-    
-    // 6. Apaga também o registo antigo da tabela de pedidos para limpeza
+    await this.bettorRepository.createQueryBuilder()
+      .relation(Bettor, 'friends')
+      .of(friendBettor.id)
+      .remove(bettor.id);
+
     await this.requestRepository.delete({
       sender: { id: bettor.id }, receiver: { id: friendBettor.id }
     });
@@ -158,7 +189,23 @@ export class FriendService {
     });
   }
 
-  /* ========================================================================== */
-  /* [MARCO] - FIM DO BLOCO DE AMIZADES                                         */
-  /* ========================================================================== */
+  async getReceivedRequests(userId: string): Promise<BettorFriendRequest[]> {
+    return await this.requestRepository.find({
+      where: { 
+        receiver: { user: { id: userId } }, 
+        status: RequestStatus.PENDING 
+      },
+      relations: ['sender'], 
+    });
+  }
+
+  async getSentRequests(userId: string): Promise<BettorFriendRequest[]> {
+    return await this.requestRepository.find({
+      where: { 
+        sender: { user: { id: userId } }, 
+        status: RequestStatus.PENDING 
+      },
+      relations: ['receiver'], 
+    });
+  }
 }

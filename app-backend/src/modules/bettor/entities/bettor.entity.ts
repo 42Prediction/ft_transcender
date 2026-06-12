@@ -31,11 +31,6 @@ export class Bettor {
     @JoinColumn({ name: 'user_id' })
     user!: User;
 
-    /* ========================================================================== */
-    /* [MARCO] - SISTEMA DE AMIZADES                                              */
-    /* Relação auto-referenciada de amizade puramente dentro do perfil Bettor     */
-    /* ========================================================================== */
-
     @ManyToMany(() => Bettor)
     @JoinTable({
         name: 'bettor_friends',
@@ -43,10 +38,6 @@ export class Bettor {
         inverseJoinColumn: { name: 'friend_id', referencedColumnName: 'id' }
     })
     friends!: Bettor[];
-    
-    /* ========================================================================== */
-    /* [MARCO] - FIM DO BLOCO                                                     */
-    /* ========================================================================== */
 
     @CreateDateColumn({name: 'created_at'})
     createdAt!: Date;
