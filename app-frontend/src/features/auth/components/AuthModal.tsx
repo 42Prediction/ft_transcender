@@ -57,7 +57,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
   const regPasswordState: FieldState = regPassword.length === 0
     ? "default": regValidPassword
     ? "success": "error";
-
+  
   const registerValid = regEmailValid && regValidPassword && accepted;
 
 
@@ -106,6 +106,8 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
             <Form method="post" action="/signin" className="relative space-y-5">
               <Field
                 name="email"
+                value={email}
+                onChange={setEmail}
                 label="Email"
                 required
                 icon={Mail}
@@ -116,6 +118,8 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
               {loginMethod === "password" && (
                 <Field
                   name="password"
+                  value={password}
+                  onChange={setPassword}
                   label="Password"
                   required
                   icon={Lock}
@@ -165,9 +169,11 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
               </p>
             </Form>
           ) : (
-            <form onSubmit={handleSubmit} className="relative space-y-5">
+            <Form method="post" action="/signup" className="relative space-y-5">
               <Field
                 name="email"
+                value={regEmail}
+                onChange={setRegEmail}
                 label="Email"
                 required
                 icon={Mail}
@@ -177,6 +183,8 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
 
               <Field
                 name="password"
+                value={regPassword}
+                onChange={setRegPassword}
                 label="Password"
                 required
                 icon={Lock}
@@ -242,7 +250,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
                   Sign In
                 </button>
               </p>
-            </form>
+            </Form>
           )}
         </div>
       </DialogContent>

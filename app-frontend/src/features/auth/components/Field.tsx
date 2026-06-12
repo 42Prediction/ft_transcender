@@ -7,6 +7,8 @@ export default function Field({
   required,
   label,
   name,
+  value,
+  onChange,
 }: {
   icon: React.ElementType;
   type?: string;
@@ -16,6 +18,8 @@ export default function Field({
   required?: boolean;
   label: string;
   name: string;
+  value: string;
+  onChange: (v: string) => void;
 }) {
   return (
     <div className="space-y-1.5">
@@ -28,6 +32,8 @@ export default function Field({
 
         <input
           name={name}
+          value={value}
+          onChange={e => onChange(e.target.value)}
           type={type}
           required={required}
           placeholder={placeholder}
