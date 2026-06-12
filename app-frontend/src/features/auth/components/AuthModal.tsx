@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import OAuth from "./OAuth";
 import Field from "./Field";
 import Divider from "./Divider";
+import { Form, useActionData, useNavigation, useSubmit } from "react-router-dom";
 
 export type Tab = "signin" | "signup";
 type LoginMethod = "password";
@@ -40,9 +41,9 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [accepted, setAccepted] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-
+  const navigation = useNavigation();
+  const actionData = useActionData<{ error?: string }>();
+  const loading = navigation.state === "submitting";
   const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
   const isValidPassword = (password: string) => PASSWORD_REGEX.test(password);
@@ -62,15 +63,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
 
   const handleSubmit = (e: React.SubmitEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        onOpenChange(false);
-      }, 1200);
-    }, 900);
+    console.log(email);
   };
 
   return (
@@ -109,37 +102,25 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
             <LogoAuth />
           </div>
 
-          {success ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-10">
-              <div className="grid h-16 w-16 place-items-center rounded-full border-2 border-[var(--yes)] bg-[var(--yes)]/10 shadow-[0_0_30px_oklch(0.78_0.20_150/0.4)]">
-                <Check className="h-8 w-8 text-[var(--yes)]" />
-              </div>
-              <p className="font-medium text-[var(--yes)]">
-                {tab === "signin" ? "Login successful!!" : "Account created successfully!"}
-              </p>
-            </div>
-          ) : tab === "signin" ? (
-            <form onSubmit={handleSubmit} className="relative space-y-5">
+          {tab === "signin" ? (
+            <Form method="post" action="/signin" className="relative space-y-5">
               <Field
+                name="email"
                 label="Email"
                 required
                 icon={Mail}
                 placeholder="Enter your email"
-                value={email}
-                onChange={setEmail}
-                state={emailState}
                 error={emailState === "error" ? "Invalid email address" : undefined}
               />
 
               {loginMethod === "password" && (
                 <Field
+                  name="password"
                   label="Password"
                   required
                   icon={Lock}
                   type={showPwd ? "text" : "password"}
                   placeholder="Enter your password"
-                  value={password}
-                  onChange={setPassword}
                   right={
                     <button
                       type="button"
@@ -182,29 +163,25 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
                 By continuing, you agree to the{" "}
                 <a href="#" className="text-primary hover:underline">Terms and Conditions</a>
               </p>
-            </form>
+            </Form>
           ) : (
             <form onSubmit={handleSubmit} className="relative space-y-5">
               <Field
+                name="email"
                 label="Email"
                 required
                 icon={Mail}
                 placeholder="Enter your email address"
-                value={regEmail}
-                onChange={setRegEmail}
-                state={regEmailState}
                 error={regEmailState === "error" ? "Invalid email address" : undefined}
               />
 
               <Field
+                name="password"
                 label="Password"
                 required
                 icon={Lock}
                 type={showRegPwd ? "text" : "password"}
                 placeholder="Create a secure password"
-                value={regPassword}
-                onChange={setRegPassword}
-                state={regPasswordState}
                 error={
                   regPasswordState === "error"
                   ? "Password must be at least 8 characters long and contain 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character."

@@ -21,8 +21,10 @@ export const auth = {
 		try {
 			const res = await api.get('/users/me');
 			return res.data;
-		} catch {
-			return null;
+		} catch (err: any) {
+			if (err.response?.status === 401)
+     			 return null;
+			throw err;
 		}
 	},
 

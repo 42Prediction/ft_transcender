@@ -1,8 +1,8 @@
-import { bettor } from "@/api/bettor/bettor.api";
+import { auth } from "@/api/auth/auth.api";
 import { redirect } from "react-router-dom";
 
 export async function protectedLoader({ request }: { request: Request}): Promise<Response | null> {
-    const user = await bettor.getMe();
+    const user = await auth.getMe();
 
     if (!user){
         const url = new URL(request.url);
@@ -12,8 +12,7 @@ export async function protectedLoader({ request }: { request: Request}): Promise
 }
 
 export async function publicLoader({ request }: { request: Request }): Promise<Response | null> {
-    const user = await bettor.getMe();
-
+    const user = await auth.getMe();
     if (user){
         const url = new URL(request.url);
         return redirect(url.searchParams.get('redirectTo') || '/')
