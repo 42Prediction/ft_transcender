@@ -88,5 +88,4 @@ export class BettorService {
     if (updateBettorDto) Object.assign(bettor, updateBettorDto);
     return await this.bettorRepository.save(bettor);
   }
-
 }
