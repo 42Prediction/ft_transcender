@@ -143,14 +143,20 @@ export default function Navbar() {
           {/* Menu Dropdown - Também ajustado para bg-background/70 com efeito blur */}
           {open && (
             <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl border border-border/60 bg-background backdrop-blur-xl p-1.5 shadow-xl z-50">
-              <Link
-                to="/settings"
-                onClick={() => setOpen(false)}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-surface hover:text-foreground"
-              >
-                <Settings className="h-4 w-4" />
-                Configurações
-              </Link>
+              <div className="flex items-center gap-1">
+                <Link
+                  to="/profile"
+                  onClick={() => setOpen(false)}
+                  className=" flex-1 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-surface hover:text-foreground"
+                >
+                  <span>{profile?.nick}</span>
+                </Link>
+                <Link to="/profile/settings"
+                   className="rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-surface hover:text-foreground"
+                >
+                  <Settings className="h-4 w-4" />
+                </Link> 
+              </div>
               
               <div className="my-1 border-t border-border/40" />
 
