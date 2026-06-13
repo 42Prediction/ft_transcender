@@ -17,7 +17,7 @@ export const auth = {
 		return res.data;
 	},
 
-	getMe: async (): Promise<User | null> => {
+	getMe: async (): Promise<any> => {
 		try {
 			const res = await api.get('/bettor/me');
 			return res.data;

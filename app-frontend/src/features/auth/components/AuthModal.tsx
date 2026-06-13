@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import OAuth from "./OAuth";
 import Field from "./Field";
 import Divider from "./Divider";
-import { Form, useActionData, useNavigation, useSubmit } from "react-router-dom";
+import { Form, useActionData, useNavigation} from "react-router-dom";
 
 export type Tab = "signin" | "signup";
 type LoginMethod = "password";
@@ -59,12 +59,6 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
     ? "success": "error";
   
   const registerValid = regEmailValid && regValidPassword && accepted;
-
-
-  const handleSubmit = (e: React.SubmitEvent) => {
-    e.preventDefault();
-    console.log(email);
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
