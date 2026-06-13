@@ -11,12 +11,12 @@ export const authRouter = [
         id: "public",
         children: [
             {
-                path: '/signin',
+                path: "signin",
                 Component: Home,
                 action: signinAction,
             },
             {
-                path: '/signup',
+                path: "signup",
                 Component: Home,
                 action: signupAction,
             },

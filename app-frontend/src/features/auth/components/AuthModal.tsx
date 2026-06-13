@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Logo from "@/components/Logo";
 import { Dialog, DialogContent, DialogTitle} from "@/components/ui/dialog";
 import { Mail, Lock, Eye, EyeOff, Loader2, Check } from "lucide-react";
@@ -44,6 +44,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
   const navigation = useNavigation();
   const actionData = useActionData<{ error?: string }>();
   const loading = navigation.state === "submitting";
+  const [localError, setLocalError] = useState<string | null>(null);
   const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
   const isValidPassword = (password: string) => PASSWORD_REGEX.test(password);
@@ -59,6 +60,16 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
     ? "success": "error";
   
   const registerValid = regEmailValid && regValidPassword && accepted;
+
+  useEffect(() => {
+    if (actionData?.error) {
+      setLocalError(actionData.error);
+    }
+  }, [actionData]);
+
+  useEffect(() => {
+    setLocalError(null);
+  }, [tab]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -97,7 +108,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
           </div>
 
           {tab === "signin" ? (
-            <Form method="post" action="/signin" className="relative space-y-5">
+            <Form key="signin"  method="post" action="/signin" className="relative space-y-5">
               <Field
                 name="email"
                 value={email}
@@ -136,15 +147,20 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
                   Forgot your password?
                 </button>
               </div>
-
+              {localError && (
+                <div className="text-center text-xs text-destructive/80">
+                  {localError}
+                </div>
+              )}
               <button
                 type="submit"
                 className={cn(
                   "relative flex h-12 w-full items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground transition-all hover:opacity-80",
                 )}
               >
-                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign In"}
+                {(loading) ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign In"}
               </button>
+              
 
               <Divider>or continue with</Divider>
 
@@ -163,7 +179,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
               </p>
             </Form>
           ) : (
-            <Form method="post" action="/signup" className="relative space-y-5">
+            <Form key="signup" method="post" action="/signup" className="relative space-y-5">
               <Field
                 name="email"
                 value={regEmail}
@@ -220,14 +236,18 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
                   <span className="text-primary"> *</span>
                 </span>
               </label>
-
+              {localError && (
+                <div className="text-center text-xs text-destructive/80">
+                  {localError}
+                </div>
+              )}
               <button
                 type="submit"
                 disabled={!registerValid || loading}
                 className={cn(
                   "flex h-12 w-full items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground transition-all",
                   registerValid && !loading
-                    ? "shadow-[0_0_30px_oklch(0.88_0.22_130/0.4)] hover:opacity-95"
+                    ? "hover:opacity-95"
                     : "cursor-not-allowed opacity-50",
                 )}
               >
