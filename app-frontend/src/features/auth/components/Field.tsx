@@ -9,6 +9,7 @@ export default function Field({
   name,
   value,
   onChange,
+  autoFocus
 }: {
   icon: React.ElementType;
   type?: string;
@@ -20,6 +21,7 @@ export default function Field({
   name: string;
   value: string;
   onChange: (v: string) => void;
+  autoFocus?: boolean;
 }) {
   return (
     <div className="space-y-1.5">
@@ -37,6 +39,7 @@ export default function Field({
           type={type}
           required={required}
           placeholder={placeholder}
+          autoFocus={autoFocus}
           className="h-12 w-full bg-transparent px-3 text-sm focus:outline-none"
         />
 

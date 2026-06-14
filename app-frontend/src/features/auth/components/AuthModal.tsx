@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Logo from "@/components/Logo";
 import { Dialog, DialogContent, DialogTitle} from "@/components/ui/dialog";
 import { Mail, Lock, Eye, EyeOff, Loader2, Check } from "lucide-react";
@@ -32,6 +32,7 @@ function LogoAuth() {
 }
 
 export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthModalProps) {
+  const emailRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<Tab>(defaultTab);
   const [loginMethod] = useState<LoginMethod>("password");
   const [showPwd, setShowPwd] = useState(false);
@@ -58,7 +59,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
   const regPasswordState: FieldState = regPassword.length === 0
     ? "default": regValidPassword
     ? "success": "error";
-  
+
   const registerValid = regEmailValid && regValidPassword && accepted;
 
   useEffect(() => {
@@ -111,6 +112,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
             <Form key="signin"  method="post" action="/signin" className="relative space-y-5">
               <Field
                 name="email"
+                autoFocus={true}
                 value={email}
                 onChange={setEmail}
                 label="Email"
@@ -160,7 +162,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
               >
                 {(loading) ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign In"}
               </button>
-              
+
 
               <Divider>or continue with</Divider>
 
@@ -182,6 +184,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
             <Form key="signup" method="post" action="/signup" className="relative space-y-5">
               <Field
                 name="email"
+                autoFocus={true}
                 value={regEmail}
                 onChange={setRegEmail}
                 label="Email"
