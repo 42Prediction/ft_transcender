@@ -29,7 +29,7 @@ export const auth = {
 	},
 
 	signout: async (): Promise<{ message: string }> => {
-		const res = await api.post('/auth/logout');
+		const res = await api.post('/auth/signout');
 		return res.data;
 	}
 };

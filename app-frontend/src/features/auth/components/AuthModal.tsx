@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Logo from "@/components/Logo";
 import { Dialog, DialogContent, DialogTitle} from "@/components/ui/dialog";
 import { Mail, Lock, Eye, EyeOff, Loader2, Check } from "lucide-react";

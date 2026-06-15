@@ -1,10 +1,36 @@
+import { auth } from "@/api/auth/auth.api";
 import Logo from "@/components/Logo";
-import { Search } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Bell, ChevronDown, LogOut, Search, Settings, Wallet } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useRevalidator, useRouteLoaderData } from "react-router-dom";
+
 
 export function Navbar() {
+  const revalidator = useRevalidator()
+  const data = useRouteLoaderData('root');
+  const profile = data?.data;
   const location = useLocation();
   const from = `${location.pathname}${location.search}${location.hash}`;
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-xl">
@@ -34,23 +60,96 @@ export function Navbar() {
             <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground md:block">⌘K</kbd>
           </div>
         </div>
-
-        <Link
-          to="/signin"
-          state={from}
-          className="hidden h-10 items-center gap-2 rounded-xl border border-border/60 bg-surface px-4 text-sm font-medium text-foreground transition hover:border-primary/40 hover:text-primary md:flex"
-        >
-          Sign In
-        </Link>
-
-        <Link
-          to="/signup"
-          state={from}
-          className="flex h-10 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-80"
-        >
-          <span className="hidden sm:inline">Sign Up</span>
-        </Link>
+        {profile ? UserInfo(profile, dropdownRef, setOpen, open, auth.signout, revalidator ) : SignButtons(from)}
       </div>
     </header>
   );
+}
+
+function SignButtons(from: string){
+  return (
+    <>
+      <Link
+        to="/signin"
+        state={from}
+        className="hidden h-10 items-center gap-2 rounded-xl border border-border/60 bg-surface px-4 text-sm font-medium text-foreground transition hover:border-primary/40 hover:text-primary md:flex"
+      >
+        Sign In
+      </Link>
+
+      <Link
+        to="/signup"
+        state={from}
+        className="flex h-10 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-80"
+      >
+        <span className="hidden sm:inline">Sign Up</span>
+      </Link>
+    </>
+  )
+}
+
+function UserInfo(
+  profile: any | null,
+  dropdownRef: React.RefObject<HTMLDivElement | null>,
+  setOpen: (value: boolean) => void,
+  open: boolean,
+  signout: () => void,
+  revalidator: ReturnType<typeof useRevalidator>
+){
+  return (
+    <>
+    <button className="relative hidden h-10 w-10 place-items-center rounded-xl border border-border/60 bg-surface text-muted-foreground transition hover:text-foreground md:grid">
+      <Bell className="h-4 w-4" />
+      <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary shadow-glow" />
+    </button>
+
+    <button className="hidden h-10 items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 text-sm font-medium text-primary transition hover:bg-primary/20 md:flex">
+      <Wallet className="h-4 w-4" />
+      ₳ {profile?.balance?.toLocaleString("pt-PT", { minimumFractionDigits: 2 }) || "4,820.50"}
+    </button>
+
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex h-10 items-center gap-2 rounded-xl bg-gradient-brand px-4 text-sm font-semibold text-primary-foreground shadow-glow transition hover:opacity-90"
+      >
+        <span className="hidden sm:inline">{profile?.nick || "lpiquet"}</span>
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl border border-border/60 bg-background backdrop-blur-xl p-1.5 shadow-xl z-50">
+          <div className="flex items-center gap-1">
+            <Link
+              to="/profile"
+              onClick={() => setOpen(false)}
+              className=" flex-1 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-surface hover:text-foreground"
+            >
+              <span>{profile?.nick}</span>
+            </Link>
+            <Link to="/profile/settings"
+                className="rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-surface hover:text-foreground"
+            >
+              <Settings className="h-4 w-4" />
+            </Link>
+          </div>
+
+          <div className="my-1 border-t border-border/40" />
+
+          <button
+            onClick={() => {
+              setOpen(false);
+              signout();
+              revalidator.revalidate();
+            }}
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-red-500 transition hover:bg-red-500/10"
+          >
+            <LogOut className="h-4 w-4" />
+            Sair
+          </button>
+        </div>
+      )}
+    </div>
+    </>
+  )
 }

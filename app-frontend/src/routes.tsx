@@ -4,6 +4,7 @@ import { publicRouter } from "./features/public/routes";
 import App from "./App";
 import { authRouter } from "./features/auth/routes";
 import { authMiddleware } from "./middleware/auth";
+import { rootLoader } from "./loader/root";
 
 export const dataContext = createContext<any | null>(null)
 
@@ -13,6 +14,7 @@ export const router = createBrowserRouter([
     id: 'root',
     Component: App,
     middleware: [authMiddleware],
+    loader: rootLoader,
     children: [
       ...publicRouter,
       ...authRouter,
