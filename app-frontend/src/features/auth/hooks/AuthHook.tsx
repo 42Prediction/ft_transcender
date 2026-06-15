@@ -1,47 +1,35 @@
 // app/hooks/useAuthModalRoute.ts
-
-import { useEffect, useState } from "react";
-import {
-  useLocation,
-  useNavigate,
-  useOutlet,
-} from "react-router-dom";
+import { useLocation, useNavigate, useOutlet } from "react-router-dom";
 import { getAuthTab } from "../utils/getAuthTab";
 import type { Tab } from "../components/AuthModal";
+import { useEffect, useState } from "react";
 
 export function useAuthModalRoute() {
+  const outlet = useOutlet();
   const location = useLocation();
   const navigate = useNavigate();
-  const outlet = useOutlet();
 
   const authTab: Tab | null = getAuthTab(location.pathname);
+  const bg = location.state?.backgroundLocation;
 
-  const isAuthRoute = authTab !== null;
-
-  const [backgroundOutlet, setBackgroundOutlet] =
-    useState(outlet);
+  const [savedOutlet, setSavedOutlet] = useState(outlet);
 
   useEffect(() => {
-    if (!isAuthRoute) {
-      setBackgroundOutlet(outlet);
+    if (!authTab) {
+      setSavedOutlet(outlet);
     }
-  }, [isAuthRoute, outlet]);
+  }, [outlet, authTab]);
 
   const closeModal = () => {
-    const from = (
-      location.state as { from?: string } | null
-    )?.from;
-
-    navigate(from || "/", {
-      replace: true,
-    });
+    const isAuthRoute = bg && !getAuthTab(bg.pathname);
+    navigate(isAuthRoute ? bg : "/", { replace: true });
   };
 
   return {
+    bg,
     authTab,
-    isAuthRoute,
-    outlet,
-    backgroundOutlet,
     closeModal,
+    savedOutlet,
+    outlet
   };
 }

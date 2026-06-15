@@ -16,6 +16,10 @@ export const router = createBrowserRouter([
     middleware: [authMiddleware],
     loader: rootLoader,
     children: [
+      {
+        path: '/test',
+        Component: Notfound,
+      },
       ...publicRouter,
       ...authRouter,
     ]

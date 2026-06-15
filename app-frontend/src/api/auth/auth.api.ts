@@ -31,5 +31,9 @@ export const auth = {
 	signout: async (): Promise<{ message: string }> => {
 		const res = await api.post('/auth/signout');
 		return res.data;
+	},
+
+	google: async (): Promise<any> => {
+		window.location.href = 'http://localhost:3000/auth/google';
 	}
 };

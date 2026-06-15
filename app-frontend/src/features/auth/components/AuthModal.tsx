@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import OAuth from "./OAuth";
 import Field from "./Field";
 import Divider from "./Divider";
-import { Form, useActionData, useNavigation} from "react-router-dom";
+import { Form, useActionData, useLocation, useNavigation} from "react-router-dom";
 
 export type Tab = "signin" | "signup";
 type LoginMethod = "password";
@@ -46,6 +46,8 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
   const loading = navigation.state === "submitting";
   const [localError, setLocalError] = useState<string | null>(null);
   const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+  const location = useLocation();
+  const from = location.state || '/notexist';
 
   const isValidPassword = (password: string) => PASSWORD_REGEX.test(password);
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$|^\+?\d{6,}$/.test(email);
@@ -165,14 +167,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
 
               <Divider>or continue with</Divider>
 
-              <div className="grid grid-cols-2 gap-2">
-                <button type="button" className="flex h-11 items-center justify-center gap-2 rounded-xl border border-border/60 bg-surface/70 text-sm font-medium transition hover:border-primary/40">
-                  <span className="font-display font-bold text-primary">42</span> School
-                </button>
-                <button type="button" className="flex h-11 items-center justify-center gap-2 rounded-xl border border-border/60 bg-surface/70 text-sm font-medium transition hover:border-primary/40">
-                  <span className="font-display font-bold text-[#EA4335]">G</span> Google
-                </button>
-              </div>
+              <OAuth from={from}/>
 
               <p className="pt-2 text-center text-xs text-muted-foreground">
                 By continuing, you agree to the{" "}
@@ -258,7 +253,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
 
               <Divider>or signin with</Divider>
 
-              <OAuth/>
+              <OAuth from={from}/>
 
               <p className="text-center text-sm text-muted-foreground">
                 Do you already have an account?{" "}

@@ -2,7 +2,7 @@ import { auth } from "@/api/auth/auth.api";
 import Logo from "@/components/Logo";
 import { Bell, ChevronDown, LogOut, Search, Settings, Wallet } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate, useRevalidator, useRouteLoaderData } from "react-router-dom";
+import { Link, useLocation, useRevalidator, useRouteLoaderData } from "react-router-dom";
 
 
 export function Navbar() {
@@ -10,7 +10,7 @@ export function Navbar() {
   const data = useRouteLoaderData('root');
   const profile = data?.data;
   const location = useLocation();
-  const from = `${location.pathname}${location.search}${location.hash}`;
+  const from = location;
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -66,12 +66,12 @@ export function Navbar() {
   );
 }
 
-function SignButtons(from: string){
+function SignButtons(from: any){
   return (
     <>
       <Link
         to="/signin"
-        state={from}
+        state={{ backgroundLocation: from }}
         className="hidden h-10 items-center gap-2 rounded-xl border border-border/60 bg-surface px-4 text-sm font-medium text-foreground transition hover:border-primary/40 hover:text-primary md:flex"
       >
         Sign In
@@ -79,7 +79,7 @@ function SignButtons(from: string){
 
       <Link
         to="/signup"
-        state={from}
+        state={{ backgroundLocation: from }}
         className="flex h-10 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-80"
       >
         <span className="hidden sm:inline">Sign Up</span>
