@@ -26,7 +26,7 @@ export class AuthController {
 
     @Get('google')
     @UseGuards(GoogleAuthGuard)
-    async googleAuth() {
+    async googleAuth(@Req() req) {
     }
 
     @Post('signin')
@@ -64,17 +64,18 @@ export class AuthController {
     @Get('google/callback')
     @UseGuards(GoogleAuthGuard)
     async googleAuthCallBack(@Req() req, @Res() res:Response){
-        
+
         const { access_token } = await this.authService.googleLogin(req.user);
         this.setAuthCookie(res, access_token);
-        const frontendUrl = this.configService.get('FRONTEND_URL');
-        res.redirect(`${frontendUrl}/auth/callback`);
-    
+        const frontendUrl = this.configService.get('FRONTEND_URL') as string;
+        const redirectTo = req.query.state || '/';
+        res.redirect(`${frontendUrl}${redirectTo}`);
+
     }
 
     @Get('42luanda/callback')
     async _42schoolAuthCallBack(@Req() req, @Res() res:Response){
-    
+
         const {access_token} = await this.authService._42SchoolLogin(req.query.code as string);
         this.setAuthCookie(res, access_token);
         const frontendUrl = this.configService.get('FRONTEND_URL');
