@@ -32,7 +32,6 @@ function LogoAuth() {
 }
 
 export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthModalProps) {
-  const emailRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<Tab>(defaultTab);
   const [loginMethod] = useState<LoginMethod>("password");
   const [showPwd, setShowPwd] = useState(false);

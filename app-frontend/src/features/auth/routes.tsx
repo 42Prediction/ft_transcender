@@ -1,12 +1,10 @@
 import { signinAction } from "./actions/signin.action";
-import PublicLayout from "@/pages/PublicLayout";
 import { publicLoader } from "@/loader/guards";
 import { Home } from "../public/pages/Home";
 import { signupAction } from "./actions/signup.action ";
 
 export const authRouter = [
     {
-        Component: PublicLayout,
         loader: publicLoader,
         id: "public",
         children: [
