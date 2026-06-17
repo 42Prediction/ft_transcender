@@ -94,7 +94,7 @@ describe('AuthController (E2E)', () => {
           expect.stringContaining('access_token=jwt-token'),
         ]),
       );
-      expect(response.headers.location).toBe('https://frontend.test/auth/callback');
+      expect(response.headers.location).toBe('https://frontend.test');
     });
   });
 });

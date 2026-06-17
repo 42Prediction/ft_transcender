@@ -61,8 +61,16 @@ describe('BettorController', () => {
 
   describe('findMyProfile', () => {
     it('should return the logged-in user profile', async () => {
-      const expectedResult = { id: 'user-id-123', name: 'John Doe' };
-      bettorService.findOne.mockResolvedValue(expectedResult as any);
+      const userData = { id: 'user-id-123', name: 'John Doe' };
+
+      const expectedResult = {
+        data: userData,
+        error: null,
+        statusCode: 200,
+        success: true,
+      };
+
+      bettorService.findOne.mockResolvedValue(userData as any);
 
       const result = await controller.findMyProfile(mockRequest);
 

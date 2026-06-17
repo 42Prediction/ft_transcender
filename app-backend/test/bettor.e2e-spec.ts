@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { OptionalJwtAuthGuard } from '../src/modules/auth/guards/optional-jwt-auth.guard';
 import { INestApplication, ClassSerializerInterceptor } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import request from 'supertest';
@@ -42,6 +43,14 @@ describe('BettorController (E2E)', () => {
     },
   };
 
+  const mockOptionalJwtAuthGuard = {
+    canActivate: (context: any) => {
+      const req = context.switchToHttp().getRequest();
+      req.user = { id: 'user-id-123' };
+      return true;
+    },
+  };
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [BettorController],
@@ -52,6 +61,8 @@ describe('BettorController (E2E)', () => {
     })
       .overrideGuard(JwtAuthGuard)
       .useValue(mockJwtAuthGuard)
+      .overrideGuard(OptionalJwtAuthGuard)
+      .useValue(mockOptionalJwtAuthGuard)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -72,6 +83,7 @@ describe('BettorController (E2E)', () => {
   describe('GET /bettor/me', () => {
     it('should return user profile', async () => {
       const mockProfile = { id: 'user-id-123', name: 'John Doe' };
+
       mockBettorService.findOne.mockResolvedValue(mockProfile);
 
       const response = await request(app.getHttpServer())
@@ -79,7 +91,16 @@ describe('BettorController (E2E)', () => {
         .expect(200);
 
       expect(mockBettorService.findOne).toHaveBeenCalledWith('user-id-123');
-      expect(response.body).toEqual(mockProfile);
+
+      expect(response.body).toEqual({
+        success: true,
+        statusCode: 200,
+        data: {
+          id: 'user-id-123',
+          name: 'John Doe',
+        },
+        error: null,
+      });
     });
   });
 
