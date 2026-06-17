@@ -2,9 +2,10 @@ import { bettor as bettorApi } from "../../../../api/bettor/bettor.api";
 import { useRef, useState } from "react";
 import { Row } from "./Row";
 import { Pencil, Save } from "lucide-react";
+import { useRevalidator } from "react-router-dom";
 
 export function PerfilPanel({ bettor }: {bettor: any}) {
-
+  const revalidator = useRevalidator();
   const [photo, setPhoto] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasChanges, setHasChanges] = useState(false);
@@ -37,6 +38,7 @@ export function PerfilPanel({ bettor }: {bettor: any}) {
         nick: name,
       });
       setIsEditingName(false);
+      await revalidator.revalidate()
     } catch (error) {
       console.log(error);
     } finally {
@@ -105,7 +107,7 @@ const saveBio = async () => {
           {isEditingName ? (
             <input
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {setName(e.target.value)}}
               className="rounded-lg border border-border/60 bg-background/60 px-2 py-1 text-sm"
             />
 
