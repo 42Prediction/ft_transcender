@@ -7,14 +7,10 @@ import {
   Bell,
   KeyRound,
   Code2,
-  Pencil,
-  Copy,
-  Check,
-  ArrowUpRight,
 } from "lucide-react";
 import { PerfilPanel } from "../components/PerfilPanel";
 import { PlaceholderPanel } from "../components/PlaceholderPanel";
-import { useLoaderData } from "react-router-dom";
+import { useRouteLoaderData } from "react-router-dom";
 
 // export const Route = createFileRoute("/settings")({
 //   head: () => ({
@@ -40,7 +36,8 @@ const TABS: { key: TabKey; label: string; icon: typeof User }[] = [
 
 export function SettingsPage() {
   const [active, setActive] = useState<TabKey>("perfil");
-  const bettor = useLoaderData()
+  const data = useRouteLoaderData('root');
+  const bettor = data.data;
 
   return (
     <div className="min-h-screen bg-background">

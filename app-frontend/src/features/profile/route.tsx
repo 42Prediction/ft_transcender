@@ -1,5 +1,4 @@
-import {type LoaderFunctionArgs } from "react-router-dom"
-import { bettor } from "../../api/bettor/bettor.api";
+import { protectedLoader } from "@/loader/guards";
 import ProfilePage from "./pages/Profile";
 import { SettingsPage } from "./settings/page/settings";
 
@@ -11,31 +10,24 @@ export interface Bettor {
     isNickSet?: boolean;
 }
 
-async function privateProfileLoader (): Promise<Bettor> {
-    const res = await bettor.getMe();
-    return res.data;
-}
-
-async function publicProfileLoader ({params}: LoaderFunctionArgs ): Promise<Bettor> {
-    const res = await bettor.getByNick(params.nick!);
-    return res.data
-}
-
-
 export const profileRoute = [
-    { path: '/profile/@:nick ',
-        element: <ProfilePage />,
-        loader: publicProfileLoader
+    {
+        id: "profile",
+        path: '/profile',
+        loader: protectedLoader,
+        children:[
+            {
+                index: true,
+                Component: ProfilePage,
+            },
+             {
+                path: 'settings',
+                Component: SettingsPage,
+            },
+        ]
     },
-];
-
-export const protectedProfileRoute = [
-    { path: '/profile',
-        element: <ProfilePage/>,
-        loader: privateProfileLoader,
+    {
+        path: '/profile/@:nick ',
+        Component: ProfilePage,
     },
-    { path: 'profile/settings',
-        element: <SettingsPage />,
-        loader: privateProfileLoader
-    }
 ];

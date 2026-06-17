@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { Row } from "./Row";
 import { Pencil, Save } from "lucide-react";
 
-export function PerfilPanel({ bettor }) {
+export function PerfilPanel({ bettor }: {bettor: any}) {
 
   const [photo, setPhoto] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -21,7 +21,7 @@ export function PerfilPanel({ bettor }) {
   const openFilePicker = () => {
     fileInputRef.current?.click();
   };
-  const [bio, setBio] = useState(bettor.bio);
+  const [bio, setBio] = useState(bettor.bio ?? "");
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingEmail, setIsEditingEmail] = useState(false);

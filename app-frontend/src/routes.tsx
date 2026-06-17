@@ -5,6 +5,7 @@ import App from "./App";
 import { authRouter } from "./features/auth/routes";
 import { authMiddleware } from "./middleware/auth";
 import { rootLoader } from "./loader/root";
+import { profileRoute } from "./features/profile/route";
 
 export const dataContext = createContext<any | null>(null)
 
@@ -22,6 +23,7 @@ export const router = createBrowserRouter([
       },
       ...publicRouter,
       ...authRouter,
+      ...profileRoute,
     ]
   },
   {
