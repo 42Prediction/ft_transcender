@@ -68,8 +68,7 @@ export class AuthController {
         const { access_token } = await this.authService.googleLogin(req.user);
         this.setAuthCookie(res, access_token);
         const frontendUrl = this.configService.get('FRONTEND_URL') as string;
-        const redirectTo = req.query.state || '/';
-        res.redirect(`${frontendUrl}${redirectTo}`);
+        res.redirect(`${frontendUrl}`);
 
     }
 
