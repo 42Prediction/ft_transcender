@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn, ManyToMany, JoinTable } from "typeorm";
 import { User } from "../../user/entities/user.entity";
 
 @Entity('bettors')
@@ -30,6 +30,14 @@ export class Bettor {
     @OneToOne(()=> User, {onDelete: 'CASCADE'})
     @JoinColumn({ name: 'user_id' })
     user!: User;
+
+    @ManyToMany(() => Bettor)
+    @JoinTable({
+        name: 'bettor_friends',
+        joinColumn: { name: 'bettor_id', referencedColumnName: 'id' },
+        inverseJoinColumn: { name: 'friend_id', referencedColumnName: 'id' }
+    })
+    friends!: Bettor[];
 
     @CreateDateColumn({name: 'created_at'})
     createdAt!: Date;

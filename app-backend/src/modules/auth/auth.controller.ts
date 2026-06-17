@@ -4,11 +4,12 @@ import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import { CredentialsAuthDto } from './dto/credentials.auth.dto';
+import { User } from '../user/entities/user.entity';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 
 @Controller('auth')
 export class AuthController {
-
     constructor(private authService: AuthService, private configService: ConfigService) { }
 
     private setAuthCookie(res: Response, accessToken: string) {
@@ -25,9 +26,8 @@ export class AuthController {
 
     @Get('google')
     @UseGuards(GoogleAuthGuard)
-    async googleAuth() {
+    async googleAuth(@Req() req) {
     }
-
 
     @Post('signin')
     async signin(@Body() signinDto: CredentialsAuthDto, @Res({ passthrough: true }) res: Response) {
@@ -41,21 +41,21 @@ export class AuthController {
         return await this.authService.signup(signinAuthDto);
     }
 
-    @Post('logout')
-    async logout(@Res({ passthrough: true }) res: Response) {
+    @Post('signout')
+    async signout(@Res({ passthrough: true }) res: Response) {
         res.clearCookie('access_token', { path: '/' });
         return { message: 'Logged out' };
     }
 
     @Get('school')
     _42schoolAuth(@Res() res:Response){
-    const url=this.configService.getOrThrow('_42SCHOOL_API_URL_AUTHORIRIZE');
-    const params = new URLSearchParams({
-        client_id:this.configService.getOrThrow<string>('_42SCHOOL_CLIENT_ID'),
-        redirect_uri:this.configService.getOrThrow<string>('_42SCHOOL_CALLBACK_URL'),
-        scope: 'public',
-        response_type: 'code',
-        state: 'xyz'
+        const url=this.configService.getOrThrow('_42SCHOOL_API_URL_AUTHORIRIZE');
+        const params = new URLSearchParams({
+            client_id:this.configService.getOrThrow<string>('_42SCHOOL_CLIENT_ID'),
+            redirect_uri:this.configService.getOrThrow<string>('_42SCHOOL_CALLBACK_URL'),
+            scope: 'public',
+            response_type: 'code',
+            state: 'xyz'
     });
 
     res.redirect(302, `${url}?${params.toString()}`);
@@ -64,21 +64,20 @@ export class AuthController {
     @Get('google/callback')
     @UseGuards(GoogleAuthGuard)
     async googleAuthCallBack(@Req() req, @Res() res:Response){
-        
+
         const { access_token } = await this.authService.googleLogin(req.user);
         this.setAuthCookie(res, access_token);
-        const frontendUrl = this.configService.get('FRONTEND_URL');
-        res.redirect(`${frontendUrl}/auth/callback`);
-    
+        const frontendUrl = this.configService.get('FRONTEND_URL') as string;
+        res.redirect(`${frontendUrl}`);
+
     }
 
     @Get('42luanda/callback')
     async _42schoolAuthCallBack(@Req() req, @Res() res:Response){
-    
+
         const {access_token} = await this.authService._42SchoolLogin(req.query.code as string);
         this.setAuthCookie(res, access_token);
         const frontendUrl = this.configService.get('FRONTEND_URL');
         res.redirect(`${frontendUrl}/auth/callback`);
     }
-
 }

@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { Roles } from '../auth/roles/roles.decorator';
 import { AdmUpdateUserDto } from './dto/admin-update-user.dto';
+import { User } from './entities/user.entity';
 
 @Controller('users')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -30,14 +31,19 @@ export class UserController {
     return await this.userService.findOne(id);
   }
 
+  @Get('me')
+  async getMe(@Req() req): Promise <User | null>{
+      return await this.userService.findOne(req.user.id);
+  }
+
   @Patch('me')
   async updateMe(@Req() req, @Body() dto: UpdateUserDto) {
     return await this.userService.update(req.user.id, dto);
   }
 
   @Delete('me')
-  remove(@Req() req) {
-    return this.userService.remove(req.user.id);
+  async remove(@Req() req) {
+    return await this.userService.remove(req.user.id);
   }
 
   @Patch(':id')
@@ -48,13 +54,8 @@ export class UserController {
   
   @Delete(':id')
   @Roles('admin')
-  admRemove(@Param('id') id: string) {
-    return this.userService.remove(id);
+  async admRemove(@Param('id') id: string) {
+    return await this.userService.remove(id);
   }
 
-  @Get('profile')
-  @UseGuards(JwtAuthGuard)
-  profile(@Req() req){
-    return req.user;
-  }
 }

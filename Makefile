@@ -9,27 +9,28 @@ BACK_PID_FILE = $(PID_DIR)/backend.pid
 BACK_CHILD_PID_FILE = $(PID_DIR)/backend.child.pid
 FRONT_PID_FILE = $(PID_DIR)/frontend.pid
 FRONT_CHILD_PID_FILE = $(PID_DIR)/frontend.child.pid
+BACK_PORT ?= 3000
+FRONT_PORT ?= 5173
+BACK_URL ?= http://localhost:$(BACK_PORT)
+FRONT_URL ?= http://localhost:$(FRONT_PORT)/
 
 all: help
 
 help:
 	@echo "Available commands:"
-	@echo "  make dev        - Start database container, backend, and frontend"
+	@echo "  make dev        - Pull image if needed, start DB container, start backend and frontend"
+	@echo "  make dev-stop   - Stop backend/frontend and stop DB container"
 	@echo "  make dev-status - Show backend/frontend process IDs"
-	@echo "  make dev-stop   - Stop apps and run clean (down + prune)"
 	@echo "  make migrate    - Run backend migrations"
 	@echo "  make seed       - Run backend seeds"
-	@echo "  make db-init    - Run migrations and seeds"
-	@echo "  make up         - Start database container"
-	@echo "  make down       - Stop database container"
-	@echo "  make shell-db   - Open psql shell in postgres container"
-	@echo "  make clean      - Stop containers and prune docker resources"
-	@echo "  make fclean     - clean + remove volumes + data dir"
-	@echo "  make re         - Full reset and start"
+	@echo "  make test       - Run backend unit/e2e tests and frontend build/lint"
+	@echo "  make clean      - Stop apps and remove containers, volumes, and data dir"
+	@echo "  make fclean     - clean + remove images"
+	@echo "  make re         - clean + make dev"
 
 up:
 	mkdir -p $(DATA_DIR)/postgresql
-	$(COMPOSE) up -d
+	$(COMPOSE) up -d --pull missing
 
 wait-db: up
 	@echo "Waiting for PostgreSQL to be ready..."
@@ -38,23 +39,38 @@ wait-db: up
 		sleep 1; \
 	done; \
 	echo " ready"
+migrate-generate:
+	@echo "Generating migration..."
+	@cd $(BACK_DIR) && \
+	@npm run migration:run &&\
+	NAME=migration && \
+	COUNT=$$(ls -1 src/migrations/*.ts 2>/dev/null | wc -l | tr -d ' ') && \
+	NEXT=$$((COUNT + 1)) && \
+	npm run migration:generate -- "src/migrations/$${NAME}$${NEXT}"
 
-down:
-	$(COMPOSE) down
-
-shell-db:
-	$(COMPOSE) exec postgres psql -U postgres transcendence_db
-
-migrate: wait-db
-	@cd $(BACK_DIR) && { [ -d node_modules ] || npm install; }
+migrate-run:
+	@cd $(BACK_DIR) echo "Running migration"
 	@cd $(BACK_DIR) && npm run migration:run
+	@echo "Migration runned"
 
 seed:
-	@cd $(BACK_DIR) && { [ -d node_modules ] || npm install; }
 	@cd $(BACK_DIR) && npm run seed:run
 
-db-init: migrate seed
-	@echo "Database initialized (migrations + seeds)."
+test-backend: wait-db
+	@cd $(BACK_DIR) && npm ci
+	@cd $(BACK_DIR) && npm test
+	@cd $(BACK_DIR) && npm run test:e2e
+
+test-frontend:
+	@cd $(BACK_DIR) && npm ci
+	@cd $(FRONT_DIR) && npm run build
+	@cd $(FRONT_DIR) && npm run lint
+
+
+test-all: test-backend
+	@echo "All project tests and checks passed"
+
+test: test-all
 
 dev: wait-db
 	@echo "Starting backend and frontend..."
@@ -64,23 +80,23 @@ dev: wait-db
 	@if [ -f $(BACK_CHILD_PID_FILE) ]; then kill -9 $$(cat $(BACK_CHILD_PID_FILE)) 2>/dev/null || true; rm -f $(BACK_CHILD_PID_FILE); fi
 	@if [ -f $(FRONT_PID_FILE) ]; then kill $$(cat $(FRONT_PID_FILE)) 2>/dev/null || true; rm -f $(FRONT_PID_FILE); fi
 	@if [ -f $(FRONT_CHILD_PID_FILE) ]; then kill -9 $$(cat $(FRONT_CHILD_PID_FILE)) 2>/dev/null || true; rm -f $(FRONT_CHILD_PID_FILE); fi
-	@# Limpeza garantida da porta 3000 antes de subir o app
-	@if command -v fuser >/dev/null 2>&1; then fuser -k -n tcp 3000 2>/dev/null || true; else listeners=$$(lsof -t -i:3000 2>/dev/null || true); if [ -n "$$listeners" ]; then kill -9 $$listeners 2>/dev/null || true; fi; fi
-	@# Limpeza garantida da porta 5173 antes de subir o frontend
-	@if command -v fuser >/dev/null 2>&1; then fuser -k -n tcp 5173 2>/dev/null || true; else listeners=$$(lsof -t -i:5173 2>/dev/null || true); if [ -n "$$listeners" ]; then kill -9 $$listeners 2>/dev/null || true; fi; fi
-	@cd $(BACK_DIR) && { [ -d node_modules ] || npm install; }
+	@# Limpeza garantida da porta do backend antes de subir o app
+	@if command -v fuser >/dev/null 2>&1; then fuser -k -n tcp $(BACK_PORT) 2>/dev/null || true; else listeners=$$(lsof -t -i:$(BACK_PORT) 2>/dev/null || true); if [ -n "$$listeners" ]; then kill -9 $$listeners 2>/dev/null || true; fi; fi
+	@# Limpeza garantida da porta do frontend antes de subir o frontend
+	@if command -v fuser >/dev/null 2>&1; then fuser -k -n tcp $(FRONT_PORT) 2>/dev/null || true; else listeners=$$(lsof -t -i:$(FRONT_PORT) 2>/dev/null || true); if [ -n "$$listeners" ]; then kill -9 $$listeners 2>/dev/null || true; fi; fi
+	@cd $(BACK_DIR) && npm install
 	@# Executa o backend em background
-	@(cd $(BACK_DIR) && NO_COLOR=true npm run start:dev > "$(LOG_DIR)/backend.log" 2>&1 &)
+	@(cd $(BACK_DIR) && NO_COLOR=true  SYN=true npm run start:dev > "$(LOG_DIR)/backend.log" 2>&1 & echo $$! > "$(BACK_PID_FILE)")
 	@sleep 2
-	@lsof -t -i:3000 > "$(BACK_CHILD_PID_FILE)" 2>/dev/null || true
-	@cd $(FRONT_DIR) && { [ -d node_modules ] || npm install; }
-	@(cd $(FRONT_DIR) && NO_COLOR=true npm run dev -- --port 5173 --strictPort > "$(LOG_DIR)/frontend.log" 2>&1 & echo $$! > "$(FRONT_PID_FILE)")
+	@lsof -t -i:$(BACK_PORT) > "$(BACK_CHILD_PID_FILE)" 2>/dev/null || true
+	@cd $(FRONT_DIR) && npm install
+	@(cd $(FRONT_DIR) && NO_COLOR=true npm run dev -- --port $(FRONT_PORT) --strictPort > "$(LOG_DIR)/frontend.log" 2>&1 & echo $$! > "$(FRONT_PID_FILE)")
 	@sleep 2
-	@lsof -t -i:5173 > "$(FRONT_CHILD_PID_FILE)" 2>/dev/null || true
+	@lsof -t -i:$(FRONT_PORT) > "$(FRONT_CHILD_PID_FILE)" 2>/dev/null || true
 	@echo "Backend log: $(LOG_DIR)/backend.log"
 	@echo "Frontend log: $(LOG_DIR)/frontend.log"
-	@echo "Frontend running at: http://localhost:5173/"
-	@echo "Backend API at: http://localhost:3000/examrank"
+	@echo "Frontend running at: $(FRONT_URL)"
+	@echo "Backend API at: $(BACK_URL)"
 	@echo "Use 'make dev-status' to check processes and 'make dev-stop' to stop them"
 
 dev-status:
@@ -92,15 +108,16 @@ dev-stop:
 	@if [ -f $(BACK_CHILD_PID_FILE) ]; then kill -9 $$(cat $(BACK_CHILD_PID_FILE)) 2>/dev/null || true; rm -f $(BACK_CHILD_PID_FILE); fi
 	@if [ -f $(FRONT_PID_FILE) ]; then kill -9 $$(cat $(FRONT_PID_FILE)) 2>/dev/null || true; rm -f $(FRONT_PID_FILE); fi
 	@if [ -f $(FRONT_CHILD_PID_FILE) ]; then kill -9 $$(cat $(FRONT_CHILD_PID_FILE)) 2>/dev/null || true; rm -f $(FRONT_CHILD_PID_FILE); fi
-	@echo "Backend and frontend stopped; clean completed"
+	@$(COMPOSE) stop
+	@echo "Backend and frontend stopped; DB container stopped"
 
-clean: down
-	docker system prune -af
+clean: dev-stop
+	@$(COMPOSE) down -v --remove-orphans
+	@sudo rm -rf $(DATA_DIR)
 
-fclean: dev-stop
-	docker volume rm $(shell docker volume ls -q) 2>/dev/null || true
-	sudo rm -rf $(DATA_DIR)
+fclean: clean
+	docker image prune -af
 
 re: fclean dev
 
-.PHONY: all help up down wait-db shell-db migrate seed db-init dev dev-status dev-stop clean fclean re
+.PHONY: all help up down wait-db migrate seed test-backend test-frontend test dev dev-status dev-stop clean fclean re

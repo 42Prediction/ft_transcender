@@ -13,7 +13,6 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AvatarService } from './avatar.service';
 
-
 @Injectable()
 export class BettorService {
   constructor(
@@ -52,10 +51,6 @@ export class BettorService {
     });
   }
 
-  // async update(id: number, updateBettorDto: UpdateBettorDto) {
-  //   return `This action updates a #${id} bettor`;
-  // }
-
   async findByNick(nick: string): Promise<Bettor> {
     const bettor = await this.bettorRepository.findOne({ where: { nick } });
     if (!bettor) throw new NotFoundException('Bettor not found');
@@ -81,7 +76,7 @@ export class BettorService {
         },
       });
       if (nickAlreadyExists)
-        throw new ConflictException('Nick already in use, chose another');
+        throw new ConflictException('Nick already in use, choose another');
       bettor.isNickSetted = true;
     }
     if (avatarFile) {

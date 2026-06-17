@@ -60,7 +60,6 @@ export class UserService {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto | AdmUpdateUserDto): Promise<User> {
-    console.log(id)
     const user : User | null = await this.userRepository.findOne({
       where: { id },
     });
@@ -108,4 +107,5 @@ export class UserService {
 
     return this.userRepository.save(user);
   }
+
 }

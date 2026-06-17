@@ -41,8 +41,8 @@ export class AuthService{
             siginDto.email,
             siginDto.password,
         )
-        
-        const payload = { 
+
+        const payload = {
             sub: user.id,
             email: user.email,
             role: user.role,
@@ -51,7 +51,7 @@ export class AuthService{
             access_token: this.jwtService.sign(payload),
             result: {
                 statusCode: 201,
-                message: 'User created successfully.',
+                message: 'User login successfully.',
                 data: {
                     id: user.id,
                     email: user.email,
@@ -85,7 +85,7 @@ export class AuthService{
         if (!userGoogle){
             throw new NotFoundException('User not found');
         }
-        
+
         let user = await this.userService.findOneByEmail(userGoogle.email);
 
         if (user === null){
@@ -94,7 +94,6 @@ export class AuthService{
             });
             this.bettorService.create(user);
         }
-
 
         const payload = {
             sub: user.id,
@@ -111,7 +110,6 @@ export class AuthService{
             }
         };
     }
-
 
     async _42SchoolLogin(code:string){
 
@@ -164,7 +162,7 @@ export class AuthService{
         return {name: profileData.login, email:profileData.email};
     }
 
-    async generateToken(email:string){
+    private async generateToken(email:string){
         let user = await this.userService.findOneByEmail(email);
 
         if (user === null){
