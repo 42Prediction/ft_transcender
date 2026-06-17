@@ -1,5 +1,6 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn, ManyToMany, JoinTable } from "typeorm";
 import { User } from "../../user/entities/user.entity";
+import { Wallet } from "../../wallet/entities/wallet.entity";
 
 @Entity('bettors')
 export class Bettor {
@@ -38,6 +39,9 @@ export class Bettor {
         inverseJoinColumn: { name: 'friend_id', referencedColumnName: 'id' }
     })
     friends!: Bettor[];
+
+    @OneToOne(() => Wallet, (wallet) => wallet.bettor)
+    wallet!: Wallet;
 
     @CreateDateColumn({name: 'created_at'})
     createdAt!: Date;
