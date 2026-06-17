@@ -93,7 +93,7 @@ function UserInfo(
   dropdownRef: React.RefObject<HTMLDivElement | null>,
   setOpen: (value: boolean) => void,
   open: boolean,
-  signout: () => void,
+  signout: () => Promise<{ message: string }>,
   revalidator: ReturnType<typeof useRevalidator>
 ){
   return (
@@ -137,10 +137,10 @@ function UserInfo(
           <div className="my-1 border-t border-border/40" />
 
           <button
-            onClick={() => {
+            onClick={async () => {
               setOpen(false);
-              signout();
-              revalidator.revalidate();
+              await signout();
+              await revalidator.revalidate();
             }}
             className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-red-500 transition hover:bg-red-500/10"
           >
