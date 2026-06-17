@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { TwoFactorService } from './two-factor.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UserModule } from '../user/user.module';
 import { BettorModule } from '../bettor/bettor.module';
@@ -25,8 +26,8 @@ import { BettorModule } from '../bettor/bettor.module';
         }),
     ],
     controllers: [AuthController],
-    providers: [AuthService, GoogleStrategy, JwtStrategy],
-    exports: [AuthService]
+    providers: [AuthService, GoogleStrategy, JwtStrategy, TwoFactorService],
+    exports: [AuthService, TwoFactorService]
 })
 
 export class AuthModule{}

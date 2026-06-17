@@ -6,6 +6,9 @@ import type { Response } from 'express';
 import { CredentialsAuthDto } from './dto/credentials.auth.dto';
 import { User } from '../user/entities/user.entity';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { TwoFactorService } from './two-factor.service';
+import { UserService } from '../user/user.service';
+import { UnauthorizedException } from '@nestjs/common';
 
 
 @Controller('auth')
@@ -79,5 +82,63 @@ export class AuthController {
         this.setAuthCookie(res, access_token);
         const frontendUrl = this.configService.get('FRONTEND_URL');
         res.redirect(`${frontendUrl}/auth/callback`);
+    }
+
+    //----------- 2FA Endpoints -----------//
+
+    @UseGuards(JwtAuthGuard)
+    @Post('2fa/generate')
+    async generate2FA(@Req() req) {
+        const secret = this.TwoFactorService.generateSecret();
+        await this.userService.setTwoFactorSecret(req.user.id, secret);
+
+        const otpAuthUrl = this.twoFactorService.generateOtpAuthUrl(req.user.email, secret);
+        const qrCode = await this.twoFactorService.generateQrCodeDataUrl(otpAuthUrl);
+
+        return { qrCode };
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('2fa/turn-on')
+    async turnOn2FA(@Req() req, @Body() dto: TwoFactorCodeDto) {
+        const user = await this.userService.findOne(req.user.id);
+        const isValid = this.twoFactorService.verifyToken(dto.code, user.twoFactorSecret);
+
+        if (!isValid) {
+        throw new UnauthorizedException('Código inválido');
+        }
+
+        await this.userService.enableTwoFactor(req.user.id);
+        return { message: '2FA ativado com sucesso' };
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('2fa/turn-off')
+    async turnOff2FA(@Req() req) {
+        await this.userService.disableTwoFactor(req.user.id);
+        return { message: '2FA desativado' };
+    }
+
+    @Post('2fa/authenticate')
+    async authenticate2FA(@Req() req, @Body() dto: TwoFactorCodeDto, @Res({ passthrough: true }) res: Response) {
+        const tempToken = req.cookies?.temp_2fa_token;
+        if (!tempToken) {
+        throw new UnauthorizedException('Sessão de 2FA expirada ou inexistente');
+        }
+
+        const payload = await this.authService.verifyTempToken(tempToken);
+        const user = await this.userService.findOne(payload.id);
+
+        const isValid = this.twoFactorService.verifyToken(dto.code, user.twoFactorSecret);
+        if (!isValid) {
+        throw new UnauthorizedException('Código 2FA inválido');
+        }
+
+        const { access_token } = await this.authService.login(user);
+        res.clearCookie('temp_2fa_token', { path: '/' });
+        this.setAuthCookie(res, access_token);
+
+        return { message: 'Autenticado com sucesso' };
+    }
     }
 }
