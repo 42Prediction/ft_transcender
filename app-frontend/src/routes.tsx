@@ -5,7 +5,7 @@ import App from "./App";
 import { authRouter } from "./features/auth/routes";
 import { authMiddleware } from "./middleware/auth";
 import { rootLoader } from "./loader/root";
-import { profileRoute } from "./features/profile/route";
+import { userRoute } from "./features/user/routes";
 
 export const dataContext = createContext<any | null>(null)
 
@@ -16,6 +16,7 @@ export const router = createBrowserRouter([
     Component: App,
     middleware: [authMiddleware],
     loader: rootLoader,
+    HydrateFallback: () => <div>...</div>,
     children: [
       {
         path: '/test',
@@ -23,7 +24,7 @@ export const router = createBrowserRouter([
       },
       ...publicRouter,
       ...authRouter,
-      ...profileRoute,
+      ...userRoute,
     ]
   },
   {

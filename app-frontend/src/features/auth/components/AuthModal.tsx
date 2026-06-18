@@ -112,6 +112,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
           {tab === "signin" ? (
             <Form key="signin"  method="post" action="/signin" className="relative space-y-5">
               <Field
+                id="email"
                 name="email"
                 autoFocus={true}
                 value={email}
@@ -121,10 +122,12 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
                 icon={Mail}
                 placeholder="Enter your email"
                 error={emailState === "error" ? "Invalid email address" : undefined}
+                autocomplete="current-email"
               />
 
               {loginMethod === "password" && (
                 <Field
+                  id="password"
                   name="password"
                   value={password}
                   onChange={setPassword}
@@ -133,6 +136,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
                   icon={Lock}
                   type={showPwd ? "text" : "password"}
                   placeholder="Enter your password"
+                  autocomplete="current-password"
                   right={
                     <button
                       type="button"
@@ -177,6 +181,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
           ) : (
             <Form key="signup" method="post" action="/signup" className="relative space-y-5">
               <Field
+                id="remail"
                 name="email"
                 autoFocus={true}
                 value={regEmail}
@@ -186,9 +191,11 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
                 icon={Mail}
                 placeholder="Enter your email address"
                 error={regEmailState === "error" ? "Invalid email address" : undefined}
+                autocomplete="new-email"
               />
 
               <Field
+                id="rpassword"
                 name="password"
                 value={regPassword}
                 onChange={setRegPassword}
@@ -197,6 +204,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
                 icon={Lock}
                 type={showRegPwd ? "text" : "password"}
                 placeholder="Create a secure password"
+                autocomplete="new-password"
                 error={
                   regPasswordState === "error"
                   ? "Password must be at least 8 characters long and contain 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character."
