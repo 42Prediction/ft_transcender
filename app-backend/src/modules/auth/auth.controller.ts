@@ -4,6 +4,8 @@ import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import { CredentialsAuthDto } from './dto/credentials.auth.dto';
+import { User } from '../user/entities/user.entity';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 
 @Controller('auth')
@@ -24,7 +26,7 @@ export class AuthController {
 
     @Get('google')
     @UseGuards(GoogleAuthGuard)
-    async googleAuth() {
+    async googleAuth(@Req() req) {
     }
 
     @Post('signin')
@@ -39,8 +41,8 @@ export class AuthController {
         return await this.authService.signup(signinAuthDto);
     }
 
-    @Post('logout')
-    async logout(@Res({ passthrough: true }) res: Response) {
+    @Post('signout')
+    async signout(@Res({ passthrough: true }) res: Response) {
         res.clearCookie('access_token', { path: '/' });
         return { message: 'Logged out' };
     }
@@ -62,17 +64,17 @@ export class AuthController {
     @Get('google/callback')
     @UseGuards(GoogleAuthGuard)
     async googleAuthCallBack(@Req() req, @Res() res:Response){
-        
+
         const { access_token } = await this.authService.googleLogin(req.user);
         this.setAuthCookie(res, access_token);
-        const frontendUrl = this.configService.get('FRONTEND_URL');
-        res.redirect(`${frontendUrl}/auth/callback`);
-    
+        const frontendUrl = this.configService.get('FRONTEND_URL') as string;
+        res.redirect(`${frontendUrl}`);
+
     }
 
     @Get('42luanda/callback')
     async _42schoolAuthCallBack(@Req() req, @Res() res:Response){
-    
+
         const {access_token} = await this.authService._42SchoolLogin(req.query.code as string);
         this.setAuthCookie(res, access_token);
         const frontendUrl = this.configService.get('FRONTEND_URL');

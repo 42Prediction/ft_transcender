@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { Roles } from '../auth/roles/roles.decorator';
 import { AdmUpdateUserDto } from './dto/admin-update-user.dto';
+import { User } from './entities/user.entity';
 
 @Controller('users')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -28,6 +29,11 @@ export class UserController {
   @Roles('admin')
   async findOne(@Param('id') id: string) {
     return await this.userService.findOne(id);
+  }
+
+  @Get('me')
+  async getMe(@Req() req): Promise <User | null>{
+      return await this.userService.findOne(req.user.id);
   }
 
   @Patch('me')
