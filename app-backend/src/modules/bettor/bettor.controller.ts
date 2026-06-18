@@ -1,8 +1,9 @@
-import { Controller, Get, Body, Patch, Param, Req, UseInterceptors, ClassSerializerInterceptor, UseGuards, UploadedFile, Post, Delete } from '@nestjs/common';
+import { Controller, Get, Body, Patch, Param, Req, UseInterceptors, ClassSerializerInterceptor, UseGuards, UploadedFile, Post, Delete, HttpCode, HttpStatus, HttpException } from '@nestjs/common';
 import { BettorService } from './bettor.service';
 import { FriendService } from './friend.service';
 import { UpdateBettorDto } from './dto/update-bettor.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { avatarUploadConfig } from '../../config/multer.config';
 
@@ -15,9 +16,39 @@ export class BettorController {
   ) {}
 
   @Get('me')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(OptionalJwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
   async findMyProfile(@Req() req: any) {
-    return await this.bettorService.findOne(req.user.id);
+    if (!req.user?.id) {
+      return {
+        success: false,
+        statusCode: HttpStatus.UNAUTHORIZED,
+        data: null,
+        error: 'Unauthorized',
+      };
+    }
+
+    try {
+      const profile = await this.bettorService.findOne(req.user.id);
+      return {
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: profile,
+        error: null,
+      };
+    } catch (error) {
+      const statusCode =
+        error instanceof HttpException
+          ? error.getStatus()
+          : HttpStatus.INTERNAL_SERVER_ERROR;
+
+      return {
+        success: false,
+        statusCode,
+        data: null,
+        error: error instanceof Error ? error.message : 'Unexpected error',
+      };
+    }
   }
 
   @Patch('me')

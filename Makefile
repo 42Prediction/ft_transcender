@@ -39,16 +39,17 @@ wait-db: up
 		sleep 1; \
 	done; \
 	echo " ready"
-
-migrate:
+migrate-generate:
 	@echo "Generating migration..."
 	@cd $(BACK_DIR) && \
+	npm run migration:run &&\
 	NAME=migration && \
 	COUNT=$$(ls -1 src/migrations/*.ts 2>/dev/null | wc -l | tr -d ' ') && \
 	NEXT=$$((COUNT + 1)) && \
 	npm run migration:generate -- "src/migrations/$${NAME}$${NEXT}"
-	@echo "Migration generated"
-	@echo "Running migration"
+
+migrate-run:
+	@cd $(BACK_DIR) echo "Running migration"
 	@cd $(BACK_DIR) && npm run migration:run
 	@echo "Migration runned"
 

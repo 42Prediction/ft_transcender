@@ -79,7 +79,7 @@ describe('AuthController', () => {
         'jwt-token',
         expect.any(Object),
       );
-      expect(res.redirect).toHaveBeenCalledWith('https://frontend.test/auth/callback');
+      expect(res.redirect).toHaveBeenCalledWith('https://frontend.test');
     });
   });
 
@@ -99,7 +99,7 @@ describe('AuthController_2', () => {
       _42SCHOOL_CALLBACK_URL: 'http://localhost:3000/auth/42luanda/callback',
       };
 
-      if (!map[key]) 
+      if (!map[key])
           throw new Error(`Missing config key: ${key}`);
       return map[key];
     }),
