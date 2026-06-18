@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import OAuth from "./OAuth";
 import Field from "./Field";
 import Divider from "./Divider";
-import { Form, useActionData, useLocation, useNavigation} from "react-router-dom";
+import { Form, Link, useActionData, useLocation, useNavigation} from "react-router-dom";
 
 export type Tab = "signin" | "signup";
 type LoginMethod = "password";
@@ -175,7 +175,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
 
               <p className="pt-2 text-center text-xs text-muted-foreground">
                 By continuing, you agree to the{" "}
-                <a href="#" className="text-primary hover:underline">Terms and Conditions</a>
+                <Link to="/terms" className="text-primary hover:underline">Terms and Conditions</Link>
               </p>
             </Form>
           ) : (
@@ -237,7 +237,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
                 </button>
                 <span className="leading-snug">
                   I am over 18 years old and I agree with the{" "}
-                  <a href="#" className="text-primary underline-offset-2 hover:underline">Terms and Conditions</a>
+                  <Link to="/terms" className="text-primary underline-offset-2 hover:underline">Terms and Conditions</Link>
                   <span className="text-primary"> *</span>
                 </span>
               </label>
