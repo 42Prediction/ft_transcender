@@ -11,10 +11,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google'){
             clientSecret: configService.getOrThrow('GOOGLE_CLIENT_SECRET'),
             callbackURL: configService.getOrThrow('GOOGLE_CALLBACK_URL'),
             scope: ['email','profile'],
+            passReqToCallback: true,
         });
     }
 
     async validate(
+        req,
         accessToken:string,
         refreshToken:string,
         profile:any,
@@ -24,11 +26,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google'){
 
         const user = {
             provideId: id,
-            email: emails[0].value,
-            firstName: name.givenName,
-            lastName: name.familyName,
-            picture: photos[0].value,
+            email: emails[0]?.value,
+            firstName: name?.givenName,
+            lastName: name?.familyName,
+            picture: photos[0]?.value,
             accessToken,
+            state: req.query.returnTo || '/',
         };
 
         done(null, user);

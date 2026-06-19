@@ -41,8 +41,8 @@ export class AuthService{
             siginDto.email,
             siginDto.password,
         )
-        
-        const payload = { 
+
+        const payload = {
             sub: user.id,
             email: user.email,
             role: user.role,
@@ -51,7 +51,7 @@ export class AuthService{
             access_token: this.jwtService.sign(payload),
             result: {
                 statusCode: 201,
-                message: 'User created successfully.',
+                message: 'User login successfully.',
                 data: {
                     id: user.id,
                     email: user.email,
@@ -85,7 +85,7 @@ export class AuthService{
         if (!userGoogle){
             throw new NotFoundException('User not found');
         }
-        
+
         let user = await this.userService.findOneByEmail(userGoogle.email);
 
         if (user === null){

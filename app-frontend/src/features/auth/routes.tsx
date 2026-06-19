@@ -1,14 +1,23 @@
-import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
+import { signinAction } from "./actions/signin.action";
+import { publicLoader } from "@/loader/guards";
+import { Home } from "../public/pages/Home";
+import { signupAction } from "./actions/signup.action ";
 
-const ProtectedRoute = () => {
-    // logica de autenticação
-    // enviar a requisição caso de erro redireciona
-    return isAuthenticated ? <Outlet /> :  <Navigate to="/login" replace/>
-}
-
-export const router = createBrowserRouter([
+export const authRouter = [
     {
-        path: '/login',
-        element: <Login />
-    }
-])
+        loader: publicLoader,
+        id: "public",
+        children: [
+            {
+                path: "signin",
+                Component: Home,
+                action: signinAction,
+            },
+            {
+                path: "signup",
+                Component: Home,
+                action: signupAction,
+            },
+        ],
+    },
+];
