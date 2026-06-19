@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, Logger } from "@nestjs/common";
+import { ConflictException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Wallet } from "./entities/wallet.entity";
 import { Repository, DataSource } from "typeorm";
@@ -41,9 +41,17 @@ export class WalletService{
 
             await manager.save(Transaction, transaction);
 
-            this.logger.log(`Wallet criada para o utilizador ${userId} com saldo inicial de ${INITIAL_BALANCE}`);
+            this.logger.log(`Wallet criada para o utilizador ${idBettor} com saldo inicial de ${INITIAL_BALANCE}`);
             return this.toWalletDto(savedWallet);
         });
+    }
+
+    async getMyWallet(idBettor: string): Promise<WalletResponseDto>{
+        const wallet = await this.walletRepository.findOne({where: {idBettor}});
+        if(!wallet)
+            throw new NotFoundException('wallet não encontrada para este utilizador');
+        return this.toWalletDto(wallet);
+
     }
 
     private toWalletDto(savedWallet: Wallet): WalletResponseDto {
