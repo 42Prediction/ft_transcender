@@ -5,8 +5,6 @@ import { CreateDateColumn } from 'typeorm/browser';
 
 
 export enum TransactionType{
-    CREDIT = 'CREDIT',
-    DEBIT = 'DEBIT',
     DEPOSIT = 'DEPOSIT',
     WITHDRAW = 'WITHDRAW',
     BET = 'BET',
