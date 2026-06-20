@@ -7,13 +7,15 @@ import { User } from './entities/user.entity';
 import * as bcrypt from 'bcrypt'
 import { AdmUpdateUserDto } from './dto/admin-update-user.dto';
 import { CreateOauthUserDto } from './create-oauth-user.dto';
+import { WalletService } from '../wallet/wallet.service';
 
 @Injectable()
 export class UserService {
   private SALTROUNDS: number = 10;
   constructor(
     @InjectRepository(User)
-    private readonly userRepository: Repository<User>
+    private readonly userRepository: Repository<User>,
+    private readonly walletService: WalletService
   ) { }
 
   private normalizeEmail(email: string | undefined): string {
@@ -38,7 +40,9 @@ export class UserService {
       email: normalizedEmail,
       password: hashed,
     });
-    return await this.userRepository.save(user);
+    const userSaved =  await this.userRepository.save(user);
+    await this.walletService.createWallet(userSaved.id);
+    return userSaved;
   }
 
   async findOneByEmail(email: string): Promise<User | null> {
