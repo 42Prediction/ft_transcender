@@ -12,7 +12,7 @@ export const bettor = {
     },
 
     getByNick(nick: string){
-        const url = `/bettor/@${nick}`
+        const url = `/bettor/${nick}`
         return api.get(url)
     }
 }

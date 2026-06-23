@@ -27,7 +27,7 @@ export class BettorController {
     return this.bettorService.update(req.user.id, updateBettorDto, avatarFile);
   }
 
-  @Get('@:nick')
+  @Get(':nick')
   async publicProfile(@Param('nick') nick: string) {
     return await this.bettorService.findByNick(nick);
   }

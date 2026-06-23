@@ -2,6 +2,7 @@ import {type LoaderFunctionArgs } from "react-router-dom"
 import { bettor } from "../../api/bettor/bettor.api";
 import ProfilePage from "./pages/Profile";
 import { SettingsPage } from "./settings/page/settings";
+import UserNotfound from "./components/UserNotFound";
 
 
 export interface Bettor {
@@ -17,15 +18,23 @@ async function privateProfileLoader (): Promise<Bettor> {
 }
 
 async function publicProfileLoader ({params}: LoaderFunctionArgs ): Promise<Bettor> {
-    const res = await bettor.getByNick(params.nick!);
-    return res.data
+    try {
+        const res = await bettor.getByNick(params.nick!);
+        return res.data
+    }catch (err: any)
+    {
+        if (err.response?.status === 404)
+            throw new Response("Not Found ", {status: 404});
+        throw err;
+    }
 }
 
 
 export const profileRoute = [
-    { path: '/profile/@:nick ',
+    { path: '/profile/:nick',
         element: <ProfilePage />,
-        loader: publicProfileLoader
+        loader: publicProfileLoader,
+        errorElement: <UserNotfound />
     },
 ];
 

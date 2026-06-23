@@ -43,7 +43,7 @@ export function ProfileHeader({ bettor, isOwn }: Props) {
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
               <span className="font-mono text-foreground/80">@{bettor.nick}</span>
               <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> 42 Paris</span>
-              <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Joined {new Date(bettor.user.createdAt).toLocaleDateString("pt-PT", {
+              <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Joined {new Date(bettor?.createdAt).toLocaleDateString("pt-PT", {
                 day: "2-digit",
                 month: "long",
                 year: "numeric",
