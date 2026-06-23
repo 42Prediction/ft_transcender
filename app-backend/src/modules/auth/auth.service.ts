@@ -161,7 +161,7 @@ export class AuthService{
                 throw new BadRequestException("Can't get user profile of API");
 
         const profileData = await profileResponse.json();
-        return {name: profileData.login, email:profileData.email, campus: profileData.campus[0].name};
+        return {name: profileData.login, email:profileData.email, campus: profileData.campus?.[0]?.name};
     }
 
     private async generateToken(email:string, profile42dto?: Profile42Dto){

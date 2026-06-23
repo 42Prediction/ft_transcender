@@ -110,10 +110,10 @@ function make42TokenResponse(accessToken = '42-access-token') {
   };
 }
 
-function make42ProfileResponse(login = 'will', email = 'will@42luanda.com') {
+function make42ProfileResponse(login = 'will', email = 'will@42luanda.com', campus = 'Luanda') {
   return {
     ok: true,
-    json: async () => ({ login, email })
+    json: async () => ({ login, email, campus: [{ name: campus }] })
   };
 }
 
@@ -255,7 +255,7 @@ describe('Auth - 42School OAuth', () => {
         .expect(302);
 
       expect(res.headers['location']).toContain(
-        'http://localhost:5173/auth/callback',
+        'http://localhost:5173',
       );
     });
 

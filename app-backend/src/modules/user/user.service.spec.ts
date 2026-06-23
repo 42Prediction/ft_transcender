@@ -1,4 +1,3 @@
-jest.mock('@dicebear/core');
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from './entities/user.entity';
@@ -6,10 +5,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ObjectLiteral, Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-
+import { BettorService } from '../bettor/bettor.service';
 
 jest.mock('bcrypt', () => ({
-  hash: jest.fn().mockResolvedValue('hashed_password_mock'),
+    hash: jest.fn().mockResolvedValue('hashed_password_mock'),
 }))
 
 describe('UserService Tests', () => {
@@ -17,24 +16,37 @@ describe('UserService Tests', () => {
     let repository: Repository<User>;
 
     const mockUserRepository = () => ({
-      create: jest.fn(),
-      save: jest.fn(),
-      find: jest.fn(),
-      findOne: jest.fn(),
-      findOneBy: jest.fn(),
-      existsBy: jest.fn(),
-      merge: jest.fn(),
-      remove: jest.fn(),
+        create: jest.fn(),
+        save: jest.fn(),
+        find: jest.fn(),
+        findOne: jest.fn(),
+        findOneBy: jest.fn(),
+        existsBy: jest.fn(),
+        merge: jest.fn(),
+        remove: jest.fn(),
     });
+
+    const mockBettorService = {
+        create: jest.fn().mockResolvedValue({ id: 'bettor-1' }),
+        findAll: jest.fn(),
+        findOne: jest.fn(),
+        update: jest.fn(),
+        remove: jest.fn(),
+    };
+
     type MockRepository<T extends ObjectLiteral = any> = Partial<Record<keyof Repository<T>, jest.Mock>>;
-    
+
     beforeEach(async () => {
-        const module : TestingModule = await Test.createTestingModule({
+        const module: TestingModule = await Test.createTestingModule({
             providers: [
                 UserService,
                 {
                     provide: getRepositoryToken(User),
                     useFactory: mockUserRepository,
+                },
+                {
+                    provide: BettorService,
+                    useValue: mockBettorService,
                 },
             ]
         }).compile();
@@ -84,13 +96,13 @@ describe('UserService Tests', () => {
 
     describe('findOneByEmail', () => {
         it('should return a user if found by email', async () => {
-        const mockUser = { id: '1', email: 'test@test.com' } as User;
-        (repository.findOne as jest.Mock).mockResolvedValue(mockUser);
+            const mockUser = { id: '1', email: 'test@test.com' } as User;
+            (repository.findOne as jest.Mock).mockResolvedValue(mockUser);
 
-        const result = await service.findOneByEmail(' TEST@TEST.COM ');
+            const result = await service.findOneByEmail(' TEST@TEST.COM ');
 
-        expect(repository.findOne).toHaveBeenCalledWith({ where: { email: 'test@test.com' } });
-        expect(result).toEqual(mockUser);
+            expect(repository.findOne).toHaveBeenCalledWith({ where: { email: 'test@test.com' } });
+            expect(result).toEqual(mockUser);
         });
     });
 
@@ -140,8 +152,8 @@ describe('UserService Tests', () => {
             expect(repository.findOne).toHaveBeenCalledWith({ where: { id: '1' } });
             expect(repository.existsBy).toHaveBeenCalledWith({ email: 'new@test.com' });
             expect(repository.merge).toHaveBeenCalledWith(existingUser, {
-            email: 'new@test.com',
-            password: 'hashed_password_mock',
+                email: 'new@test.com',
+                password: 'hashed_password_mock',
             });
             expect(repository.save).toHaveBeenCalledWith(existingUser);
             expect(result).toEqual(updatedUser);
@@ -206,4 +218,3 @@ describe('UserService Tests', () => {
         });
     });
 })
-
