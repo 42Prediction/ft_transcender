@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { Search, UserPlus, Check, X, UserMinus, Clock } from "lucide-react";
 // Importa o teu hook/API de amizades aqui quando estiver pronto no front
 // import { friendService } from "../../../../services/friendService";
@@ -118,9 +119,12 @@ export function ListaAmigos({ bettor }: { bettor?: any }) {
                                         {friend.nick.charAt(0).toUpperCase()}
                                     </div>
                                     <div>
-                                        <span className="text-sm font-medium text-foreground">
+                                        <Link
+                                            to={`/user/${friend.nick}`} // Ou /profile/${friend.nick}
+                                            className="text-sm font-medium text-foreground hover:text-primary hover:underline transition-colors"
+                                        >
                                             {friend.nick}
-                                        </span>
+                                        </Link>
                                         {friend.status === "received_request" && (
                                             <p className="text-xs text-primary">Pedido recebido</p>
                                         )}
