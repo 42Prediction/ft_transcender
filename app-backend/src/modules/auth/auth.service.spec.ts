@@ -16,6 +16,7 @@ import { UserService } from '../user/user.service';
 import { BettorService } from '../bettor/bettor.service';
 import { User } from '../user/entities/user.entity';
 import { URLSearchParams } from 'url';
+import { Profile42Dto } from '../bettor/dto/profile-42.dto';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -238,7 +239,7 @@ describe('AuthService_2', () => {
         });
         mockFetch.mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ login: 'guiguito', email: 'student@42luanda.com' })
+          json: async () => ({ login: 'guiguito', email: 'student@42luanda.com', campus: [{ name: '42Luanda' }] }),
         });
 
         mockUserService.findOneByEmail.mockResolvedValue(makeUser());
@@ -250,24 +251,27 @@ describe('AuthService_2', () => {
       });
 
       it('creates a new user and bettor when user does not exist', async () => {
-        const newUser = makeUser({ id: 'new-uuid' });
+        const newUser = makeUser({ id: 'new-uuid', email: 'new@42luanda.com' });
         mockFetch.mockResolvedValueOnce({
           ok: true,
           json: async () => ({ access_token: '42-access-token' })
         });
         mockFetch.mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ login: 'newbie', email: 'new@42luanda.com' })
+          json: async () => ({ login: 'newbie', email: 'new@42luanda.com', campus: [{ name: '42Luanda' }] })
         });
         mockUserService.findOneByEmail.mockResolvedValue(null);
         mockUserService.createOauthUser.mockResolvedValue(newUser);
+        mockBettorService.create.mockResolvedValue({});
 
         const result = await service._42SchoolLogin('valid-code');
 
         expect(mockUserService.createOauthUser).toHaveBeenCalledWith({
           email: 'new@42luanda.com'
         });
-        expect(mockBettorService.create).toHaveBeenCalledWith(newUser);
+        expect(mockBettorService.create).toHaveBeenCalledWith(newUser, {
+          campus: '42Luanda'
+        });
         expect(result).toEqual({ access_token: 'signed-jwt-token' });
       });
 
@@ -278,7 +282,7 @@ describe('AuthService_2', () => {
         });
         mockFetch.mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ login: 'wilili', email: 'student@42luanda.com' }),
+          json: async () => ({ login: 'wilili', email: 'student@42luanda.com', campus: [{ name: '42Luanda' }] }),
         });
         mockUserService.findOneByEmail.mockResolvedValue(makeUser());
 
@@ -303,13 +307,13 @@ describe('AuthService_2', () => {
       it('returns name and email from the profile endpoint', async () => {
         mockFetch.mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ login: 'jdoe', email: 'jdoe@42luanda.com' }),
+          json: async () => ({ login: 'jdoe', email: 'jdoe@42luanda.com', campus: [{ name: '42Luanda' }] }),
         });
 
 
         const profile = await (service as any).profileOauth42School('some-token');
 
-        expect(profile).toEqual({ name: 'jdoe', email: 'jdoe@42luanda.com' });
+        expect(profile).toEqual({ name: 'jdoe', email: 'jdoe@42luanda.com', campus: '42Luanda' });
         expect(mockFetch).toHaveBeenCalledWith(
           'https://api.intra.42.fr/v2/me',
           expect.objectContaining({
@@ -339,7 +343,7 @@ describe('AuthService_2', () => {
         });
         mockFetch.mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ login: 'admin', email: 'admin@42luanda.com' }),
+          json: async () => ({ login: 'admin', email: 'student@42luanda.com', campus: [{ name: '42Luanda' }] }),
         });
         mockUserService.findOneByEmail.mockResolvedValue(user);
 

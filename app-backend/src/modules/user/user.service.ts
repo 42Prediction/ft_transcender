@@ -8,6 +8,7 @@ import * as bcrypt from 'bcrypt'
 import { AdmUpdateUserDto } from './dto/admin-update-user.dto';
 import { CreateOauthUserDto } from './create-oauth-user.dto';
 import { BettorService } from '../bettor/bettor.service';
+import { Profile42Dto } from '../bettor/dto/profile-42.dto';
 
 @Injectable()
 export class UserService {
@@ -105,13 +106,11 @@ export class UserService {
     }
   }
 
-  createOauthUser(dto:CreateOauthUserDto ):Promise<User>{
+  async createOauthUser(dto:CreateOauthUserDto):Promise<User>{
     const normalizedEmail = this.normalizeEmail(dto.email);
     const user = this.userRepository.create({
         email: normalizedEmail,
     });
-
     return this.userRepository.save(user);
   }
-
 }

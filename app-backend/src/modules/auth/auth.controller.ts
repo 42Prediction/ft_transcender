@@ -78,6 +78,6 @@ export class AuthController {
         const {access_token} = await this.authService._42SchoolLogin(req.query.code as string);
         this.setAuthCookie(res, access_token);
         const frontendUrl = this.configService.get('FRONTEND_URL');
-        res.redirect(`${frontendUrl}/auth/callback`);
+        res.redirect(`${frontendUrl}`);
     }
 }
