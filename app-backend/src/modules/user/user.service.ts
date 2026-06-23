@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -7,13 +7,15 @@ import { User } from './entities/user.entity';
 import * as bcrypt from 'bcrypt'
 import { AdmUpdateUserDto } from './dto/admin-update-user.dto';
 import { CreateOauthUserDto } from './create-oauth-user.dto';
+import { BettorService } from '../bettor/bettor.service';
 
 @Injectable()
 export class UserService {
   private SALTROUNDS: number = 10;
   constructor(
     @InjectRepository(User)
-    private readonly userRepository: Repository<User>
+    private readonly userRepository: Repository<User>,
+    private readonly bettorService: BettorService,
   ) { }
 
   private normalizeEmail(email: string | undefined): string {
@@ -38,6 +40,10 @@ export class UserService {
       email: normalizedEmail,
       password: hashed,
     });
+    const bettor = await this.bettorService.create(user);
+    if (!bettor) {
+      throw new InternalServerErrorException('Failed to create bettor for the user.');
+    }
     return await this.userRepository.save(user);
   }
 
