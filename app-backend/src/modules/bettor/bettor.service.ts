@@ -87,7 +87,7 @@ export class BettorService {
     if (avatarFile) {
       const oldFilename = this.avatarService.extractFilename(bettor.avatar);
       const filename = await this.avatarService.processAndSave(avatarFile);
-      bettor.avatar = `avatar/${filename}`;
+      bettor.avatar = `${filename}`;
       this.avatarService.deleteOldAvatar(oldFilename);
     }
     if (updateBettorDto) Object.assign(bettor, updateBettorDto);

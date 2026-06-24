@@ -4,10 +4,12 @@ import { bettor } from "@/api/bettor/bettor.api";
 
 
 export interface Bettor {
-    nick: string;
-    bio: string;
-    avatar: string | null;
-    isNickSet?: boolean;
+  nick: string;
+  bio: string;
+  avatar: string | null;
+  isNickSet?: boolean;
+  campus: string;
+  createdAt: string;
 }
 
 export async function publicProfileLoader({
@@ -29,9 +31,9 @@ export async function publicProfileLoader({
 }
 
 export const profileRoute = [
-    {
-        path: ':nick',
-        Component: ProfilePage,
-        loader: publicProfileLoader,
-    }
+  {
+    path: ':nick',
+    Component: ProfilePage,
+    loader: publicProfileLoader,
+  }
 ];

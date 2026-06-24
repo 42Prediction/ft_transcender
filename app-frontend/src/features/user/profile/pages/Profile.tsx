@@ -10,15 +10,16 @@ import { ActivityFeed } from "../components/ActivityFeed";
 import { TopPerformances } from "../components/Topperformances";
 import type { Bettor } from "../route";
 
-export default function ProfilePage (){
+export default function ProfilePage() {
 
   const bettor = useLoaderData() as Bettor;
 
-  const { nick } = useParams();
-
-  const isOwn = !nick;
-
-    return (
+  const authUser = useRouteLoaderData('root') as any;
+  const isAuthenticated = authUser?.success === true;
+  const isOwn = isAuthenticated && authUser?.data.nick === bettor?.nick;
+  console.log('isOwn: ', isOwn);
+  console.log('auth: ', isAuthenticated);
+  return (
     <div className="dark min-h-screen bg-background text-foreground">
       <div className="pointer-events-none fixed inset-0 bg-gradient-hero opacity-60" />
       <div className="relative">
