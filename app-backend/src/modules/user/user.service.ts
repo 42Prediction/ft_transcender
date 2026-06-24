@@ -15,7 +15,6 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly walletService: WalletService
   ) { }
 
   private normalizeEmail(email: string | undefined): string {
@@ -40,9 +39,7 @@ export class UserService {
       email: normalizedEmail,
       password: hashed,
     });
-    const userSaved =  await this.userRepository.save(user);
-    await this.walletService.createWallet(userSaved.id);
-    return userSaved;
+    return  await this.userRepository.save(user);
   }
 
   async findOneByEmail(email: string): Promise<User | null> {

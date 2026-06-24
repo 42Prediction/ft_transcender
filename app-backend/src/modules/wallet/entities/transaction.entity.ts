@@ -1,7 +1,5 @@
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, CreateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
 import { Wallet } from './wallet.entity';
-import { PrimaryGeneratedColumn } from 'typeorm/browser';
-import { CreateDateColumn } from 'typeorm/browser';
 
 
 export enum TransactionType{

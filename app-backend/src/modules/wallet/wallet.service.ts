@@ -38,13 +38,13 @@ export class WalletService {
                 status: TransactionStatus.COMPLETED,
                 balanceBefore: 0,
                 balanceAfter: INITIAL_BALANCE,
-                description: 'Bonus de boas-vindas'
+                description: 'New user bonus'
 
             });
 
             await manager.save(Transaction, transaction);
 
-            this.logger.log(`Wallet criada para o utilizador ${idBettor} com saldo inicial de ${INITIAL_BALANCE}`);
+            this.logger.log(`Wallet created for user ${idBettor} with initial balance of ${INITIAL_BALANCE}`);
             return this.toWalletDto(savedWallet);
         });
     }
@@ -52,7 +52,7 @@ export class WalletService {
     async getMyWallet(idBettor: string): Promise<WalletResponseDto> {
         const wallet = await this.walletRepository.findOne({ where: { idBettor } });
         if (!wallet)
-            throw new NotFoundException('wallet não encontrada para este utilizador');
+            throw new NotFoundException(`Wallet not found for ${idBettor}`);
         return this.toWalletDto(wallet);
 
     }
@@ -60,7 +60,7 @@ export class WalletService {
     async getMyTransactions(idBettor: string): Promise<TransactionResponseDto[]> {
         const wallet = await this.walletRepository.findOne({ where: { idBettor } });
         if (!wallet)
-            throw new NotFoundException('Wallet nao encontrada para este utilizador, reporta erro a equipa tecnica');
+            throw new NotFoundException(`Wallet not found for ${idBettor}`);
         const transactions = await this.transactionRepository.find({
             where: { idWallet: wallet.id },
             order: { createdAt: 'DESC' }
@@ -70,7 +70,7 @@ export class WalletService {
 
     async credit(idBettor: string, dto: CreditWalletDto): Promise<TransactionResponseDto> {
         if (dto.amount <= 0)
-            throw new BadRequestException('O montante do crédito deve ser positivo');
+            throw new BadRequestException('The credit amount must be positive');
         return this.dataSource.transaction(async (manager) => {
             const wallet = await manager
                 .createQueryBuilder(Wallet, 'wallet')
@@ -79,7 +79,7 @@ export class WalletService {
                 .getOne();
 
             if (!wallet)
-                throw new NotFoundException('Wallet não encontrada');
+                throw new NotFoundException(`Wallet not found for ${idBettor}`);
             const balanceBefore = Number(wallet.balance);
             const balanceAfter = balanceBefore + dto.amount;
             wallet.balance = balanceAfter;
@@ -96,14 +96,14 @@ export class WalletService {
             });
 
             const saved = await manager.save(Transaction, transaction);
-            this.logger.log(`Crédito de ${dto.amount} para utilizador ${idBettor}. Novo saldo: ${balanceAfter}`);
+            this.logger.log(`Credit of ${dto.amount} applied to user ${idBettor}. New balance: ${balanceAfter}`);
             return this.toTransactionDto(saved);
         });
     }
 
     async debit(idBettor: string, dto: DebitWalletDto): Promise<TransactionResponseDto> {
         if (dto.amount <= 0)
-            throw new BadRequestException('O montante do débito deve ser positivo');
+            throw new BadRequestException('The debit amount must be positive');
         return this.dataSource.transaction(async (manager) => {
             const wallet = await manager
                 .createQueryBuilder(Wallet, 'wallet')
@@ -112,11 +112,11 @@ export class WalletService {
                 .getOne();
 
             if (!wallet)
-                throw new NotFoundException('Wallet não encontrada');
+                throw new NotFoundException(`Wallet not found for ${idBettor}`);
             const balanceBefore = Number(wallet.balance);
 
             if (balanceBefore < dto.amount)
-                throw new BadRequestException(`Saldo insuficiente. Saldo atual: ${balanceBefore}, montante solicitado: ${dto.amount}`);
+                throw new BadRequestException(`Insufficient balance. Current balance: ${balanceBefore}, requested amount: ${dto.amount}`);
             const balanceAfter = balanceBefore - dto.amount;
             wallet.balance = balanceAfter;
             await manager.save(Wallet, wallet);
@@ -132,7 +132,7 @@ export class WalletService {
             });
 
             const saved = await manager.save(Transaction, transaction);
-            this.logger.log(`Débito de ${dto.amount} para utilizador ${idBettor}. Novo saldo: ${balanceAfter}`);
+            this.logger.log(`Debit of ${dto.amount} applied to user ${idBettor}. New balance: ${balanceAfter}`);
             return this.toTransactionDto(saved);
         });
     }

@@ -12,6 +12,7 @@ import { avataaarsNeutral } from '@dicebear/collection';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AvatarService } from './avatar.service';
+import { WalletService } from '../wallet/wallet.service';
 
 @Injectable()
 export class BettorService {
@@ -19,6 +20,7 @@ export class BettorService {
     @InjectRepository(Bettor)
     private readonly bettorRepository: Repository<Bettor>,
     private readonly avatarService: AvatarService,
+    private readonly walletService: WalletService
   ) {}
 
   async create(user: User): Promise<Bettor> {
@@ -41,7 +43,9 @@ export class BettorService {
       avatar: avatarUri,
       user: user,
     });
-    return await this.bettorRepository.save(bettor);
+    const bettorSaved =  await this.bettorRepository.save(bettor);
+    await this.walletService.createWallet(bettorSaved.id);
+    return bettorSaved;
   }
 
   async findOne(id: string ): Promise<Bettor | null>{
