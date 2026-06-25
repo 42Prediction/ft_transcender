@@ -7,7 +7,7 @@ export interface User {
 }
 
 export const auth = {
-	signin: async (credential: Record<string, string>): Promise<User> => {
+	signin: async (credential: Record<string, string>) => {
 		const res = await api.post('/auth/signin', credential);
 		return res.data;
 	},
@@ -24,6 +24,18 @@ export const auth = {
 		} catch (err: any) {
 			if (err.response?.status === 401)
      			 return null;
+			throw err;
+		}
+	},
+
+	getMeAdmin: async (): Promise<any> => {
+		try {
+			const res = await api.get('/users/me');
+			return res.data;
+		} catch (err: any) {
+			if (err.response?.status === 401) {
+				return null;
+			}
 			throw err;
 		}
 	},

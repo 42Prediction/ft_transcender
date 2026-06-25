@@ -24,16 +24,16 @@ export class UserController {
   async findAll() {
     return await this.userService.findAll();
   }
+  
+  @Get('me')
+  async getMe(@Req() req): Promise <User | null>{
+      return await this.userService.findOne(req.user.id);
+  }
 
   @Get(':id')
   @Roles('admin')
   async findOne(@Param('id') id: string) {
     return await this.userService.findOne(id);
-  }
-
-  @Get('me')
-  async getMe(@Req() req): Promise <User | null>{
-      return await this.userService.findOne(req.user.id);
   }
 
   @Patch('me')

@@ -4,8 +4,9 @@ import { publicRouter } from "./features/public/routes";
 import App from "./App";
 import { authRouter } from "./features/auth/routes";
 import { authMiddleware } from "./middleware/auth";
-import { rootLoader } from "./loader/root";
+import {rootLoader } from "./loader/root";
 import { userRoute } from "./features/user/routes";
+import { adminDashboardRoute } from "./features/admin/routes";
 
 export const dataContext = createContext<any | null>(null)
 
@@ -18,15 +19,13 @@ export const router = createBrowserRouter([
     loader: rootLoader,
     HydrateFallback: () => <div>...</div>,
     children: [
-      {
-        path: '/test',
-        Component: Notfound,
-      },
       ...publicRouter,
       ...authRouter,
       ...userRoute,
+      ...adminDashboardRoute,
     ]
   },
+
   {
     path: '*',
     Component: Notfound,
