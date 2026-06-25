@@ -22,20 +22,20 @@ import { useRouteLoaderData } from "react-router-dom";
 //   component: SettingsPage,
 // });
 
-type TabKey = "perfil" | "conta" | "negociacao" | "notificacoes" | "api" | "construtores";
+type TabKey = "profile" | "account" | "negotiation" | "notifications" | "api" | "builders";
 
 const TABS: { key: TabKey; label: string; icon: typeof User }[] = [
-  { key: "perfil", label: "Perfil", icon: User },
-  { key: "conta", label: "Conta", icon: Wallet },
-  { key: "negociacao", label: "Negociação", icon: TrendingUp },
-  { key: "notificacoes", label: "Notificações", icon: Bell },
-  { key: "api", label: "Chaves API do Relayer", icon: KeyRound },
-  { key: "construtores", label: "Construtores", icon: Code2 },
+  { key: "profile", label: "Profile", icon: User },
+  { key: "account", label: "Account", icon: Wallet },
+  { key: "negotiation", label: "Negotiation", icon: TrendingUp },
+  { key: "notifications", label: "Notifications", icon: Bell },
+  { key: "api", label: "API Keys", icon: KeyRound },
+  { key: "builders", label: "Builders", icon: Code2 },
 ];
 
 
 export function SettingsPage() {
-  const [active, setActive] = useState<TabKey>("perfil");
+  const [active, setActive] = useState<TabKey>("profile");
   const data = useRouteLoaderData('root');
   const bettor = data.data;
 
@@ -67,12 +67,12 @@ export function SettingsPage() {
           </aside>
 
           <section>
-            {active === "perfil" && <PerfilPanel bettor={bettor} />}
-            {active === "conta" && <PlaceholderPanel title="Conta" />}
-            {active === "negociacao" && <PlaceholderPanel title="Negociação" />}
-            {active === "notificacoes" && <PlaceholderPanel title="Notificações" />}
-            {active === "api" && <PlaceholderPanel title="Chaves API do Relayer" />}
-            {active === "construtores" && <PlaceholderPanel title="Construtores" />}
+            {active === "profile" && <PerfilPanel bettor={bettor} />}
+            {active === "account" && <PlaceholderPanel title="Account" />}
+            {active === "negotiation" && <PlaceholderPanel title="Negotiation" />}
+            {active === "notifications" && <PlaceholderPanel title="Notifications" />}
+            {active === "api" && <PlaceholderPanel title="API Keys" />}
+            {active === "builders" && <PlaceholderPanel title="Builders" />}
           </section>
         </div>
       </main>

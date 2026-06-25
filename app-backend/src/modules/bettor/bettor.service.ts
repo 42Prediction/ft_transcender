@@ -13,6 +13,7 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AvatarService } from './avatar.service';
 import { WalletService } from '../wallet/wallet.service';
+import { Profile42Dto } from './dto/profile-42.dto';
 
 @Injectable()
 export class BettorService {
@@ -23,11 +24,10 @@ export class BettorService {
     private readonly walletService: WalletService
   ) {}
 
-  async create(user: User): Promise<Bettor> {
+  async create(user: User, dto?: Profile42Dto): Promise<Bettor> {
     if (!user) {
       throw new InternalServerErrorException('User id required');
     }
-
     const avatar = createAvatar(avataaarsNeutral, {
       seed: user.email,
     });
@@ -38,10 +38,15 @@ export class BettorService {
       .substring(0, 20)
       .replace(/[^a-zA-O0-9_.]/g, '');
     const temporaryNick = `${cleanPrefix}_${Math.floor(1000 + Math.random() * 9000)}`;
+    let campus: string | undefined = undefined;
+    if (dto) {
+      campus = dto.campus ?? undefined;
+    }
     const bettor: Bettor = this.bettorRepository.create({
       nick: temporaryNick,
       avatar: avatarUri,
       user: user,
+      campus: campus,
     });
     const bettorSaved =  await this.bettorRepository.save(bettor);
     await this.walletService.createWallet(bettorSaved.id);
@@ -86,7 +91,7 @@ export class BettorService {
     if (avatarFile) {
       const oldFilename = this.avatarService.extractFilename(bettor.avatar);
       const filename = await this.avatarService.processAndSave(avatarFile);
-      bettor.avatar = `avatar/${filename}`;
+      bettor.avatar = `${filename}`;
       this.avatarService.deleteOldAvatar(oldFilename);
     }
     if (updateBettorDto) Object.assign(bettor, updateBettorDto);

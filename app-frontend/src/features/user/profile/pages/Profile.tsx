@@ -1,4 +1,4 @@
-import { useParams, useRouteLoaderData } from "react-router-dom";
+import { useLoaderData, useParams, useRouteLoaderData } from "react-router-dom";
 import { ProfileHeader } from "../components/ProfileHeader";
 import { StatsRow } from "../components/StatsRow";
 import { AccuracyChart } from "../components/AccuracyChart";
@@ -8,15 +8,18 @@ import { HistoryTable } from "../components/HistoryTable";
 import { ReputationCard } from "../components/ReputationCard";
 import { ActivityFeed } from "../components/ActivityFeed";
 import { TopPerformances } from "../components/Topperformances";
+import type { Bettor } from "../route";
 
-export default function ProfilePage (){
+export default function ProfilePage() {
 
-  const data = useRouteLoaderData('root');
-  const bettor = data?.data;
-  const { nick } = useParams<{nick?:string}>();
-  const isOwn = !nick;
+  const bettor = useLoaderData() as Bettor;
 
-    return (
+  const authUser = useRouteLoaderData('root') as any;
+  const isAuthenticated = authUser?.success === true;
+  const isOwn = isAuthenticated && authUser?.data.nick === bettor?.nick;
+  console.log('isOwn: ', isOwn);
+  console.log('auth: ', isAuthenticated);
+  return (
     <div className="dark min-h-screen bg-background text-foreground">
       <div className="pointer-events-none fixed inset-0 bg-gradient-hero opacity-60" />
       <div className="relative">

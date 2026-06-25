@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -7,7 +7,7 @@ import { User } from './entities/user.entity';
 import * as bcrypt from 'bcrypt'
 import { AdmUpdateUserDto } from './dto/admin-update-user.dto';
 import { CreateOauthUserDto } from './create-oauth-user.dto';
-import { WalletService } from '../wallet/wallet.service';
+import { BettorService } from '../bettor/bettor.service';
 
 @Injectable()
 export class UserService {
@@ -15,6 +15,7 @@ export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly bettorService: BettorService,
   ) { }
 
   private normalizeEmail(email: string | undefined): string {
@@ -39,7 +40,11 @@ export class UserService {
       email: normalizedEmail,
       password: hashed,
     });
-    return  await this.userRepository.save(user);
+    const bettor = await this.bettorService.create(user);
+    if (!bettor) {
+      throw new InternalServerErrorException('Failed to create bettor for the user.');
+    }
+    return await this.userRepository.save(user);
   }
 
   async findOneByEmail(email: string): Promise<User | null> {
@@ -100,13 +105,11 @@ export class UserService {
     }
   }
 
-  createOauthUser(dto:CreateOauthUserDto ):Promise<User>{
+  async createOauthUser(dto:CreateOauthUserDto):Promise<User>{
     const normalizedEmail = this.normalizeEmail(dto.email);
     const user = this.userRepository.create({
         email: normalizedEmail,
     });
-
     return this.userRepository.save(user);
   }
-
 }

@@ -245,7 +245,7 @@ describe('BettorService', () => {
       expect(mockAvatarService.extractFilename).toHaveBeenCalledWith('avatar/old.png');
       expect(mockAvatarService.processAndSave).toHaveBeenCalledWith(mockFile);
       expect(mockAvatarService.deleteOldAvatar).toHaveBeenCalledWith('old.png');
-      expect(result.avatar).toBe('avatar/processed-new-file.png');
+      expect(result.avatar).toBe('processed-new-file.png');
     });
   });
 });
