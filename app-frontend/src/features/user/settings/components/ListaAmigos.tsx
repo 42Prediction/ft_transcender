@@ -12,7 +12,7 @@ interface FriendData {
     status: FriendStatus;
 }
 
-export function ListaAmigos({ bettor }: { bettor?: any }) {
+export function FriendList({ bettor }: { bettor?: any }) {
     const [friends, setFriends] = useState<FriendData[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [inviteNick, setInviteNick] = useState("");
@@ -167,7 +167,7 @@ export function ListaAmigos({ bettor }: { bettor?: any }) {
     return (
         <div className="space-y-6">
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                Amigos
+                FriendList
             </h1>
 
             {/* Controlos do Topo: Pesquisa e Convite */}
