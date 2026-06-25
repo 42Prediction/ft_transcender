@@ -40,10 +40,6 @@ export class UserService {
       email: normalizedEmail,
       password: hashed,
     });
-    const bettor = await this.bettorService.create(user);
-    if (!bettor) {
-      throw new InternalServerErrorException('Failed to create bettor for the user.');
-    }
     return await this.userRepository.save(user);
   }
 
