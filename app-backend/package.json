@@ -105,6 +105,9 @@
       "lcov",
       "text"
     ],
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "transformIgnorePatterns": [
+      "node_modules/(?!(@dicebear|uuid)/)"
+    ]
   }
 }
