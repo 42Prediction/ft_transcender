@@ -48,22 +48,22 @@ export class AuthController {
     }
 
     @Get('school')
-    _42schoolAuth(@Res() res:Response){
-        const url=this.configService.getOrThrow('_42SCHOOL_API_URL_AUTHORIRIZE');
+    _42schoolAuth(@Res() res: Response) {
+        const url = this.configService.getOrThrow('_42SCHOOL_API_URL_AUTHORIRIZE');
         const params = new URLSearchParams({
-            client_id:this.configService.getOrThrow<string>('_42SCHOOL_CLIENT_ID'),
-            redirect_uri:this.configService.getOrThrow<string>('_42SCHOOL_CALLBACK_URL'),
+            client_id: this.configService.getOrThrow<string>('_42SCHOOL_CLIENT_ID'),
+            redirect_uri: this.configService.getOrThrow<string>('_42SCHOOL_CALLBACK_URL'),
             scope: 'public',
             response_type: 'code',
             state: 'xyz'
-    });
+        });
 
-    res.redirect(302, `${url}?${params.toString()}`);
+        res.redirect(302, `${url}?${params.toString()}`);
     }
 
     @Get('google/callback')
     @UseGuards(GoogleAuthGuard)
-    async googleAuthCallBack(@Req() req, @Res() res:Response){
+    async googleAuthCallBack(@Req() req, @Res() res: Response) {
 
         const { access_token } = await this.authService.googleLogin(req.user);
         this.setAuthCookie(res, access_token);
@@ -73,11 +73,10 @@ export class AuthController {
     }
 
     @Get('42luanda/callback')
-    async _42schoolAuthCallBack(@Req() req, @Res() res:Response){
-
-        const {access_token} = await this.authService._42SchoolLogin(req.query.code as string);
+    async _42schoolAuthCallBack(@Req() req, @Res() res: Response) {
+        const { access_token } = await this.authService._42SchoolLogin(req.query.code as string);
         this.setAuthCookie(res, access_token);
         const frontendUrl = this.configService.get('FRONTEND_URL');
-        res.redirect(`${frontendUrl}/auth/callback`);
+        res.redirect(`${frontendUrl}`);
     }
 }

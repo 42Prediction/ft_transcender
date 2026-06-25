@@ -20,8 +20,8 @@ async function bootstrap() {
     whitelist: true,
   }));
   
-  app.useStaticAssets(join(process.cwd(), 'uploads'),{
-    prefix: '/',
+  app.useStaticAssets(join(__dirname, "..", "uploads"), {
+    prefix: "/uploads/",
   });
   
   await app.listen(process.env.SERVER_PORT ?? 3000);

@@ -12,23 +12,20 @@ const quickMetrics = [
 interface Props { bettor: Bettor; isOwn: boolean }
 
 export function ProfileHeader({ bettor, isOwn }: Props) {
-  const avatarUrl = bettor.avatar
-    ? `${import.meta.env.VITE_API_URL}${bettor.avatar}`
-    : `https://api.dicebear.com/9.x/glass/svg?seed=${bettor.nick}&backgroundType=gradientLinear`;
-
   return (
     <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-card p-6 md:p-8">
       <div className="relative grid gap-6 md:grid-cols-[auto_1fr_auto] md:items-center">
 
         {/* Avatar */}
         <div className="relative">
-          <div className="absolute inset-0 rounded-3xl bg-gradient-brand opacity-50 " />
+          <div className="absolute inset-0 rounded-3xl bg-gradient-brand opacity-50" />
           <div className="relative grid h-28 w-28 place-items-center rounded-3xl border-2 border-primary/60 bg-surface p-1">
-            <img src={avatarUrl} alt={bettor.nick} className="h-full w-full rounded-2xl object-cover" />
+            <img
+              src={bettor?.avatar ?? `https://api.dicebear.com/10.x/glass/svg?seed=${bettor?.nick ?? "user"}`}
+              alt={bettor?.nick}
+              className="h-full w-full rounded-2xl object-cover"
+            />
           </div>
-          {/* <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full border border-primary/60 bg-background px-3 py-1 font-mono text-[11px] font-bold text-primary ">
-            LVL 27
-          </div> */}
         </div>
 
         {/* Identity */}
@@ -36,35 +33,32 @@ export function ProfileHeader({ bettor, isOwn }: Props) {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
-                {bettor.nick}
+                {bettor?.nick ?? "—"}
               </h1>
               <BadgeCheck className="h-6 w-6 text-accent" />
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-              <span className="font-mono text-foreground/80">@{bettor.nick}</span>
-              <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> 42 Paris</span>
-              <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Joined {new Date(bettor.user.createdAt).toLocaleDateString("pt-PT", {
-                day: "2-digit",
-                month: "long",
-                year: "numeric",
-              })}</span>
+              <span className="font-mono text-foreground/80">@{bettor?.nick ?? "—"}</span>
+              <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {bettor?.campus ?? "—"}</span>
+              <span className="flex items-center gap-1">
+                <Calendar className="h-3.5 w-3.5" />
+                Joined {bettor?.createdAt
+                  ? new Date(bettor.createdAt).toLocaleDateString("pt-PT", {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                    })
+                  : "—"}
+              </span>
             </div>
-            {bettor.bio && (
+            {bettor?.bio && (
               <p className="mt-2 max-w-md text-sm text-muted-foreground">{bettor.bio}</p>
             )}
           </div>
 
-          {/* <div className="flex flex-wrap gap-2">
-            {staticBadges.map((b) => (
-              <span key={b} className="flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
-                <Sparkles className="h-3 w-3" /> {b}
-              </span>
-            ))}
-          </div> */}
-
           <div className="grid grid-cols-3 gap-2 pt-2 sm:max-w-md">
             {quickMetrics.map((m) => (
-              <div key={m.label} className="rounded-xl border border-border/60 bg-surface/60 px-3 py-2 ">
+              <div key={m.label} className="rounded-xl border border-border/60 bg-surface/60 px-3 py-2">
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{m.label}</div>
                 <div className="mt-0.5 font-mono text-sm font-semibold">{m.value}</div>
                 <div className={`text-[10px] ${m.up ? "text-[color:var(--yes)]" : "text-[color:var(--no)]"}`}>{m.trend}</div>
@@ -77,16 +71,14 @@ export function ProfileHeader({ bettor, isOwn }: Props) {
         <div className="flex flex-col gap-2">
           {!isOwn && (
             <button className="flex items-center justify-center gap-2 rounded-xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90">
-              <UserPlus className="h-4 w-4" /> Follow
+              <UserPlus className="h-4 w-4" /> 
             </button>
           )}
-          {
-            isOwn && (
-              <button className="flex items-center justify-center gap-2 rounded-xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90">
-                <UserPen className="h-4 w-4" /> Edit
-              </button>
-            )
-          }
+          {isOwn && (
+            <button className="flex items-center justify-center gap-2 rounded-xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90">
+              <UserPen className="h-4 w-4" /> Edit
+            </button>
+          )}
           <button className="flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-surface px-5 py-2.5 text-sm font-medium text-foreground transition hover:bg-surface-elevated">
             <Share2 className="h-4 w-4" /> Share
           </button>

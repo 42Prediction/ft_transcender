@@ -167,7 +167,7 @@ describe('AuthController_2', () => {
       const res = makeRes();
       await controller._42schoolAuthCallBack(req, res as Response);
       expect(mockAuthService._42SchoolLogin).toHaveBeenCalledWith('auth-code-abc');
-        expect(res.redirect).toHaveBeenCalledWith('http://localhost:5173/auth/callback');
+        expect(res.redirect).toHaveBeenCalledWith('http://localhost:5173');
     });
     it('sets the auth cookie with the JWT before redirecting', async ()=>{
       mockAuthService._42SchoolLogin.mockResolvedValue({
