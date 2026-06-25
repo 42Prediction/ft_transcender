@@ -1,4 +1,3 @@
-.gitignore
 secrets/
 .env
 en.subject.pdf
@@ -7,3 +6,4 @@ logs/
 app-backend/node_modules
 app-frontend/node_modules
 coverage
+uploads
