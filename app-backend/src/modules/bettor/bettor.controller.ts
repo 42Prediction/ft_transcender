@@ -85,28 +85,28 @@ export class BettorController {
     return await this.friendService.sendFriendRequest(req.user.id, nick);
   }
 
-  @Patch('me/friend-requests/:nick/accept')
+  @Patch('me/friend-requests/:id/accept')
   @UseGuards(JwtAuthGuard)
-  async acceptFriendRequest(@Req() req: any, @Param('nick') nick: string) {
-    return await this.friendService.acceptFriendRequest(req.user.id, nick);
+  async acceptFriendRequest(@Req() req: any, @Param('id') id: string) {
+    return await this.friendService.acceptFriendRequest(req.user.id, id);
   }
 
-  @Delete('me/friend-requests/:nick/cancel')
+  @Delete('me/friend-requests/:id/cancel')
   @UseGuards(JwtAuthGuard)
-  async cancelRequest(@Req() req: any, @Param('nick') nick: string) {
-    return await this.friendService.cancelFriendRequest(req.user.id, nick);
+  async cancelRequest(@Req() req: any, @Param('id') id: string) {
+    return await this.friendService.cancelFriendRequest(req.user.id, id);
   }
 
-  @Delete('me/friend-requests/:nick/reject')
+  @Delete('me/friend-requests/:id/reject')
   @UseGuards(JwtAuthGuard)
-  async rejectRequest(@Req() req: any, @Param('nick') nick: string) {
-    return await this.friendService.rejectFriendRequest(req.user.id, nick);
+  async rejectRequest(@Req() req: any, @Param('id') id: string) {
+    return await this.friendService.rejectFriendRequest(req.user.id, id);
   }
 
-  @Delete('me/friends/:nick')
+  @Delete('me/friends/:id')
   @UseGuards(JwtAuthGuard)
-  async removeFriend(@Req() req: any, @Param('nick') nick: string) {
-    return await this.friendService.removeFriend(req.user.id, nick);
+  async removeFriend(@Req() req: any, @Param('id') id: string) {
+    return await this.friendService.removeFriend(req.user.id, id);
   }
 
   @Get('me/friend-requests/received')

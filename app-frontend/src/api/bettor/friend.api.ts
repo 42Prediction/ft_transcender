@@ -7,8 +7,8 @@ export const friendApi = {
   getSentRequests: () => api.get('/bettor/me/friend-requests/sent'),
   
   sendRequest: (nick: string) => api.post(`/bettor/me/friend-requests/${nick}/send`),
-  acceptRequest: (nick: string) => api.patch(`/bettor/me/friend-requests/${nick}/accept`),
-  rejectRequest: (nick: string) => api.delete(`/bettor/me/friend-requests/${nick}/reject`),
-  cancelRequest: (nick: string) => api.delete(`/bettor/me/friend-requests/${nick}/cancel`),
-  removeFriend: (nick: string) => api.delete(`/bettor/me/friends/${nick}`),
+  acceptRequest: (id: string) => api.patch(`/bettor/me/friend-requests/${id}/accept`),
+  rejectRequest: (id: string) => api.delete(`/bettor/me/friend-requests/${id}/reject`),
+  cancelRequest: (id: string) => api.delete(`/bettor/me/friend-requests/${id}/cancel`),
+  removeFriend: (id: string) => api.delete(`/bettor/me/friends/${id}`),
 };

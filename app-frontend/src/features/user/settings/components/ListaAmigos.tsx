@@ -20,7 +20,7 @@ export function FriendList({ bettor }: { bettor?: any }) {
     // Estados de Loading
     const [isLoading, setIsLoading] = useState(true);
     const [isInviting, setIsInviting] = useState(false);
-    const [actionLoadingNick, setActionLoadingNick] = useState<string | null>(null);
+    const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
     // Carregar dados reais do backend ao montar o componente
     useEffect(() => {
@@ -108,59 +108,59 @@ export function FriendList({ bettor }: { bettor?: any }) {
         }
     };
 
-    const handleAccept = async (nick: string) => {
+    const handleAccept = async (id: string) => {
         try {
-            setActionLoadingNick(nick);
-            await friendApi.acceptRequest(nick);
+            setActionLoadingId(id);
+            await friendApi.acceptRequest(id);
 
             // Altera o status para 'accepted' localmente
             setFriends(prev => prev.map(f =>
-                f.nick === nick ? { ...f, status: "accepted" } : f
+                f.id === id ? { ...f, status: "accepted" } : f
             ));
         } catch (error) {
             console.error("Erro ao aceitar pedido:", error);
         } finally {
-            setActionLoadingNick(null);
+            setActionLoadingId(null);
         }
     };
 
-    const handleReject = async (nick: string) => {
+    const handleReject = async (id: string) => {
         try {
-            setActionLoadingNick(nick);
-            await friendApi.rejectRequest(nick);
+            setActionLoadingId(id);
+            await friendApi.rejectRequest(id);
 
             // Remove da lista
-            setFriends(prev => prev.filter(f => f.nick !== nick));
+            setFriends(prev => prev.filter(f => f.id !== id));
         } catch (error) {
             console.error("Erro ao rejeitar pedido:", error);
         } finally {
-            setActionLoadingNick(null);
+            setActionLoadingId(null);
         }
     };
 
-    const handleCancel = async (nick: string) => {
+    const handleCancel = async (id: string) => {
         try {
-            setActionLoadingNick(nick);
-            await friendApi.cancelRequest(nick);
+            setActionLoadingId(id);
+            await friendApi.cancelRequest(id);
 
-            setFriends(prev => prev.filter(f => f.nick !== nick));
+            setFriends(prev => prev.filter(f => f.id !== id));
         } catch (error) {
             console.error("Erro ao cancelar pedido:", error);
         } finally {
-            setActionLoadingNick(null);
+            setActionLoadingId(null);
         }
     };
 
-    const handleRemove = async (nick: string) => {
+    const handleRemove = async (id: string) => {
         try {
-            setActionLoadingNick(nick);
-            await friendApi.removeFriend(nick);
+            setActionLoadingId(id);
+            await friendApi.removeFriend(id);
 
-            setFriends(prev => prev.filter(f => f.nick !== nick));
+            setFriends(prev => prev.filter(f => f.id !== id));
         } catch (error) {
             console.error("Erro ao remover amigo:", error);
         } finally {
-            setActionLoadingNick(null);
+            setActionLoadingId(null);
         }
     };
 
@@ -229,7 +229,7 @@ export function FriendList({ bettor }: { bettor?: any }) {
                                     <div>
                                         {/* Link para o perfil */}
                                         <Link
-                                            to={`/profile/${friend.nick}`}
+                                            to={`/user/${friend.nick}`}
                                             className="text-sm font-medium text-foreground hover:text-primary hover:underline transition-colors block"
                                         >
                                             {friend.nick}
@@ -249,7 +249,7 @@ export function FriendList({ bettor }: { bettor?: any }) {
 
                                 {/* Ações baseadas no estado */}
                                 <div className="flex gap-2">
-                                    {actionLoadingNick === friend.nick ? (
+                                    {actionLoadingId === friend.id ? (
                                         <div className="grid h-8 w-8 place-items-center text-muted-foreground">
                                             <Loader2 className="h-4 w-4 animate-spin" />
                                         </div>
@@ -258,14 +258,14 @@ export function FriendList({ bettor }: { bettor?: any }) {
                                             {friend.status === "received_request" && (
                                                 <>
                                                     <button
-                                                        onClick={() => handleAccept(friend.nick)}
+                                                        onClick={() => handleAccept(friend.id)}
                                                         title="Aceitar Pedido"
                                                         className="grid h-8 w-8 place-items-center rounded-lg bg-green-500/10 text-green-500 hover:bg-green-500/20 transition-colors"
                                                     >
                                                         <Check className="h-4 w-4" />
                                                     </button>
                                                     <button
-                                                        onClick={() => handleReject(friend.nick)}
+                                                        onClick={() => handleReject(friend.id)}
                                                         title="Rejeitar Pedido"
                                                         className="grid h-8 w-8 place-items-center rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
                                                     >
@@ -276,7 +276,7 @@ export function FriendList({ bettor }: { bettor?: any }) {
 
                                             {friend.status === "sent_request" && (
                                                 <button
-                                                    onClick={() => handleCancel(friend.nick)}
+                                                    onClick={() => handleCancel(friend.id)}
                                                     title="Cancelar Pedido"
                                                     className="grid h-8 w-8 place-items-center rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
                                                 >
@@ -286,7 +286,7 @@ export function FriendList({ bettor }: { bettor?: any }) {
 
                                             {friend.status === "accepted" && (
                                                 <button
-                                                    onClick={() => handleRemove(friend.nick)}
+                                                    onClick={() => handleRemove(friend.id)}
                                                     title="Remover Amigo"
                                                     className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:bg-surface hover:text-red-400 transition-colors"
                                                 >
