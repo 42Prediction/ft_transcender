@@ -1,6 +1,10 @@
 import { Controller, UseGuards, Request, Get, HttpStatus, HttpException } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { WalletService } from "./wallet.service";
+import { errorResponse, successResponse } from "../../shared/helper/api-response.helper";
+import { Wallet } from "./entities/wallet.entity";
+import { WalletResponseDto } from "./dto/wallet-response.dto";
+import { TransactionResponseDto } from "./dto/transaction-response.dto";
 
 @UseGuards(JwtAuthGuard)
 @Controller('wallet')
@@ -12,24 +16,9 @@ export class WalletController {
     async getMyWallet(@Request() req) {
         try {
             const wallet = await this.walletService.getMyWallet(req.user.id);
-            return {
-                success: true,
-                statusCode: HttpStatus.OK,
-                data: wallet,
-                error: null,
-            }
+            return successResponse<WalletResponseDto>(HttpStatus.OK, wallet);
         } catch (error) {
-            const statusCode =
-                error instanceof HttpException
-                    ? error.getStatus()
-                    : HttpStatus.INTERNAL_SERVER_ERROR;
-
-            return {
-                success: false,
-                statusCode,
-                data: null,
-                error: error instanceof Error ? error.message : 'Unexpected error',
-            };
+            return errorResponse(error);
         }
     }
 
@@ -37,24 +26,9 @@ export class WalletController {
     async getMyTransactions(@Request() req) {
         try {
             const transactions = await this.walletService.getMyTransactions(req.user.id);
-            return {
-                success: true,
-                statusCode: HttpStatus.OK,
-                data: transactions,
-                error: null,
-            }
+            return successResponse<TransactionResponseDto[]>(HttpStatus.OK, transactions);
         } catch (error) {
-            const statusCode =
-                error instanceof HttpException
-                    ? error.getStatus()
-                    : HttpStatus.INTERNAL_SERVER_ERROR;
-
-            return {
-                success: false,
-                statusCode,
-                data: null,
-                error: error instanceof Error ? error.message : 'Unexpected error',
-            };
+            return errorResponse(error);
         }
     }
 }
