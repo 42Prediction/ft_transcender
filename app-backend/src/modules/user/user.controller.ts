@@ -38,24 +38,24 @@ export class UserController {
     }
   }
 
-  @Get(':id')
-  @Roles('admin')
-  @HttpCode(HttpStatus.OK)
-  async findOne(@Param('id') id: string) {
-    try {
-      const user = await this.userService.findOne(id);
-      return successResponse<User>(HttpStatus.OK, user);
-    } catch (error) {
-      return errorResponse(error);
-    }
-  }
-
   @Get('me')
   @HttpCode(HttpStatus.OK)
   async getMe(@Req() req){
     if (!req.user?.id) return unauthorizedResponse();
     try {
       const user = await this.userService.findOne(req.user.id);
+      return successResponse<User>(HttpStatus.OK, user);
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+
+  @Get(':id')
+  @Roles('admin')
+  @HttpCode(HttpStatus.OK)
+  async findOne(@Param('id') id: string) {
+    try {
+      const user = await this.userService.findOne(id);
       return successResponse<User>(HttpStatus.OK, user);
     } catch (error) {
       return errorResponse(error);
