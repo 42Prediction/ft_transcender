@@ -50,15 +50,12 @@ export class AuthService{
         }
         return {
             access_token: this.jwtService.sign(payload),
-            result: {
-                statusCode: 201,
-                message: 'User login successfully.',
-                data: {
-                    id: user.id,
-                    email: user.email,
-                    role: user.role,
-                },
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role,
             },
+            message: 'User login successfully.',
         }
     }
 
@@ -69,16 +66,15 @@ export class AuthService{
             throw new InternalServerErrorException('Bettor id required');
         }
         return {
-            statusCode: 201,
-            message: 'User created successfully.',
-            data: {
+            user: {
                 id: user.id,
                 email: user.email,
                 role: user.role,
                 nick: bettor.nick,
                 avatar: bettor.avatar,
                 isNickSetted: bettor.isNickSetted,
-            }
+            },
+            message: 'User created successfully.',
         }
     }
 

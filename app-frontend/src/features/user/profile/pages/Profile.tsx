@@ -1,4 +1,4 @@
-import { useLoaderData, useParams, useRouteLoaderData } from "react-router-dom";
+import { useLoaderData, useRouteLoaderData } from "react-router-dom";
 import { ProfileHeader } from "../components/ProfileHeader";
 import { StatsRow } from "../components/StatsRow";
 import { AccuracyChart } from "../components/AccuracyChart";
@@ -12,7 +12,9 @@ import type { Bettor } from "../route";
 
 export default function ProfilePage() {
 
-  const bettor = useLoaderData() as Bettor;
+  const data = useLoaderData();
+  data.sucesss
+  const bettor = data?.data as Bettor;
 
   const authUser = useRouteLoaderData('root') as any;
   const isAuthenticated = authUser?.success === true;
