@@ -6,6 +6,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { avatarUploadConfig } from '../../config/multer.config';
+import { ApiResponse, errorResponse, successResponse, unauthorizedResponse } from '../../shared/helper/api-response.helper';
+import { Bettor } from './entities/bettor.entity';
+import { BettorFriendRequest } from './entities/friend.entity';
 
 @Controller('bettor')
 @UseInterceptors(ClassSerializerInterceptor)
@@ -18,106 +21,160 @@ export class BettorController {
   @Get('me')
   @UseGuards(OptionalJwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async findMyProfile(@Req() req: any) {
-    if (!req.user?.id) {
-      return {
-        success: false,
-        statusCode: HttpStatus.UNAUTHORIZED,
-        data: null,
-        error: 'Unauthorized',
-      };
-    }
+  async findMyProfile(@Req() req: any): Promise< ApiResponse<Bettor | null> > {
+    if (!req.user?.id) return unauthorizedResponse();
 
     try {
-      const profile = await this.bettorService.findOne(req.user.id);
-      return {
-        success: true,
-        statusCode: HttpStatus.OK,
-        data: profile,
-        error: null,
-      };
+      const bettor = await this.bettorService.findOne(req.user.id);
+      return successResponse<Bettor>( HttpStatus.OK, bettor as Bettor);
     } catch (error) {
-      const statusCode =
-        error instanceof HttpException
-          ? error.getStatus()
-          : HttpStatus.INTERNAL_SERVER_ERROR;
-
-      return {
-        success: false,
-        statusCode,
-        data: null,
-        error: error instanceof Error ? error.message : 'Unexpected error',
-      };
+      return errorResponse(error);
     }
   }
 
   @Patch('me')
   @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
   @UseInterceptors(FileInterceptor('avatar', avatarUploadConfig))
-  updateProfile(
+  async updateProfile(
       @Req() req: any,
       @Body() updateBettorDto: UpdateBettorDto,
       @UploadedFile() avatarFile?: Express.Multer.File
   )
   {
-    return this.bettorService.update(req.user.id, updateBettorDto, avatarFile);
+    if (!req.user?.id) return unauthorizedResponse();
+    try {
+      const bettor = await this.bettorService.update(req.user.id, updateBettorDto, avatarFile);
+      return successResponse<Bettor>(HttpStatus.OK, bettor); 
+    } catch (error) {
+      return errorResponse(error);
+    }
+    
   }
 
   @Get('@:nick')
+  @HttpCode(HttpStatus.OK)
   async publicProfile(@Param('nick') nick: string) {
-    return await this.bettorService.findByNick(nick);
+    try {
+      const bettor = await this.bettorService.findByNick(nick);
+      return successResponse<Bettor>(HttpStatus.OK, bettor);
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
 
   @Get('me/friends')
   @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
   async getMyFriends(@Req() req: any) {
-    return await this.friendService.getMyFriends(req.user.id);
+    if (!req.user?.id) return unauthorizedResponse();
+    try {
+      const friends = await this.friendService.getMyFriends(req.user.id);
+      return successResponse<Bettor[]>(HttpStatus.OK, friends);
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
 
   @Get('@:nick/friends')
+  @HttpCode(HttpStatus.OK)
   async getPublicFriends(@Param('nick') nick: string) {
-    return await this.friendService.getPublicFriends(nick);
+    try {
+      const friends = await this.friendService.getPublicFriends(nick);
+      return successResponse<Bettor[]>(HttpStatus.OK,  friends);
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
 
   @Post('me/friend-requests/:nick/send')
   @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
   async sendFriendRequest(@Req() req: any, @Param('nick') nick: string) {
-    return await this.friendService.sendFriendRequest(req.user.id, nick);
+    if (!req.user?.id) return unauthorizedResponse();
+    try {
+      const friends =  await this.friendService.sendFriendRequest(req.user.id, nick);
+      return successResponse(HttpStatus.OK, friends)
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
 
   @Patch('me/friend-requests/:nick/accept')
   @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
   async acceptFriendRequest(@Req() req: any, @Param('nick') nick: string) {
-    return await this.friendService.acceptFriendRequest(req.user.id, nick);
+    if (!req.user?.id) return unauthorizedResponse();
+    try {
+      const friends = await this.friendService.acceptFriendRequest(req.user.id, nick);
+      return successResponse(HttpStatus.OK, friends)
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
 
   @Delete('me/friend-requests/:nick/cancel')
   @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
   async cancelRequest(@Req() req: any, @Param('nick') nick: string) {
-    return await this.friendService.cancelFriendRequest(req.user.id, nick);
+    if (!req.user?.id) return unauthorizedResponse();
+    try {
+      const friends = await this.friendService.cancelFriendRequest(req.user.id, nick);
+      return successResponse(HttpStatus.OK, friends)
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
 
   @Delete('me/friend-requests/:nick/reject')
   @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
   async rejectRequest(@Req() req: any, @Param('nick') nick: string) {
-    return await this.friendService.rejectFriendRequest(req.user.id, nick);
+    if (!req.user?.id) return unauthorizedResponse();
+    try {
+      const friends = await this.friendService.rejectFriendRequest(req.user.id, nick);
+      return successResponse(HttpStatus.OK, friends)
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
 
   @Delete('me/friends/:nick')
   @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
   async removeFriend(@Req() req: any, @Param('nick') nick: string) {
-    return await this.friendService.removeFriend(req.user.id, nick);
+    if (!req.user?.id) return unauthorizedResponse();
+    try {
+      const friend = await this.friendService.removeFriend(req.user.id, nick);
+      return successResponse(HttpStatus.OK, friend)
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
 
   @Get('me/friend-requests/received')
   @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
   async getReceivedRequests(@Req() req: any) {
-    return await this.friendService.getReceivedRequests(req.user.id);
+    if (!req.user?.id) return unauthorizedResponse();
+    try {
+      const friends = await this.friendService.getReceivedRequests(req.user.id);
+      return successResponse<BettorFriendRequest[]>(HttpStatus.OK, friends);
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
 
   @Get('me/friend-requests/sent')
   @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
   async getSentRequests(@Req() req: any) {
-    return await this.friendService.getSentRequests(req.user.id);
+    if (!req.user?.id) return unauthorizedResponse();
+    try {
+      const friends = await this.friendService.getSentRequests(req.user.id);
+      return successResponse<BettorFriendRequest[]>(HttpStatus.OK, friends);
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
 }
