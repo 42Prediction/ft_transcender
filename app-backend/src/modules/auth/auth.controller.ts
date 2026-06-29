@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import { CredentialsAuthDto } from './dto/credentials.auth.dto';
 import { User } from '../user/entities/user.entity';
+import { TwoFactorCodeDto } from './dto/two-factor-code.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { TwoFactorService } from './two-factor.service';
 import { UserService } from '../user/user.service';
@@ -13,7 +14,9 @@ import { UnauthorizedException } from '@nestjs/common';
 
 @Controller('auth')
 export class AuthController {
-    constructor(private authService: AuthService, private configService: ConfigService) { }
+    constructor(private authService: AuthService, private configService: ConfigService,
+                private twoFactorService: TwoFactorService, private userService: UserService
+    ) { }
 
     private setAuthCookie(res: Response, accessToken: string) {
         const isProduction = this.configService.get('NODE_ENV') === 'production';
@@ -27,6 +30,17 @@ export class AuthController {
         });
     }
 
+    private setTempTwoFactorCookie(res: Response, tempToken: string) {
+        const isProduction = this.configService.get('NODE_ENV') === 'production';
+        res.cookie('temp_2fa_token', tempToken, {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'lax',
+            maxAge: 5 * 60 * 1000, // 5 minutos
+            path: '/',
+        });
+    }
+
     @Get('google')
     @UseGuards(GoogleAuthGuard)
     async googleAuth(@Req() req) {
@@ -34,7 +48,13 @@ export class AuthController {
 
     @Post('signin')
     async signin(@Body() signinDto: CredentialsAuthDto, @Res({ passthrough: true }) res: Response) {
-        const { access_token, ...result } = await this.authService.signin(signinDto);
+        const { access_token, user, ...result } = await this.authService.signin(signinDto);
+
+        if (user.isTwoFactorEnabled) {
+            const tempToken = await this.authService.generateTempToken(user);
+            this.setTempTwoFactorCookie(res, tempToken);
+            return { message: '2FA required' };
+        }
         this.setAuthCookie(res, access_token);
         return result;
     }
@@ -89,7 +109,7 @@ export class AuthController {
     @UseGuards(JwtAuthGuard)
     @Post('2fa/generate')
     async generate2FA(@Req() req) {
-        const secret = this.TwoFactorService.generateSecret();
+        const secret = this.twoFactorService.generateSecret();
         await this.userService.setTwoFactorSecret(req.user.id, secret);
 
         const otpAuthUrl = this.twoFactorService.generateOtpAuthUrl(req.user.email, secret);
@@ -102,10 +122,10 @@ export class AuthController {
     @Post('2fa/turn-on')
     async turnOn2FA(@Req() req, @Body() dto: TwoFactorCodeDto) {
         const user = await this.userService.findOne(req.user.id);
-        const isValid = this.twoFactorService.verifyToken(dto.code, user.twoFactorSecret);
+        const isValid = await this.twoFactorService.verifyToken(dto.code, user.twoFactorSecret);
 
         if (!isValid) {
-        throw new UnauthorizedException('Código inválido');
+            throw new UnauthorizedException('Código inválido');
         }
 
         await this.userService.enableTwoFactor(req.user.id);
@@ -123,7 +143,7 @@ export class AuthController {
     async authenticate2FA(@Req() req, @Body() dto: TwoFactorCodeDto, @Res({ passthrough: true }) res: Response) {
         const tempToken = req.cookies?.temp_2fa_token;
         if (!tempToken) {
-        throw new UnauthorizedException('Sessão de 2FA expirada ou inexistente');
+            throw new UnauthorizedException('Sessão de 2FA expirada ou inexistente');
         }
 
         const payload = await this.authService.verifyTempToken(tempToken);
@@ -131,7 +151,7 @@ export class AuthController {
 
         const isValid = this.twoFactorService.verifyToken(dto.code, user.twoFactorSecret);
         if (!isValid) {
-        throw new UnauthorizedException('Código 2FA inválido');
+            throw new UnauthorizedException('Código 2FA inválido');
         }
 
         const { access_token } = await this.authService.login(user);
@@ -139,6 +159,5 @@ export class AuthController {
         this.setAuthCookie(res, access_token);
 
         return { message: 'Autenticado com sucesso' };
-    }
     }
 }

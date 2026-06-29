@@ -1,25 +1,29 @@
-// modules/auth/two-factor.service.ts
 import { Injectable } from '@nestjs/common';
-import { authenticator } from 'otplib';
+import { TOTP } from 'otplib';
 import { toDataURL } from 'qrcode';
 
 @Injectable()
 export class TwoFactorService {
+  private totp = new TOTP();
 
   generateSecret(): string {
-    return authenticator.generateSecret();
+    return this.totp.generateSecret();
   }
 
   generateOtpAuthUrl(email: string, secret: string): string {
-    const appName = 'FtTranscender'; // nome que aparece na app de autenticação
-    return authenticator.keyuri(email, appName, secret);
+    return this.totp.toURI({
+      secret,
+      label: email,
+      issuer: 'FtTranscender',
+    });
   }
 
   async generateQrCodeDataUrl(otpAuthUrl: string): Promise<string> {
     return toDataURL(otpAuthUrl);
   }
 
-  verifyToken(token: string, secret: string): boolean {
-    return authenticator.verify({ token, secret });
+  async verifyToken(token: string, secret: string): Promise<boolean> {
+    const result = await this.totp.verify(token, { secret });
+    return result.valid; // extrai o boolean
   }
 }

@@ -99,6 +99,33 @@ export class UserService {
     }
   }
 
+  async setTwoFactorSecret(userId: string, secret: string): Promise<void> {
+    const user = await this.userRepository.findOneBy({ id: userId });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    user.twoFactorSecret = secret;
+    await this.userRepository.save(user);
+  }
+
+  async enableTwoFactor(userId: string): Promise<void> {
+    const user = await this.userRepository.findOneBy({ id: userId });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    user.isTwoFactorEnabled = true;
+    await this.userRepository.save(user);
+  }
+
+  async disableTwoFactor(userId: string): Promise<void> {
+    const user = await this.userRepository.findOneBy({ id: userId });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    user.isTwoFactorEnabled = false;
+    await this.userRepository.save(user);
+  }
+
   createOauthUser(dto:CreateOauthUserDto ):Promise<User>{
     const normalizedEmail = this.normalizeEmail(dto.email);
     const user = this.userRepository.create({

@@ -42,7 +42,7 @@ wait-db: up
 migrate-generate:
 	@echo "Generating migration..."
 	@cd $(BACK_DIR) && \
-	@npm run migration:run &&\
+	npm run migration:run &&\
 	NAME=migration && \
 	COUNT=$$(ls -1 src/migrations/*.ts 2>/dev/null | wc -l | tr -d ' ') && \
 	NEXT=$$((COUNT + 1)) && \

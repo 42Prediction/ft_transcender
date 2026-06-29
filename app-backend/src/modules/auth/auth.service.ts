@@ -183,4 +183,38 @@ export class AuthService{
             token:this.jwtService.sign(payload)
         };
     }
+
+    async verifyTempToken(token: string): Promise<User> {
+        try {
+            const decoded = this.jwtService.verify(token);
+            const userId = decoded.sub;
+            const user = await this.userService.findOne(userId);
+            if (!user) {
+                throw new UnauthorizedException('User not found');
+            }
+            return user;
+        } catch (error) {
+            throw new UnauthorizedException('Invalid or expired token');
+        }
+    }
+
+    async generateTempToken(user: User): Promise<string> {
+        const payload = {
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+        };
+        return this.jwtService.sign(payload, { expiresIn: '5m' });
+    }
+
+    async login(user: User): Promise<{ access_token: string }> {
+        const payload = {
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+        };
+        return {
+            access_token: this.jwtService.sign(payload),
+        };
+    }
 }
