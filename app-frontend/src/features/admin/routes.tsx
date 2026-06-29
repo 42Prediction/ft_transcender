@@ -1,13 +1,19 @@
-import { authMiddleware } from "@/middleware/auth";
-import { Admin } from "./pages/Admin";
-import { adminProtectedLoader } from "@/loader/guards";
+import { adminProtectedLoader, adminPublicLoader } from '@/loader/guards';
+import { adminSigninAction } from './actions/singnin';
+import AdminLogin from './pages/Login';
+import UsersPage from './pages/Users';
+
 
 export const adminDashboardRoute = [
     {
-        id: 'admin',
-        path: 'admin',
-        component: Admin,
+        path: 'login',
+        loader: adminPublicLoader,
+        action: adminSigninAction,
+        Component: AdminLogin,
+    },
+    {
+        path: 'users',
         loader: adminProtectedLoader,
-        middleware: [authMiddleware],
+        Component: UsersPage,
     }
 ];

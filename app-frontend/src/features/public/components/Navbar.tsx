@@ -10,10 +10,8 @@ export function Navbar() {
   const data = useRouteLoaderData('root') as any;
   const profile = data?.data;
   const location = useLocation();
-  const isAdmin = location.pathname.startsWith('/admin');
   const from = location;
-  console.log("isAdmin", isAdmin, location.pathname);
-  console.log("profile", profile);
+
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -116,7 +114,7 @@ function UserInfo(
           onClick={() => setOpen(!open)}
           className="flex h-10 items-center gap-2 rounded-xl bg-gradient-brand px-4 text-sm font-semibold text-primary-foreground shadow-glow transition hover:opacity-90"
         >
-          <span className="hidden sm:inline">{profile?.nick || "lpiquet"}</span>
+          <span className="hidden sm:inline">{ profile?.nick}</span>
           <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
         </button>
 

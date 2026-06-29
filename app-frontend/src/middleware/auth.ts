@@ -3,22 +3,35 @@ import { dataContext } from "@/routes";
 import type { LoaderFunctionArgs } from "react-router-dom";
 
 
-// src/middleware/auth.ts
 export async function authMiddleware({ context }: LoaderFunctionArgs) {
+    
     try {
-        const data = await auth.getMe(); // bettor/me
+        const data = await auth.getMe();
         if (data) {
             context.set(dataContext, { statusCode: 200, data });
             return;
         }
-        // se não tem bettor tenta como user
-        const userData = await auth.getMeAdmin(); // users/me
+    } catch (error) {
+        console.error('bettor/me failed:', error);
+    }
+
+    context.set(dataContext, null);
+}
+
+export async function adminAuthMiddleware({ context, request }: LoaderFunctionArgs) {
+    const url = new URL(request.url);
+    if (url.pathname === '/admin/login') {
+        context.set(dataContext, null);
+        return;
+    }
+    try {
+        const userData = await auth.getMeAdmin();
         if (userData) {
             context.set(dataContext, { statusCode: 200, data: userData });
             return;
         }
-        context.set(dataContext, null);
-    } catch (error) {
-        context.set(dataContext, null);
+    } catch {
+        // silencioso
     }
+    context.set(dataContext, null);
 }

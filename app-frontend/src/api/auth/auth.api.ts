@@ -1,9 +1,9 @@
 import api from "../api";
 
 export interface User {
-  id: string;
-  email: string;
-  role: string;
+	id: string;
+	email: string;
+	role: string;
 }
 
 export const auth = {
@@ -17,13 +17,14 @@ export const auth = {
 		return res.data;
 	},
 
+	// src/api/auth/auth.api.ts
 	getMe: async (): Promise<any> => {
 		try {
 			const res = await api.get('/bettor/me');
-			return res.data;
+			if (res.data?.statusCode === 401 || !res.data?.success) return null;
+			return res.data?.data ?? res.data;
 		} catch (err: any) {
-			if (err.response?.status === 401)
-     			 return null;
+			if (err.response?.status === 401) return null;
 			throw err;
 		}
 	},
@@ -31,11 +32,10 @@ export const auth = {
 	getMeAdmin: async (): Promise<any> => {
 		try {
 			const res = await api.get('/users/me');
+			if (!res.data || res.data?.statusCode === 401) return null;
 			return res.data;
 		} catch (err: any) {
-			if (err.response?.status === 401) {
-				return null;
-			}
+			if (err.response?.status === 401) return null;
 			throw err;
 		}
 	},
