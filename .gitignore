@@ -7,3 +7,4 @@ app-backend/node_modules
 app-frontend/node_modules
 coverage
 uploads
+qrcode.html
