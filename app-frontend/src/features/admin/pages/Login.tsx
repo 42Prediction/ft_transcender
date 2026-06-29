@@ -1,13 +1,22 @@
 import { useState } from "react";
 import { Form, useActionData } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 
 export default function AdminLogin() {
     const actionData = useActionData() as { error?: string } | undefined;
     const [showPassword, setShowPassword] = useState(false);
 
     return (
-        <div className="dark grid min-h-screen place-items-center bg-background text-foreground">
+        <>
+        
+             <button
+                onClick={() => (window.location.href = "/")}
+                className="flex items-center fo rounded-md bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground"
+            >
+                <ChevronLeft className="h-4 w-4" />
+                Go back
+            </button>
+        <div className="grid h-screen place-items-center overflow-hidden bg-background text-foreground">
             <Form method="post" className="w-80 space-y-4">
                 <h1 className="text-2xl font-bold">Admin Login</h1>
 
@@ -54,9 +63,9 @@ export default function AdminLogin() {
                     Login
                 </button>
             </Form>
-                <button>
-                    Go back
-                </button>
+
+           
         </div>
+        </>
     );
 }
