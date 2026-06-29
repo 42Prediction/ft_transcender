@@ -27,6 +27,12 @@ export class Bettor {
     })
     isNickSetted!: boolean;
 
+    @Column({ 
+        type: 'text',
+        nullable: true 
+    })
+    campus?: string;
+
     @OneToOne(()=> User, {onDelete: 'CASCADE'})
     @JoinColumn({ name: 'user_id' })
     user!: User;

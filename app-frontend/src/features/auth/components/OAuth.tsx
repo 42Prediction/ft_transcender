@@ -4,7 +4,6 @@ export default function OAuth({from}: {from: string}){
     };
 	const urlGoogle = `http://localhost:3000/auth/google?state=${encodeURIComponent(from)}`
 	const url42 = `http://localhost:3000/auth/school?state=${encodeURIComponent(from)}`
-	console.log(urlGoogle)
     return (
 		<>
 			<div className="grid grid-cols-2 gap-2">

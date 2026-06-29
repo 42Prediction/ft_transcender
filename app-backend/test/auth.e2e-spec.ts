@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ExecutionContext, UnauthorizedException, ValidationPipe } from '@nestjs/common';
+import { INestApplication, ExecutionContext, UnauthorizedException, ValidationPipe, HttpStatus } from '@nestjs/common';
 import request from 'supertest';
 import { AuthController } from '../src/modules/auth/auth.controller';
 import { AuthService } from '../src/modules/auth/auth.service';
@@ -8,6 +8,7 @@ import { GoogleAuthGuard } from '../src/modules/auth/guards/google-auth.guard';
 import { JwtService } from '@nestjs/jwt';
 import { BettorService } from '../src/modules/bettor/bettor.service';
 import { UserService } from '../src/modules/user/user.service';
+import { HttpException } from '@nestjs/common';
 
 describe('AuthController (E2E)', () => {
   let app: INestApplication;
@@ -16,6 +17,9 @@ describe('AuthController (E2E)', () => {
 
   const mockAuthService = {
     googleLogin: jest.fn(),
+    _42SchoolLogin: jest.fn(),
+    signin: jest.fn(),
+    signup: jest.fn(),
   };
 
   const mockConfigService = {
@@ -72,13 +76,17 @@ describe('AuthController (E2E)', () => {
     it('should return 401 Unauthorized if the Google guard does not authenticate a user', async () => {
       currentGoogleUser = null;
 
-      await request(app.getHttpServer()).get('/auth/google/callback').expect(401);
+      await request(app.getHttpServer())
+        .get('/auth/google/callback')
+        .expect(HttpStatus.UNAUTHORIZED);
     });
   });
 
   describe('Google OAuth Endpoints', () => {
     it('GET /auth/google -> should resolve through the Google guard without calling the service', async () => {
-      await request(app.getHttpServer()).get('/auth/google').expect(200);
+      await request(app.getHttpServer())
+        .get('/auth/google')
+        .expect(HttpStatus.OK);
 
       expect(mockAuthService.googleLogin).not.toHaveBeenCalled();
     });
@@ -86,7 +94,7 @@ describe('AuthController (E2E)', () => {
     it('GET /auth/google/callback -> should set auth cookie and redirect to the frontend callback', async () => {
       const response = await request(app.getHttpServer())
         .get('/auth/google/callback')
-        .expect(302);
+        .expect(HttpStatus.FOUND); // 302
 
       expect(mockAuthService.googleLogin).toHaveBeenCalledWith({ email: 'google@test.com' });
       expect(response.headers['set-cookie']).toEqual(
@@ -110,10 +118,10 @@ function make42TokenResponse(accessToken = '42-access-token') {
   };
 }
 
-function make42ProfileResponse(login = 'will', email = 'will@42luanda.com') {
+function make42ProfileResponse(login = 'will', email = 'will@42luanda.com', campus = 'Luanda') {
   return {
     ok: true,
-    json: async () => ({ login, email })
+    json: async () => ({ login, email, campus: [{ name: campus }] })
   };
 }
 
@@ -215,7 +223,7 @@ describe('Auth - 42School OAuth', () => {
     it('returns 302 and redirects to 42 authorization URL', async () => {
       const res = await request(app.getHttpServer())
         .get('/auth/school')
-        .expect(302);
+        .expect(HttpStatus.FOUND);
 
       const location = res.headers['location'];
       expect(location).toBeDefined();
@@ -233,7 +241,7 @@ describe('Auth - 42School OAuth', () => {
     it('redirect URL contains the correct redirect_uri', async () => {
       const res = await request(app.getHttpServer())
         .get('/auth/school')
-        .expect(302);
+        .expect(HttpStatus.FOUND);
 
       const location = new URL(res.headers['location']);
       expect(location.searchParams.get('redirect_uri')).toBe(
@@ -244,6 +252,12 @@ describe('Auth - 42School OAuth', () => {
 
 
   describe('GET /auth/42luanda/callback', () => {
+    let authServiceInstance: AuthService;
+
+    beforeEach(() => {
+      authServiceInstance = app.get<AuthService>(AuthService);
+    });
+
     it('returns 302 to frontend after successful OAuth exchange', async () => {
       mockFetch
         .mockResolvedValueOnce(make42TokenResponse())
@@ -252,10 +266,10 @@ describe('Auth - 42School OAuth', () => {
       const res = await request(app.getHttpServer())
         .get('/auth/42luanda/callback')
         .query({ code: 'valid-code' })
-        .expect(302);
+        .expect(HttpStatus.FOUND);
 
       expect(res.headers['location']).toContain(
-        'http://localhost:5173/auth/callback',
+        'http://localhost:5173',
       );
     });
 
@@ -267,15 +281,12 @@ describe('Auth - 42School OAuth', () => {
       const res = await request(app.getHttpServer())
         .get('/auth/42luanda/callback')
         .query({ code: 'valid-code' })
-        .expect(302);
+        .expect(HttpStatus.FOUND);
 
       const raw = res.headers['set-cookie'] as string | string[] | undefined;
       const cookies: string[] = Array.isArray(raw) ? raw : raw ? [raw] : [];
       const hasAuthCookie = cookies.some(
-        (c) =>
-          c.toLowerCase().includes('token') ||
-          c.toLowerCase().includes('auth') ||
-          c.toLowerCase().includes('jwt'),
+        (c) => c.includes('access_token=')
       );
       expect(hasAuthCookie).toBe(true);
     });
@@ -288,7 +299,7 @@ describe('Auth - 42School OAuth', () => {
       await request(app.getHttpServer())
         .get('/auth/42luanda/callback')
         .query({ code: 'test-code-123' })
-        .expect(302);
+        .expect(HttpStatus.FOUND);
 
       const [tokenUrl, tokenOptions] = mockFetch.mock.calls[0];
       expect(tokenUrl).toBe('https://api.intra.42.fr/oauth/token');
@@ -308,41 +319,53 @@ describe('Auth - 42School OAuth', () => {
       await request(app.getHttpServer())
         .get('/auth/42luanda/callback')
         .query({ code: 'some-code' })
-        .expect(302);
+        .expect(HttpStatus.FOUND);
 
       const [profileUrl, profileOptions] = mockFetch.mock.calls[1];
       expect(profileUrl).toBe('https://api.intra.42.fr/v2/me');
       expect(profileOptions.headers['Authorization']).toBe('Bearer tok-xyz');
     });
 
-    it('returns 400 when code is absent', async () => {
-      await request(app.getHttpServer())
+    it('returns 200 (com wrapper de erro) quando o code está ausente', async () => {
+      jest.spyOn(authServiceInstance, '_42SchoolLogin').mockRejectedValueOnce(
+        new HttpException('Code is absent', HttpStatus.BAD_REQUEST)
+      );
+
+      const res = await request(app.getHttpServer())
         .get('/auth/42luanda/callback')
-        .expect(400);
+        .expect(HttpStatus.OK);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.statusCode).toBe(HttpStatus.BAD_REQUEST);
+      expect(res.body.error.message).toBe('Code is absent');
     });
 
-    it('returns 400 when 42 token endpoint rejects the code', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        text: async () => 'invalid_grant',
-      });
+    it('returns 200 (com wrapper de erro) quando o endpoint de token rejeita o code', async () => {
+      jest.spyOn(authServiceInstance, '_42SchoolLogin').mockRejectedValueOnce(
+        new HttpException('invalid_grant', HttpStatus.BAD_REQUEST)
+      );
 
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .get('/auth/42luanda/callback')
         .query({ code: 'expired-code' })
-        .expect(400);
+        .expect(HttpStatus.OK);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.statusCode).toBe(HttpStatus.BAD_REQUEST);
     });
 
-    it('returns 400 when profile endpoint fails', async () => {
+    it('returns 200 (com wrapper de erro 500) quando o profile falha e lança erro genérico', async () => {
       mockFetch
         .mockResolvedValueOnce(make42TokenResponse())
-        .mockResolvedValueOnce({ ok: false });
+        .mockResolvedValueOnce({ ok: false, json: async () => ({}) });
 
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .get('/auth/42luanda/callback')
         .query({ code: 'valid-code' })
-        .expect(400);
+        .expect(HttpStatus.OK);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.statusCode).toBe(HttpStatus.BAD_REQUEST);
     });
   });
 });

@@ -9,6 +9,7 @@ import { BettorService } from '../bettor/bettor.service';
 import { Bettor } from '../bettor/entities/bettor.entity';
 import { ConfigService } from '@nestjs/config';
 import { BadRequestException } from '@nestjs/common';
+import { Profile42Dto } from '../bettor/dto/profile-42.dto';
 
 @Injectable()
 export class AuthService{
@@ -49,15 +50,12 @@ export class AuthService{
         }
         return {
             access_token: this.jwtService.sign(payload),
-            result: {
-                statusCode: 201,
-                message: 'User login successfully.',
-                data: {
-                    id: user.id,
-                    email: user.email,
-                    role: user.role,
-                },
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role,
             },
+            message: 'User login successfully.',
         }
     }
 
@@ -68,16 +66,15 @@ export class AuthService{
             throw new InternalServerErrorException('Bettor id required');
         }
         return {
-            statusCode: 201,
-            message: 'User created successfully.',
-            data: {
+            user: {
                 id: user.id,
                 email: user.email,
                 role: user.role,
                 nick: bettor.nick,
                 avatar: bettor.avatar,
                 isNickSetted: bettor.isNickSetted,
-            }
+            },
+            message: 'User created successfully.',
         }
     }
 
@@ -92,7 +89,7 @@ export class AuthService{
             user = await this.userService.createOauthUser({
                 email: userGoogle.email,
             });
-            this.bettorService.create(user);
+            await this.bettorService.create(user);
         }
 
         const payload = {
@@ -140,9 +137,11 @@ export class AuthService{
         }
 
         const responseData = await response.json();
-        const {email} = await this.profileOauth42School(responseData.access_token);
-        const {token} = await this.generateToken(email);
-        return {access_token: token};
+        const {email, campus} = await this.profileOauth42School(responseData.access_token);
+        const {token} = await this.generateToken(email, {campus} as Profile42Dto);
+        return {
+            access_token: token,
+        };
     }
 
     async profileOauth42School(token:string){
@@ -158,18 +157,20 @@ export class AuthService{
                 throw new BadRequestException("Can't get user profile of API");
 
         const profileData = await profileResponse.json();
-
-        return {name: profileData.login, email:profileData.email};
+        return {name: profileData.login, email:profileData.email, campus: profileData.campus?.[0]?.name};
     }
 
-    private async generateToken(email:string){
+    private async generateToken(email:string, profile42dto?: Profile42Dto){
         let user = await this.userService.findOneByEmail(email);
 
         if (user === null){
             user = await this.userService.createOauthUser({
                 email: email,
             });
-            this.bettorService.create(user);
+            const bettor = await this.bettorService.create(user, profile42dto);
+            if (!bettor){
+                throw new InternalServerErrorException('Bettor id required');
+            }
         }
 
 
@@ -180,7 +181,8 @@ export class AuthService{
         };
 
         return {
-            token:this.jwtService.sign(payload)
+            token:this.jwtService.sign(payload),
+            data:{}
         };
     }
 

@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export function Footer() {
   return (
     <footer className="border-t border-border/60 bg-background py-12">
@@ -32,14 +34,43 @@ export function Footer() {
           </p>
         </div>
         {[
-          { h: "Platform", links: ["Markets", "Leaderboard"] },
-          { h: "Learn", links: ["How it works", "Trading guide", "FAQ"] },
-          { h: "Legal", links: ["About", "Terms", "Privacy"] },
+          {
+            h: "Platform",
+            links: [
+              { label: "Markets", to: "/markets" },
+              { label: "Leaderboard", to: "/leaderboard" },
+            ],
+          },
+          {
+            h: "Learn",
+            links: [
+              { label: "How it works", to: "/how-it-works" },
+              { label: "Trading guide", to: "/trading-guide" },
+              { label: "FAQ", to: "/faq" },
+            ],
+          },
+          {
+            h: "Legal",
+            links: [
+              { label: "About", to: "/about" },
+              { label: "Terms", to: "/terms" },
+              { label: "Privacy", to: "/privacy" },
+            ],
+          },
         ].map((col) => (
           <div key={col.h}>
-            <div className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">{col.h}</div>
+            <div className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+              {col.h}
+            </div>
+
             <ul className="mt-3 space-y-2 text-sm">
-              {col.links.map((l) => <li key={l}><a href="#" className="hover:text-primary">{l}</a></li>)}
+              {col.links.map((l) => (
+                <li key={l.to}>
+                  <Link to={l.to} onClick={() => window.scrollTo(0, 0)} className="hover:text-primary">
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         ))}

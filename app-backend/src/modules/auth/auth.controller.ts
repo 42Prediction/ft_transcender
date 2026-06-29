@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
@@ -10,12 +10,14 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { TwoFactorService } from './two-factor.service';
 import { UserService } from '../user/user.service';
 import { UnauthorizedException } from '@nestjs/common';
+import { errorResponse, successResponse } from '../../shared/helper/api-response.helper';
+
 
 
 @Controller('auth')
 export class AuthController {
     constructor(private authService: AuthService, private configService: ConfigService,
-                private twoFactorService: TwoFactorService, private userService: UserService
+        private twoFactorService: TwoFactorService, private userService: UserService
     ) { }
 
     private setAuthCookie(res: Response, accessToken: string) {
@@ -44,64 +46,96 @@ export class AuthController {
     @Get('google')
     @UseGuards(GoogleAuthGuard)
     async googleAuth(@Req() req) {
+        try {
+
+        } catch (error) {
+            return errorResponse(error);
+        }
     }
 
     @Post('signin')
+    @HttpCode(HttpStatus.OK)
     async signin(@Body() signinDto: CredentialsAuthDto, @Res({ passthrough: true }) res: Response) {
-        const { access_token, user, ...result } = await this.authService.signin(signinDto);
-
-        if (user.isTwoFactorEnabled) {
-            const tempToken = await this.authService.generateTempToken(user);
-            this.setTempTwoFactorCookie(res, tempToken);
-            return { message: '2FA required' };
+     
+        try {
+            const { access_token, user, ...result } = await this.authService.signin(signinDto);
+            if (user.isTwoFactorEnabled) {
+                const tempToken = await this.authService.generateTempToken(user);
+                this.setTempTwoFactorCookie(res, tempToken);
+                return { message: '2FA required' };
+            }
+            this.setAuthCookie(res, access_token);
+            return successResponse<any>(HttpStatus.OK, result);
+        } catch (error) {
+            return errorResponse(error);
         }
-        this.setAuthCookie(res, access_token);
-        return result;
+
     }
 
     @Post('signup')
+    @HttpCode(HttpStatus.OK)
     async signup(@Body() signinAuthDto: CredentialsAuthDto) {
-        return await this.authService.signup(signinAuthDto);
+        try {
+            const res = await this.authService.signup(signinAuthDto);
+            return successResponse<any>(HttpStatus.CREATED, res);
+        } catch (error) {
+            return errorResponse(error);
+        }
     }
 
     @Post('signout')
+    @HttpCode(HttpStatus.OK)
     async signout(@Res({ passthrough: true }) res: Response) {
-        res.clearCookie('access_token', { path: '/' });
-        return { message: 'Logged out' };
+        try {
+            res.clearCookie('access_token', { path: '/' });
+            successResponse(HttpStatus.OK, { message: 'Logged out' });
+        } catch (error) {
+            return errorResponse(error);
+        }
     }
 
     @Get('school')
-    _42schoolAuth(@Res() res:Response){
-        const url=this.configService.getOrThrow('_42SCHOOL_API_URL_AUTHORIRIZE');
-        const params = new URLSearchParams({
-            client_id:this.configService.getOrThrow<string>('_42SCHOOL_CLIENT_ID'),
-            redirect_uri:this.configService.getOrThrow<string>('_42SCHOOL_CALLBACK_URL'),
-            scope: 'public',
-            response_type: 'code',
-            state: 'xyz'
-    });
+    _42schoolAuth(@Res() res: Response) {
+        try {
+            const url = this.configService.getOrThrow('_42SCHOOL_API_URL_AUTHORIRIZE');
+            const params = new URLSearchParams({
+                client_id: this.configService.getOrThrow<string>('_42SCHOOL_CLIENT_ID'),
+                redirect_uri: this.configService.getOrThrow<string>('_42SCHOOL_CALLBACK_URL'),
+                scope: 'public',
+                response_type: 'code',
+                state: 'xyz'
+            });
 
-    res.redirect(302, `${url}?${params.toString()}`);
+            res.redirect(302, `${url}?${params.toString()}`);
+        } catch (error) {
+            return console.error(error);
+        }
     }
 
     @Get('google/callback')
     @UseGuards(GoogleAuthGuard)
-    async googleAuthCallBack(@Req() req, @Res() res:Response){
-
-        const { access_token } = await this.authService.googleLogin(req.user);
-        this.setAuthCookie(res, access_token);
-        const frontendUrl = this.configService.get('FRONTEND_URL') as string;
-        res.redirect(`${frontendUrl}`);
+    async googleAuthCallBack(@Req() req, @Res({ passthrough: true }) res: Response) {
+        try {
+            const { access_token } = await this.authService.googleLogin(req.user);
+            this.setAuthCookie(res, access_token);
+            const frontendUrl = this.configService.get('FRONTEND_URL') as string;
+            res.redirect(`${frontendUrl}`);
+        } catch (error) {
+            return errorResponse(error);
+        }
 
     }
 
     @Get('42luanda/callback')
-    async _42schoolAuthCallBack(@Req() req, @Res() res:Response){
-
-        const {access_token} = await this.authService._42SchoolLogin(req.query.code as string);
-        this.setAuthCookie(res, access_token);
-        const frontendUrl = this.configService.get('FRONTEND_URL');
-        res.redirect(`${frontendUrl}/auth/callback`);
+    async _42schoolAuthCallBack(@Req() req, @Res({ passthrough: true }) res: Response) {
+        try {
+            const { access_token } = await this.authService._42SchoolLogin(req.query.code as string);
+            this.setAuthCookie(res, access_token);
+            const frontendUrl = this.configService.get('FRONTEND_URL');
+            res.redirect(`${frontendUrl}`);
+        } catch (error) {
+            return errorResponse(error);
+        }
     }
 
     //----------- 2FA Endpoints -----------//

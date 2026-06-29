@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -7,13 +7,16 @@ import { User } from './entities/user.entity';
 import * as bcrypt from 'bcrypt'
 import { AdmUpdateUserDto } from './dto/admin-update-user.dto';
 import { CreateOauthUserDto } from './create-oauth-user.dto';
+import { BettorService } from '../bettor/bettor.service';
+import { Profile42Dto } from '../bettor/dto/profile-42.dto';
 
 @Injectable()
 export class UserService {
   private SALTROUNDS: number = 10;
   constructor(
     @InjectRepository(User)
-    private readonly userRepository: Repository<User>
+    private readonly userRepository: Repository<User>,
+    private readonly bettorService: BettorService,
   ) { }
 
   private normalizeEmail(email: string | undefined): string {
@@ -42,7 +45,7 @@ export class UserService {
   }
 
   async findOneByEmail(email: string): Promise<User | null> {
-    return await this.userRepository.findOne({where: { email: this.normalizeEmail(email) }});
+    return await this.userRepository.findOne({ where: { email: this.normalizeEmail(email) } });
   }
 
   async findAll(): Promise<User[]> {
@@ -50,20 +53,20 @@ export class UserService {
   }
 
   async findOne(id: string): Promise<User> {
-    const user : User | null = await this.userRepository.findOne({
+    const user: User | null = await this.userRepository.findOne({
       where: { id },
     });
-    if (!user){
+    if (!user) {
       throw new NotFoundException("User Not Found");
     }
     return user;
   }
 
   async update(id: string, updateUserDto: UpdateUserDto | AdmUpdateUserDto): Promise<User> {
-    const user : User | null = await this.userRepository.findOne({
+    const user: User | null = await this.userRepository.findOne({
       where: { id },
     });
-    if (!user){
+    if (!user) {
       throw new NotFoundException("User Not Found");
     }
 
@@ -89,8 +92,8 @@ export class UserService {
   };
 
   async remove(id: string) {
-    const user = await this.userRepository.findOneBy({id});
-    if (!user){
+    const user = await this.userRepository.findOneBy({ id });
+    if (!user) {
       throw new NotFoundException("User Not Found");
     }
     await this.userRepository.remove(user);
@@ -126,13 +129,12 @@ export class UserService {
     await this.userRepository.save(user);
   }
 
-  createOauthUser(dto:CreateOauthUserDto ):Promise<User>{
+
+  async createOauthUser(dto: CreateOauthUserDto): Promise<User> {
     const normalizedEmail = this.normalizeEmail(dto.email);
     const user = this.userRepository.create({
-        email: normalizedEmail,
+      email: normalizedEmail,
     });
-
     return this.userRepository.save(user);
   }
-
 }

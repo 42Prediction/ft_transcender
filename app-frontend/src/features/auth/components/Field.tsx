@@ -9,7 +9,9 @@ export default function Field({
   name,
   value,
   onChange,
-  autoFocus
+  autoFocus,
+  autocomplete,
+  id,
 }: {
   icon: React.ElementType;
   type?: string;
@@ -22,10 +24,12 @@ export default function Field({
   value: string;
   onChange: (v: string) => void;
   autoFocus?: boolean;
+  autocomplete?: string;
+  id: string;
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-foreground/90">
+      <label htmlFor={id} className="block text-sm font-medium text-foreground/90">
         {label} {required && <span className="text-primary">*</span>}
       </label>
 
@@ -33,6 +37,7 @@ export default function Field({
         <Icon className="ml-3.5 h-4 w-4 text-muted-foreground" />
 
         <input
+          id={id}
           name={name}
           value={value}
           onChange={e => onChange(e.target.value)}
@@ -41,6 +46,8 @@ export default function Field({
           placeholder={placeholder}
           autoFocus={autoFocus}
           className="h-12 w-full bg-transparent px-3 text-sm focus:outline-none"
+          onFocus={(e) => e.stopPropagation()}
+          autoComplete={autocomplete}
         />
 
         {right}
