@@ -63,6 +63,13 @@ export class BettorController {
     return this.bettorService.update(req.user.id, updateBettorDto, avatarFile);
   }
 
+  @Get('@:nick/exists')
+  @HttpCode(HttpStatus.OK)
+  async checkNickExists(@Param('nick') nick: string): Promise<{ exists: boolean }> {
+    const exists = await this.bettorService.nickExists(nick);
+    return { exists };
+  }
+
   @Get('@:nick')
   async publicProfile(@Param('nick') nick: string) {
     return await this.bettorService.findByNick(nick);
