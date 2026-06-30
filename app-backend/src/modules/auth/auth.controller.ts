@@ -62,7 +62,7 @@ export class AuthController {
     async signout(@Res({ passthrough: true }) res: Response) {
         try {
             res.clearCookie('access_token', { path: '/' });
-            successResponse<any>(HttpStatus.OK, { message: 'Logged out' });
+            successResponse(HttpStatus.OK, { message: 'Logged out' });
         } catch (error) {
             return errorResponse(error);
         }
@@ -88,7 +88,7 @@ export class AuthController {
 
     @Get('google/callback')
     @UseGuards(GoogleAuthGuard)
-    async googleAuthCallBack(@Req() req, @Res() res: Response) {
+    async googleAuthCallBack(@Req() req, @Res({ passthrough: true }) res: Response) {
         try {
             const { access_token } = await this.authService.googleLogin(req.user);
             this.setAuthCookie(res, access_token);
@@ -101,7 +101,7 @@ export class AuthController {
     }
 
     @Get('42luanda/callback')
-    async _42schoolAuthCallBack(@Req() req, @Res() res: Response) {
+    async _42schoolAuthCallBack(@Req() req, @Res({ passthrough: true }) res: Response) {
         try {
             const { access_token } = await this.authService._42SchoolLogin(req.query.code as string);
             this.setAuthCookie(res, access_token);

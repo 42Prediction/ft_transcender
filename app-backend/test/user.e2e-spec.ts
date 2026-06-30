@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import 'reflect-metadata';
-import { INestApplication, ExecutionContext, ClassSerializerInterceptor, UnauthorizedException } from '@nestjs/common';
+import { INestApplication, ExecutionContext, ClassSerializerInterceptor, UnauthorizedException, HttpStatus } from '@nestjs/common';
 import request from 'supertest';
 import { Reflector } from '@nestjs/core';
 import { Role } from '../src/shared/enums/roles.enum';
@@ -86,7 +86,7 @@ describe('UserController (E2E)', () => {
 
       await request(app.getHttpServer())
         .get('/users')
-        .expect(401);
+        .expect(HttpStatus.UNAUTHORIZED);
     });
 
     it('should return 403 Forbidden if a standard user tries to access admin routes', async () => {
@@ -94,7 +94,7 @@ describe('UserController (E2E)', () => {
 
       await request(app.getHttpServer())
         .get('/users')
-        .expect(403);
+        .expect(HttpStatus.FORBIDDEN);
     });
   });
 
@@ -111,10 +111,15 @@ describe('UserController (E2E)', () => {
       const response = await request(app.getHttpServer())
         .post('/users')
         .send(payload)
-        .expect(201);
+        .expect(HttpStatus.OK); // Alterado de 201 para 200 conforme seu @HttpCode
 
       expect(userService.create).toHaveBeenCalledWith(payload);
-      expect(response.body).toEqual(expectedOutput);
+      expect(response.body).toEqual({
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: expectedOutput,
+        error: null,
+      });
     });
 
     it('GET /users -> should allow admin to fetch all users', async () => {
@@ -123,10 +128,15 @@ describe('UserController (E2E)', () => {
 
       const response = await request(app.getHttpServer())
         .get('/users')
-        .expect(200);
+        .expect(HttpStatus.OK);
 
       expect(userService.findAll).toHaveBeenCalled();
-      expect(response.body).toEqual(expectedOutput);
+      expect(response.body).toEqual({
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: expectedOutput,
+        error: null,
+      });
     });
 
     it('GET /users/:id -> should allow admin to fetch a specific user', async () => {
@@ -136,10 +146,15 @@ describe('UserController (E2E)', () => {
 
       const response = await request(app.getHttpServer())
         .get(`/users/${targetId}`)
-        .expect(200);
+        .expect(HttpStatus.OK);
 
       expect(userService.findOne).toHaveBeenCalledWith(targetId);
-      expect(response.body).toEqual(expectedOutput);
+      expect(response.body).toEqual({
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: expectedOutput,
+        error: null,
+      });
     });
 
     it('PATCH /users/:id -> should allow admin to update any user info', async () => {
@@ -151,29 +166,55 @@ describe('UserController (E2E)', () => {
       const response = await request(app.getHttpServer())
         .patch(`/users/${targetId}`)
         .send(updatePayload)
-        .expect(200);
+        .expect(HttpStatus.OK);
 
       expect(userService.update).toHaveBeenCalledWith(targetId, updatePayload);
-      expect(response.body).toEqual(expectedOutput);
+      expect(response.body).toEqual({
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: expectedOutput,
+        error: null,
+      });
     });
 
     it('DELETE /users/:id -> should allow admin to destroy a user profile', async () => {
       const targetId = 'to-be-deleted';
-      const expectedOutput = { message: 'User deleted successfully' };
-      mockUserService.remove.mockResolvedValue(expectedOutput);
+      mockUserService.remove.mockResolvedValue(undefined);
 
       const response = await request(app.getHttpServer())
         .delete(`/users/${targetId}`)
-        .expect(200);
+        .expect(HttpStatus.OK);
 
       expect(userService.remove).toHaveBeenCalledWith(targetId);
-      expect(response.body).toEqual(expectedOutput);
+      expect(response.body).toEqual({
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: null, // No controller você passou 'null' explicitamente no successResponse
+        error: null,
+      });
     });
   });
 
   describe('User Personal Endpoints ("me")', () => {
     beforeEach(() => {
       currentActor = { id: 'my-own-profile-id', role: Role.USER };
+    });
+
+    it('GET /users/me -> should return current authenticated user profile', async () => {
+      const expectedOutput = { id: 'my-own-profile-id', email: 'me@test.com' };
+      mockUserService.findOne.mockResolvedValue(expectedOutput);
+
+      const response = await request(app.getHttpServer())
+        .get('/users/me')
+        .expect(HttpStatus.OK);
+
+      expect(userService.findOne).toHaveBeenCalledWith('my-own-profile-id');
+      expect(response.body).toEqual({
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: expectedOutput,
+        error: null,
+      });
     });
 
     it('PATCH /users/me -> should update only the context user profile based on JWT payload', async () => {
@@ -184,22 +225,31 @@ describe('UserController (E2E)', () => {
       const response = await request(app.getHttpServer())
         .patch('/users/me')
         .send(updatePayload)
-        .expect(200);
+        .expect(HttpStatus.OK);
 
       expect(userService.update).toHaveBeenCalledWith('my-own-profile-id', updatePayload);
-      expect(response.body).toEqual(expectedOutput);
+      expect(response.body).toEqual({
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: expectedOutput,
+        error: null,
+      });
     });
 
     it('DELETE /users/me -> should delete the authenticated user profile own account', async () => {
-      const expectedOutput = { message: 'User deleted successfully' };
-      mockUserService.remove.mockResolvedValue(expectedOutput);
+      mockUserService.remove.mockResolvedValue(undefined);
 
       const response = await request(app.getHttpServer())
         .delete('/users/me')
-        .expect(200);
+        .expect(HttpStatus.OK);
 
       expect(userService.remove).toHaveBeenCalledWith('my-own-profile-id');
-      expect(response.body).toEqual(expectedOutput);
+      expect(response.body).toEqual({
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: null, // No controller você passou 'null' explicitamente no successResponse
+        error: null,
+      });
     });
   });
 });

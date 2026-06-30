@@ -9,10 +9,11 @@ import { ReputationCard } from "../components/ReputationCard";
 import { ActivityFeed } from "../components/ActivityFeed";
 import { TopPerformances } from "../components/Topperformances";
 import type { Bettor } from "../route";
+import { useMemo } from "react";
 
 export default function ProfilePage() {
 
-  const data = useLoaderData();
+  const data = useMemo(() => useLoaderData(), []);
   data.sucesss
   const bettor = data?.data as Bettor;
 

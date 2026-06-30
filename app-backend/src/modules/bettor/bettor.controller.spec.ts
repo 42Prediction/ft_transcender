@@ -1,9 +1,9 @@
-// Mock dependências ESM que causam erro no Jest
 jest.mock('@dicebear/core', () => ({ createAvatar: jest.fn() }));
 jest.mock('@dicebear/collection', () => ({ avataaarsNeutral: {} }));
 jest.mock('uuid', () => ({ v4: () => 'uuid-mock' }));
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { HttpStatus } from '@nestjs/common';
 import { BettorController } from './bettor.controller';
 import { BettorService } from './bettor.service';
 import { FriendService } from './friend.service';
@@ -18,7 +18,6 @@ describe('BettorController', () => {
     user: { id: 'user-id-123' },
   };
 
-  // Mocks dos Serviços
   const mockBettorService = {
     findOne: jest.fn(),
     update: jest.fn(),
@@ -36,6 +35,20 @@ describe('BettorController', () => {
     getReceivedRequests: jest.fn(),
     getSentRequests: jest.fn(),
   };
+
+  const successResponse = <T>(data: T) => ({
+    success: true,
+    statusCode: HttpStatus.OK,
+    data,
+    error: null,
+  });
+
+  const unauthorizedResponse = () => ({
+    success: false,
+    statusCode: HttpStatus.UNAUTHORIZED,
+    data: null,
+    error: 'Unauthorized',
+  });
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -59,171 +72,269 @@ describe('BettorController', () => {
     expect(controller).toBeDefined();
   });
 
+  // ─── findMyProfile ───────────────────────────────────────────────────────────
+
   describe('findMyProfile', () => {
-    it('should return the logged-in user profile', async () => {
+    it('should return the logged-in user profile wrapped in successResponse', async () => {
       const userData = { id: 'user-id-123', name: 'John Doe' };
-
-      const expectedResult = {
-        data: userData,
-        error: null,
-        statusCode: 200,
-        success: true,
-      };
-
       bettorService.findOne.mockResolvedValue(userData as any);
 
       const result = await controller.findMyProfile(mockRequest);
 
       expect(bettorService.findOne).toHaveBeenCalledWith('user-id-123');
-      expect(result).toEqual(expectedResult);
+      expect(result).toEqual(successResponse(userData));
+    });
+
+    it('should return unauthorizedResponse when user id is missing', async () => {
+      const result = await controller.findMyProfile({ user: null });
+
+      expect(bettorService.findOne).not.toHaveBeenCalled();
+      expect(result).toEqual(unauthorizedResponse());
+    });
+
+    it('should return errorResponse when service throws', async () => {
+      const error = new Error('not found');
+      bettorService.findOne.mockRejectedValue(error);
+
+      const result = await controller.findMyProfile(mockRequest) as any;
+
+      expect(result.success).toBe(false);
+      expect(result.data).toBeNull();
+      expect(result.error).toBe(error);
     });
   });
 
+  // ─── updateProfile ───────────────────────────────────────────────────────────
+
   describe('updateProfile', () => {
-    it('should update profile with a file (avatar) and dto data', async () => {
+    it('should update profile with avatar file and return successResponse', async () => {
       const updateDto: UpdateBettorDto = { nick: 'new-nick' };
       const mockFile = { filename: 'avatar.png' } as Express.Multer.File;
-      const expectedResult = { id: 'user-id-123', nick: 'new-nick', avatar: 'avatar.png' };
-
-      bettorService.update.mockResolvedValue(expectedResult as any);
+      const updatedBettor = { id: 'user-id-123', nick: 'new-nick', avatar: 'avatar.png' };
+      bettorService.update.mockResolvedValue(updatedBettor as any);
 
       const result = await controller.updateProfile(mockRequest, updateDto, mockFile);
 
       expect(bettorService.update).toHaveBeenCalledWith('user-id-123', updateDto, mockFile);
-      expect(result).toEqual(expectedResult);
+      expect(result).toEqual(successResponse(updatedBettor));
     });
 
-    it('should update profile successfully even when avatar file is branch undefined', async () => {
+    it('should update profile without avatar file (undefined branch)', async () => {
       const updateDto: UpdateBettorDto = { nick: 'only-nick' };
-      const expectedResult = { id: 'user-id-123', nick: 'only-nick' };
+      const updatedBettor = { id: 'user-id-123', nick: 'only-nick' };
+      bettorService.update.mockResolvedValue(updatedBettor as any);
 
-      bettorService.update.mockResolvedValue(expectedResult as any);
-
-      // Cobrindo o branch opcional do avatarFile (avatarFile?: Express.Multer.File)
       const result = await controller.updateProfile(mockRequest, updateDto, undefined);
 
       expect(bettorService.update).toHaveBeenCalledWith('user-id-123', updateDto, undefined);
-      expect(result).toEqual(expectedResult);
+      expect(result).toEqual(successResponse(updatedBettor));
+    });
+
+    it('should return unauthorizedResponse when user id is missing', async () => {
+      const result = await controller.updateProfile({ user: null }, {}, undefined);
+
+      expect(bettorService.update).not.toHaveBeenCalled();
+      expect(result).toEqual(unauthorizedResponse());
+    });
+
+    it('should return errorResponse when service throws', async () => {
+      const error = new Error('update failed');
+      bettorService.update.mockRejectedValue(error);
+
+      const result = await controller.updateProfile(mockRequest, {}, undefined) as any;
+
+      expect(result.success).toBe(false);
+      expect(result.data).toBeNull();
     });
   });
 
+  // ─── publicProfile ────────────────────────────────────────────────────────────
+
   describe('publicProfile', () => {
-    it('should return a profile by nickname', async () => {
-      const expectedResult = { nick: 'lobo_pid' };
-      bettorService.findByNick.mockResolvedValue(expectedResult as any);
+    it('should return a public profile wrapped in successResponse', async () => {
+      const bettor = { nick: 'lobo_pid' };
+      bettorService.findByNick.mockResolvedValue(bettor as any);
 
       const result = await controller.publicProfile('lobo_pid');
 
       expect(bettorService.findByNick).toHaveBeenCalledWith('lobo_pid');
-      expect(result).toEqual(expectedResult);
+      expect(result).toEqual(successResponse(bettor));
+    });
+
+    it('should return errorResponse when service throws', async () => {
+      const error = new Error('not found');
+      bettorService.findByNick.mockRejectedValue(error);
+
+      const result = await controller.publicProfile('unknown') as any;
+
+      expect(result.success).toBe(false);
+      expect(result.data).toBeNull();
     });
   });
 
+  // ─── getMyFriends ─────────────────────────────────────────────────────────────
+
   describe('getMyFriends', () => {
-    it('should return friends list of logged user', async () => {
-      const expectedFriends = [{ id: 'friend-1' }];
-      friendService.getMyFriends.mockResolvedValue(expectedFriends as any);
+    it('should return the friend list wrapped in successResponse', async () => {
+      const friends = [{ id: 'friend-1' }];
+      friendService.getMyFriends.mockResolvedValue(friends as any);
 
       const result = await controller.getMyFriends(mockRequest);
 
       expect(friendService.getMyFriends).toHaveBeenCalledWith('user-id-123');
-      expect(result).toEqual(expectedFriends);
+      expect(result).toEqual(successResponse(friends));
+    });
+
+    it('should return unauthorizedResponse when user id is missing', async () => {
+      const result = await controller.getMyFriends({ user: null });
+      expect(result).toEqual(unauthorizedResponse());
     });
   });
 
+  // ─── getPublicFriends ─────────────────────────────────────────────────────────
+
   describe('getPublicFriends', () => {
-    it('should return friends list of a public user by nick', async () => {
-      const expectedFriends = [{ id: 'friend-2' }];
-      friendService.getPublicFriends.mockResolvedValue(expectedFriends as any);
+    it('should return a public user friends list wrapped in successResponse', async () => {
+      const friends = [{ id: 'friend-2' }];
+      friendService.getPublicFriends.mockResolvedValue(friends as any);
 
       const result = await controller.getPublicFriends('some_nick');
 
       expect(friendService.getPublicFriends).toHaveBeenCalledWith('some_nick');
-      expect(result).toEqual(expectedFriends);
+      expect(result).toEqual(successResponse(friends));
     });
   });
 
+  // ─── sendFriendRequest ────────────────────────────────────────────────────────
+
   describe('sendFriendRequest', () => {
-    it('should call sendFriendRequest on service', async () => {
-      const expectedResponse = { success: true };
-      friendService.sendFriendRequest.mockResolvedValue(expectedResponse as any);
+    it('should call sendFriendRequest on service and return successResponse', async () => {
+      const payload = { id: 'req-1' };
+      friendService.sendFriendRequest.mockResolvedValue(payload as any);
 
       const result = await controller.sendFriendRequest(mockRequest, 'target_nick');
 
       expect(friendService.sendFriendRequest).toHaveBeenCalledWith('user-id-123', 'target_nick');
-      expect(result).toEqual(expectedResponse);
+      expect(result).toEqual(successResponse(payload));
+    });
+
+    it('should return unauthorizedResponse when user id is missing', async () => {
+      const result = await controller.sendFriendRequest({ user: null }, 'target_nick');
+      expect(result).toEqual(unauthorizedResponse());
     });
   });
 
+  // ─── acceptFriendRequest ──────────────────────────────────────────────────────
+
   describe('acceptFriendRequest', () => {
-    it('should call acceptFriendRequest on service', async () => {
-      const expectedResponse = { success: true };
-      friendService.acceptFriendRequest.mockResolvedValue(expectedResponse as any);
+    it('should call acceptFriendRequest on service and return successResponse', async () => {
+      const payload = { id: 'req-2' };
+      friendService.acceptFriendRequest.mockResolvedValue(payload as any);
 
       const result = await controller.acceptFriendRequest(mockRequest, 'target_nick');
 
       expect(friendService.acceptFriendRequest).toHaveBeenCalledWith('user-id-123', 'target_nick');
-      expect(result).toEqual(expectedResponse);
+      expect(result).toEqual(successResponse(payload));
+    });
+
+    it('should return unauthorizedResponse when user id is missing', async () => {
+      const result = await controller.acceptFriendRequest({ user: null }, 'target_nick');
+      expect(result).toEqual(unauthorizedResponse());
     });
   });
 
+  // ─── cancelRequest ────────────────────────────────────────────────────────────
+
   describe('cancelRequest', () => {
-    it('should call cancelFriendRequest on service', async () => {
-      const expectedResponse = { success: true };
-      friendService.cancelFriendRequest.mockResolvedValue(expectedResponse as any);
+    it('should call cancelFriendRequest on service and return successResponse', async () => {
+      const payload = { id: 'req-3' };
+      friendService.cancelFriendRequest.mockResolvedValue(payload as any);
 
       const result = await controller.cancelRequest(mockRequest, 'target_nick');
 
       expect(friendService.cancelFriendRequest).toHaveBeenCalledWith('user-id-123', 'target_nick');
-      expect(result).toEqual(expectedResponse);
+      expect(result).toEqual(successResponse(payload));
+    });
+
+    it('should return unauthorizedResponse when user id is missing', async () => {
+      const result = await controller.cancelRequest({ user: null }, 'target_nick');
+      expect(result).toEqual(unauthorizedResponse());
     });
   });
 
+  // ─── rejectRequest ────────────────────────────────────────────────────────────
+
   describe('rejectRequest', () => {
-    it('should call rejectFriendRequest on service', async () => {
-      const expectedResponse = { success: true };
-      friendService.rejectFriendRequest.mockResolvedValue(expectedResponse as any);
+    it('should call rejectFriendRequest on service and return successResponse', async () => {
+      const payload = { id: 'req-4' };
+      friendService.rejectFriendRequest.mockResolvedValue(payload as any);
 
       const result = await controller.rejectRequest(mockRequest, 'target_nick');
 
       expect(friendService.rejectFriendRequest).toHaveBeenCalledWith('user-id-123', 'target_nick');
-      expect(result).toEqual(expectedResponse);
+      expect(result).toEqual(successResponse(payload));
+    });
+
+    it('should return unauthorizedResponse when user id is missing', async () => {
+      const result = await controller.rejectRequest({ user: null }, 'target_nick');
+      expect(result).toEqual(unauthorizedResponse());
     });
   });
 
+  // ─── removeFriend ─────────────────────────────────────────────────────────────
+
   describe('removeFriend', () => {
-    it('should call removeFriend on service', async () => {
-      const expectedResponse = { success: true };
-      friendService.removeFriend.mockResolvedValue(expectedResponse as any);
+    it('should call removeFriend on service and return successResponse', async () => {
+      const payload = { id: 'friend-1' };
+      friendService.removeFriend.mockResolvedValue(payload as any);
 
       const result = await controller.removeFriend(mockRequest, 'target_nick');
 
       expect(friendService.removeFriend).toHaveBeenCalledWith('user-id-123', 'target_nick');
-      expect(result).toEqual(expectedResponse);
+      expect(result).toEqual(successResponse(payload));
+    });
+
+    it('should return unauthorizedResponse when user id is missing', async () => {
+      const result = await controller.removeFriend({ user: null }, 'target_nick');
+      expect(result).toEqual(unauthorizedResponse());
     });
   });
 
+  // ─── getReceivedRequests ──────────────────────────────────────────────────────
+
   describe('getReceivedRequests', () => {
-    it('should call getReceivedRequests on service', async () => {
-      const expectedResponse = [{ id: 'req-1', status: 'PENDING', sender: { nick: 'gildo' } }];
-      friendService.getReceivedRequests.mockResolvedValue(expectedResponse as any);
+    it('should return received requests wrapped in successResponse', async () => {
+      const requests = [{ id: 'req-1', status: 'PENDING', sender: { nick: 'gildo' } }];
+      friendService.getReceivedRequests.mockResolvedValue(requests as any);
 
       const result = await controller.getReceivedRequests(mockRequest);
 
       expect(friendService.getReceivedRequests).toHaveBeenCalledWith('user-id-123');
-      expect(result).toEqual(expectedResponse);
+      expect(result).toEqual(successResponse(requests));
+    });
+
+    it('should return unauthorizedResponse when user id is missing', async () => {
+      const result = await controller.getReceivedRequests({ user: null });
+      expect(result).toEqual(unauthorizedResponse());
     });
   });
 
+  // ─── getSentRequests ──────────────────────────────────────────────────────────
+
   describe('getSentRequests', () => {
-    it('should call getSentRequests on service', async () => {
-      const expectedResponse = [{ id: 'req-2', status: 'PENDING', receiver: { nick: 'daniel' } }];
-      friendService.getSentRequests.mockResolvedValue(expectedResponse as any);
+    it('should return sent requests wrapped in successResponse', async () => {
+      const requests = [{ id: 'req-2', status: 'PENDING', receiver: { nick: 'daniel' } }];
+      friendService.getSentRequests.mockResolvedValue(requests as any);
 
       const result = await controller.getSentRequests(mockRequest);
 
       expect(friendService.getSentRequests).toHaveBeenCalledWith('user-id-123');
-      expect(result).toEqual(expectedResponse);
+      expect(result).toEqual(successResponse(requests));
+    });
+
+    it('should return unauthorizedResponse when user id is missing', async () => {
+      const result = await controller.getSentRequests({ user: null });
+      expect(result).toEqual(unauthorizedResponse());
     });
   });
 });
