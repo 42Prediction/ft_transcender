@@ -62,6 +62,11 @@ export class BettorService {
     return bettor;
   }
 
+  async nickExists(nick: string): Promise<boolean> {
+    const count = await this.bettorRepository.count({ where: { nick } });
+    return count > 0;
+  }
+
   async update(userId: string,
     updateBettorDto: UpdateBettorDto, 
     avatarFile?:Express.Multer.File ) {

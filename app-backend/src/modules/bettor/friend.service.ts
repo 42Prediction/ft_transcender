@@ -86,12 +86,12 @@ async sendFriendRequest(userId: string, receiverNick: string): Promise<void> {
     }
   }
 
-  async acceptFriendRequest(userId: string, senderNick: string): Promise<void> {
+  async acceptFriendRequest(userId: string, senderId: string): Promise<void> {
     const receiver = await this.bettorRepository.findOne({
       where: { user: { id: userId } },
     });
     const sender = await this.bettorRepository.findOne({
-      where: { nick: senderNick },
+      where: { id: senderId },
     });
 
     if (!receiver || !sender) {
@@ -126,9 +126,9 @@ async sendFriendRequest(userId: string, receiverNick: string): Promise<void> {
     });
   }
 
-async rejectFriendRequest(userId: string, senderNick: string): Promise<void> {
+async rejectFriendRequest(userId: string, senderId: string): Promise<void> {
     const receiver = await this.bettorRepository.findOne({ where: { user: { id: userId } } });
-    const sender = await this.bettorRepository.findOne({ where: { nick: senderNick } });
+    const sender = await this.bettorRepository.findOne({ where: { id: senderId } });
 
     if (!receiver || !sender) throw new NotFoundException('Perfil ou remetente não encontrado');
 
@@ -143,9 +143,9 @@ async rejectFriendRequest(userId: string, senderNick: string): Promise<void> {
     }
   }
 
-  async cancelFriendRequest(userId: string, targetNick: string): Promise<void> {
+  async cancelFriendRequest(userId: string, targetId: string): Promise<void> {
     const sender = await this.bettorRepository.findOne({ where: { user: { id: userId } } });
-    const receiver = await this.bettorRepository.findOne({ where: { nick: targetNick } });
+    const receiver = await this.bettorRepository.findOne({ where: { id: targetId } });
 
     if (!sender || !receiver) throw new NotFoundException('Perfil ou destinatário não encontrado');
 
@@ -160,13 +160,13 @@ async rejectFriendRequest(userId: string, senderNick: string): Promise<void> {
     }
   }
 
-  async removeFriend(userId: string, friendNick: string): Promise<void> {
+  async removeFriend(userId: string, friendId: string): Promise<void> {
     const bettor = await this.bettorRepository.findOne({
       where: { user: { id: userId } },
     });
 
     const friendBettor = await this.bettorRepository.findOne({ 
-      where: { nick: friendNick },
+      where: { id: friendId },
     });
 
     if (!bettor || !friendBettor) throw new NotFoundException('Perfil ou amigo não encontrado');
