@@ -22,6 +22,7 @@ describe('BettorController', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     findByNick: jest.fn(),
+    nickExists: jest.fn(),
   };
 
   const mockFriendService = {
@@ -72,8 +73,6 @@ describe('BettorController', () => {
     expect(controller).toBeDefined();
   });
 
-  // ─── findMyProfile ───────────────────────────────────────────────────────────
-
   describe('findMyProfile', () => {
     it('should return the logged-in user profile wrapped in successResponse', async () => {
       const userData = { id: 'user-id-123', name: 'John Doe' };
@@ -103,8 +102,6 @@ describe('BettorController', () => {
       expect(result.error).toBe(error);
     });
   });
-
-  // ─── updateProfile ───────────────────────────────────────────────────────────
 
   describe('updateProfile', () => {
     it('should update profile with avatar file and return successResponse', async () => {
@@ -148,7 +145,25 @@ describe('BettorController', () => {
     });
   });
 
-  // ─── publicProfile ────────────────────────────────────────────────────────────
+  describe('checkNickExists', () => {
+    it('Deve chamar o serviço com o parâmetro correto e retornar o formato { exists: true }', async () => {
+      mockBettorService.nickExists.mockResolvedValueOnce(true);
+
+      const result = await controller.checkNickExists('gildo');
+
+      expect(mockBettorService.nickExists).toHaveBeenCalledWith('gildo');
+      expect(result).toEqual({ exists: true });
+    });
+
+    it('Deve retornar { exists: false } quando o nickname não for encontrado no sistema', async () => {
+      mockBettorService.nickExists.mockResolvedValueOnce(false);
+
+      const result = await controller.checkNickExists('daniel_x');
+
+      expect(mockBettorService.nickExists).toHaveBeenCalledWith('daniel_x');
+      expect(result).toEqual({ exists: false });
+    });
+  });
 
   describe('publicProfile', () => {
     it('should return a public profile wrapped in successResponse', async () => {
@@ -172,8 +187,6 @@ describe('BettorController', () => {
     });
   });
 
-  // ─── getMyFriends ─────────────────────────────────────────────────────────────
-
   describe('getMyFriends', () => {
     it('should return the friend list wrapped in successResponse', async () => {
       const friends = [{ id: 'friend-1' }];
@@ -191,8 +204,6 @@ describe('BettorController', () => {
     });
   });
 
-  // ─── getPublicFriends ─────────────────────────────────────────────────────────
-
   describe('getPublicFriends', () => {
     it('should return a public user friends list wrapped in successResponse', async () => {
       const friends = [{ id: 'friend-2' }];
@@ -204,8 +215,6 @@ describe('BettorController', () => {
       expect(result).toEqual(successResponse(friends));
     });
   });
-
-  // ─── sendFriendRequest ────────────────────────────────────────────────────────
 
   describe('sendFriendRequest', () => {
     it('should call sendFriendRequest on service and return successResponse', async () => {
@@ -224,8 +233,6 @@ describe('BettorController', () => {
     });
   });
 
-  // ─── acceptFriendRequest ──────────────────────────────────────────────────────
-
   describe('acceptFriendRequest', () => {
     it('should call acceptFriendRequest on service and return successResponse', async () => {
       const payload = { id: 'req-2' };
@@ -242,8 +249,6 @@ describe('BettorController', () => {
       expect(result).toEqual(unauthorizedResponse());
     });
   });
-
-  // ─── cancelRequest ────────────────────────────────────────────────────────────
 
   describe('cancelRequest', () => {
     it('should call cancelFriendRequest on service and return successResponse', async () => {
@@ -262,8 +267,6 @@ describe('BettorController', () => {
     });
   });
 
-  // ─── rejectRequest ────────────────────────────────────────────────────────────
-
   describe('rejectRequest', () => {
     it('should call rejectFriendRequest on service and return successResponse', async () => {
       const payload = { id: 'req-4' };
@@ -280,8 +283,6 @@ describe('BettorController', () => {
       expect(result).toEqual(unauthorizedResponse());
     });
   });
-
-  // ─── removeFriend ─────────────────────────────────────────────────────────────
 
   describe('removeFriend', () => {
     it('should call removeFriend on service and return successResponse', async () => {
@@ -300,8 +301,6 @@ describe('BettorController', () => {
     });
   });
 
-  // ─── getReceivedRequests ──────────────────────────────────────────────────────
-
   describe('getReceivedRequests', () => {
     it('should return received requests wrapped in successResponse', async () => {
       const requests = [{ id: 'req-1', status: 'PENDING', sender: { nick: 'gildo' } }];
@@ -318,8 +317,6 @@ describe('BettorController', () => {
       expect(result).toEqual(unauthorizedResponse());
     });
   });
-
-  // ─── getSentRequests ──────────────────────────────────────────────────────────
 
   describe('getSentRequests', () => {
     it('should return sent requests wrapped in successResponse', async () => {

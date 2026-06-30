@@ -51,6 +51,7 @@ describe('BettorService', () => {
     create: jest.fn(),
     save: jest.fn(),
     findOne: jest.fn(),
+    count: jest.fn(),
   };
 
   const mockAvatarService = {
@@ -145,6 +146,30 @@ describe('BettorService', () => {
       await expect(service.create(null as any)).rejects.toThrow(
         new InternalServerErrorException('User id required'),
       );
+    });
+  });
+
+  describe('nickExists', () => {
+    it('Cenário 1: Deve retornar true se o utilizador com o nickname indicado existir', async () => {
+      mockBettorRepository.count.mockResolvedValueOnce(1);
+
+      const result = await service.nickExists('marco');
+
+      expect(result).toBe(true);
+      expect(mockBettorRepository.count).toHaveBeenCalledWith({
+        where: { nick: 'marco' },
+      });
+    });
+
+    it('Cenário 2: Deve retornar false se o utilizador com o nickname indicado não existir', async () => {
+      mockBettorRepository.count.mockResolvedValueOnce(0);
+
+      const result = await service.nickExists('nickname_inexistente');
+
+      expect(result).toBe(false);
+      expect(mockBettorRepository.count).toHaveBeenCalledWith({
+        where: { nick: 'nickname_inexistente' },
+      });
     });
   });
 
