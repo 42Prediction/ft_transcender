@@ -7,7 +7,6 @@ import { adminAuthMiddleware, authMiddleware } from "./middleware/auth";
 import { rootLoader } from "./loader/root";
 import { userRoute } from "./features/user/routes";
 import { adminDashboardRoute } from "./features/admin/routes";
-import AdminLayout from "./features/admin/pages/AdminLayout";
 
 export const dataContext = createContext<any | null>(null)
 
@@ -28,7 +27,6 @@ export const router = createBrowserRouter([
   {
     path: '/admin',
     id: 'admin-root',
-    Component: AdminLayout,
     middleware: [adminAuthMiddleware],
     loader: rootLoader,
     HydrateFallback: () => <div>...</div>,

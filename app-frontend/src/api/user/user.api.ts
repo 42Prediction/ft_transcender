@@ -38,7 +38,7 @@ export const user = {
 
     getAll: async () => {
         try {
-            const { data } = await api.get<UserMe[]>("/users");
+            const { data } = await api.get<any>("/users");
             return data;
         } catch (err: any) {
             if (err.response?.status === 404) {

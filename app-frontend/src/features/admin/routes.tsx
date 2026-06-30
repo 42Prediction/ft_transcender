@@ -2,9 +2,14 @@ import { adminProtectedLoader, adminPublicLoader } from '@/loader/guards';
 import { adminSigninAction } from './actions/singnin';
 import AdminLogin from './pages/Login';
 import UsersPage from './pages/Users';
+import { redirect } from 'react-router-dom';
 
 
 export const adminDashboardRoute = [
+    {
+    index: true,
+    loader: () => redirect("/admin/login"),
+    },
     {
         path: 'login',
         loader: adminPublicLoader,

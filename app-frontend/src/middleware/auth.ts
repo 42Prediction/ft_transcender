@@ -8,30 +8,32 @@ export async function authMiddleware({ context }: LoaderFunctionArgs) {
     try {
         const data = await auth.getMe();
         if (data) {
-            context.set(dataContext, { statusCode: 200, data });
+            context.set(dataContext, { ...data });
             return;
         }
     } catch (error) {
-        console.error('bettor/me failed:', error);
     }
 
     context.set(dataContext, null);
 }
 
-export async function adminAuthMiddleware({ context, request }: LoaderFunctionArgs) {
-    const url = new URL(request.url);
-    if (url.pathname === '/admin/login') {
-        context.set(dataContext, null);
-        return;
-    }
+export async function adminAuthMiddleware({ context }: LoaderFunctionArgs) {
+
     try {
-        const userData = await auth.getMeAdmin();
-        if (userData) {
-            context.set(dataContext, { statusCode: 200, data: userData });
+        const data = await auth.getMeAdmin();
+        if (data) {
+            context.set(dataContext,  { ...data});
             return;
         }
     } catch {
-        // silencioso
+        context.set(dataContext, null);
     }
-    context.set(dataContext, null);
 }
+
+
+// response{
+//     success: boolean;
+//     data: any;
+//     statusCode: number;
+//     error: string | null;
+// }

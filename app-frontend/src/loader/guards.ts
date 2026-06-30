@@ -10,14 +10,12 @@ export async function protectedLoader({ request, context }: LoaderFunctionArgs):
     return null;
 }
 
-export async function adminProtectedLoader({ request, context }: LoaderFunctionArgs): Promise<Response | null> {
+export async function adminProtectedLoader({ context }: LoaderFunctionArgs): Promise<Response | null> {
     const data = context.get(dataContext);
-    if (!data) {
+
+    if (data?.data?.statusCode !== 200 && data?.data?.role !== 'admin') {
         return redirect('/admin/login');
     }
-    if (data?.data?.role !== 'admin') {
-        return redirect('/'); 
-    }    
     return null;
 }
 
@@ -32,7 +30,8 @@ export async function publicLoader({ request, context }: LoaderFunctionArgs): Pr
 
 export async function adminPublicLoader({ context }: LoaderFunctionArgs): Promise<Response | null> {
     const data = context.get(dataContext);
-    if (data?.data?.role === 'admin') {
+
+    if (data && data.data?.role === 'admin') {
         return redirect('/admin/users');
     }
     return null;

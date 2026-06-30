@@ -2,10 +2,11 @@ import { auth } from "@/api/auth/auth.api";
 import Logo from "@/components/Logo";
 import { Bell, ChevronDown, LogOut, Search, Settings, Wallet } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useRevalidator, useRouteLoaderData } from "react-router-dom";
+import { Link, useLocation, useNavigate, useRevalidator, useRouteLoaderData } from "react-router-dom";
 
 
 export function Navbar() {
+  const navigate = useNavigate();
   const revalidator = useRevalidator();
   const data = useRouteLoaderData('root') as any;
   const profile = data?.data;
@@ -61,7 +62,7 @@ export function Navbar() {
             <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground md:block">⌘K</kbd>
           </div>
         </div>
-        {profile ? UserInfo(profile, dropdownRef, setOpen, open, auth.signout, revalidator) : SignButtons(from)}
+        {profile ? UserInfo(profile, dropdownRef, setOpen, open, auth.signout, revalidator, navigate) : SignButtons(from)}
       </div>
     </header>
   );
@@ -95,7 +96,8 @@ function UserInfo(
   setOpen: (value: boolean) => void,
   open: boolean,
   signout: () => Promise<{ message: string }>,
-  revalidator: ReturnType<typeof useRevalidator>
+  revalidator: ReturnType<typeof useRevalidator>,
+  navigate: ReturnType<typeof useNavigate>
 ) {
   return (
     <>
@@ -114,7 +116,7 @@ function UserInfo(
           onClick={() => setOpen(!open)}
           className="flex h-10 items-center gap-2 rounded-xl bg-gradient-brand px-4 text-sm font-semibold text-primary-foreground shadow-glow transition hover:opacity-90"
         >
-          <span className="hidden sm:inline">{ profile?.nick}</span>
+          <span className="hidden sm:inline">{profile?.nick}</span>
           <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
         </button>
 
@@ -142,11 +144,12 @@ function UserInfo(
                 setOpen(false);
                 await signout();
                 await revalidator.revalidate();
+                navigate('/', { replace: true });
               }}
               className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-red-500 transition hover:bg-red-500/10"
             >
               <LogOut className="h-4 w-4" />
-              Log out
+              Sign out
             </button>
           </div>
         )}

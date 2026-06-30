@@ -14,9 +14,9 @@ export async function signinAction({ request }: { request: Request }) {
 
     try {
         const res = await auth.signin({email, password});
-        const role = res.result?.data?.role;
+        const role = res.data?.user?.role;
         if (role === 'admin')
-            return redirect('/admin');
+            return redirect('/admin/users');
         const url: URL = new URL(request.url);
         const redirectTo = url.searchParams.get('redirectTo') || '/';
         return redirect(redirectTo);

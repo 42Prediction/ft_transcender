@@ -9,18 +9,16 @@ export default function UsersPage() {
     const [filtered, setFiltered] = useState<UserMe[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
-    const revalidator = useRevalidator();
     const data = useRouteLoaderData('admin-root') as any;
     const profile = data?.data;
 
     useEffect(() => {
         userApi.getAll()
             .then((res) => {
-                const data = (res || []).filter((u: UserMe) => u.role !== "admin");
+                const data = (res.data || []).filter((u: UserMe) => u.role !== "admin");
                 setUsers(data);
                 setFiltered(data);
             })
-            .catch(console.error)
             .finally(() => setLoading(false));
     }, []);
 
@@ -34,7 +32,6 @@ export default function UsersPage() {
             await userApi.deleteById(id);
             setUsers((prev) => prev.filter((u) => u.id !== id));
         } catch (err) {
-            console.error(err);
         }
     };
 

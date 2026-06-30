@@ -1,3 +1,4 @@
+import { redirect } from "react-router-dom";
 import api from "../api";
 
 export interface User {
@@ -17,12 +18,12 @@ export const auth = {
 		return res.data;
 	},
 
-	// src/api/auth/auth.api.ts
+
 	getMe: async (): Promise<any> => {
 		try {
 			const res = await api.get('/bettor/me');
 			if (res.data?.statusCode === 401 || !res.data?.success) return null;
-			return res.data?.data ?? res.data;
+			return res.data;
 		} catch (err: any) {
 			if (err.response?.status === 401) return null;
 			throw err;
