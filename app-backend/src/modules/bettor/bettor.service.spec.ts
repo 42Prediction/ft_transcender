@@ -126,7 +126,7 @@ describe('BettorService', () => {
     it('should successfully create a bettor', async () => {
       const mockUser = { id: 'user-id', email: 'test@example.com' } as User;
       const mockBettor = {
-        id: 'bettor-123',                                      // <-- precisa ter id agora
+        id: 'bettor-123',                                      
         nick: 'test_1234',
         avatar: 'data:image/svg+xml;base64,mocked-avatar',
         user: mockUser,
@@ -137,7 +137,7 @@ describe('BettorService', () => {
 
       const result = await service.create(mockUser);
 
-      expect(mockWalletService.createWallet).toHaveBeenCalledWith('bettor-123'); // <-- nova
+      expect(mockWalletService.createWallet).toHaveBeenCalledWith('bettor-123'); 
       expect(result).toEqual(mockBettor);
     });
 
@@ -157,7 +157,7 @@ describe('BettorService', () => {
 
       expect(mockBettorRepository.findOne).toHaveBeenCalledWith({
         where: { user: { id: 'user-id' } },
-        relations: ['user'],
+        relations: ['user', 'wallet'],
       });
       expect(result).toEqual(mockBettor);
     });

@@ -56,7 +56,7 @@ export class BettorService {
   async findOne(id: string ): Promise<Bettor | null>{
     return this.bettorRepository.findOne({
       where: { user: { id } },
-      relations: ['user'],
+      relations: ['user', 'wallet'],
     });
   }
 
