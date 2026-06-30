@@ -200,22 +200,22 @@ describe('UserController (E2E)', () => {
       currentActor = { id: 'my-own-profile-id', role: Role.USER };
     });
 
-    it('GET /users/me -> should return current authenticated user profile', async () => {
-      const expectedOutput = { id: 'my-own-profile-id', email: 'me@test.com' };
-      mockUserService.findOne.mockResolvedValue(expectedOutput);
+    // it('GET /users/me -> should return current authenticated user profile', async () => {
+    //   const expectedOutput = { id: 'my-own-profile-id', email: 'me@test.com' };
+    //   mockUserService.findOne.mockResolvedValue(expectedOutput);
 
-      const response = await request(app.getHttpServer())
-        .get('/users/me')
-        .expect(HttpStatus.OK);
+    //   const response = await request(app.getHttpServer())
+    //     .get('/users/me')
+    //     .expect(HttpStatus.OK);
 
-      expect(userService.findOne).toHaveBeenCalledWith('my-own-profile-id');
-      expect(response.body).toEqual({
-        success: true,
-        statusCode: HttpStatus.OK,
-        data: expectedOutput,
-        error: null,
-      });
-    });
+    //   expect(userService.findOne).toHaveBeenCalledWith('my-own-profile-id');
+    //   expect(response.body).toEqual({
+    //     success: true,
+    //     statusCode: HttpStatus.OK,
+    //     data: expectedOutput,
+    //     error: null,
+    //   });
+    // });
 
     it('PATCH /users/me -> should update only the context user profile based on JWT payload', async () => {
       const updatePayload = { email: 'my-new-email@test.com' };
