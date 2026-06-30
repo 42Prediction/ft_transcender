@@ -13,15 +13,6 @@ import { PlaceholderPanel } from "../components/PlaceholderPanel";
 import { FriendList } from "../components/ListaAmigos";
 import { useRouteLoaderData } from "react-router-dom";
 
-// export const Route = createFileRoute("/settings")({
-//   head: () => ({
-//     meta: [
-//       { title: "Configurações — ExamBet" },
-//       { name: "description", content: "Gerencie seu perfil, conta e preferências." },
-//     ],
-//   }),
-//   component: SettingsPage,
-// });
 
 type TabKey = "profile" | "account" | "negotiation" | "notifications" | "api" | "Friends";
 

@@ -12,11 +12,6 @@ interface FriendData {
     status: FriendStatus;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Constrói o mapa de estado mais recente a partir das três listas do backend. */
 function buildFriendMap(
     friends: FriendData[],
     received: FriendData[],
@@ -29,10 +24,6 @@ function buildFriendMap(
     return map;
 }
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
 export function FriendList({ bettor }: { bettor?: any }) {
     const [friends, setFriends] = useState<FriendData[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
@@ -42,12 +33,8 @@ export function FriendList({ bettor }: { bettor?: any }) {
     const [isInviting, setIsInviting] = useState(false);
     const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-    // Estado do modal — null significa "fechado"
     const [modalMessage, setModalMessage] = useState<string | null>(null);
 
-    // -----------------------------------------------------------------------
-    // Fetch
-    // -----------------------------------------------------------------------
 
     const fetchFriendsData = useCallback(async (): Promise<Map<string, FriendStatus>> => {
         const [friendsRes, receivedRes, sentRes] = await Promise.all([
@@ -56,17 +43,21 @@ export function FriendList({ bettor }: { bettor?: any }) {
             friendApi.getSentRequests(),
         ]);
 
-        const acceptedFriends: FriendData[] = friendsRes.data.map((f: any) => ({
+        const friendsArray = friendsRes.data?.data || [];
+        const receivedArray = receivedRes.data?.data || [];
+        const sentArray = sentRes.data?.data || [];
+
+        const acceptedFriends: FriendData[] = friendsArray.map((f: any) => ({
             id: f.id,
             nick: f.nick,
             status: "accepted" as FriendStatus,
         }));
-        const receivedRequests: FriendData[] = receivedRes.data.map((req: any) => ({
+        const receivedRequests: FriendData[] = receivedArray.map((req: any) => ({
             id: req.sender.id,
             nick: req.sender.nick,
             status: "received_request" as FriendStatus,
         }));
-        const sentRequests: FriendData[] = sentRes.data.map((req: any) => ({
+        const sentRequests: FriendData[] = sentArray.map((req: any) => ({
             id: req.receiver.id,
             nick: req.receiver.nick,
             status: "sent_request" as FriendStatus,
@@ -83,9 +74,6 @@ export function FriendList({ bettor }: { bettor?: any }) {
         fetchFriendsData().finally(() => setIsLoading(false));
     }, [fetchFriendsData]);
 
-    // -----------------------------------------------------------------------
-    // Silent refresh
-    // -----------------------------------------------------------------------
 
     const silentRefresh = useCallback(async (): Promise<Map<string, FriendStatus>> => {
         try {
@@ -95,9 +83,6 @@ export function FriendList({ bettor }: { bettor?: any }) {
         }
     }, [fetchFriendsData]);
 
-    // -----------------------------------------------------------------------
-    // Ordenação e filtragem
-    // -----------------------------------------------------------------------
 
     const filteredAndSortedFriends = useMemo(() => {
         const result = friends.filter(f =>
@@ -113,87 +98,48 @@ export function FriendList({ bettor }: { bettor?: any }) {
         return result;
     }, [friends, searchQuery]);
 
-    // -----------------------------------------------------------------------
-    // Ações
-    // -----------------------------------------------------------------------
 
-    /**
-     * Enviar convite.
-     *
-     * Fluxo (sem erros de rede na consola):
-     *
-     *   1. Validação local — verificar em memória se já existe relação com
-     *      este nick. Se existir → modal, return. Zero pedidos à rede.
-     *
-     *   2. Verificação de existência do nick via GET sempre-200:
-     *      GET /bettor/@:nick/exists → { exists: boolean }
-     *      Este endpoint NUNCA devolve 4xx, logo NUNCA gera erros de rede
-     *      na consola do browser.
-     *      Se exists === false → modal "não encontrado", return.
-     *
-     *   3. Só chega aqui se o nick existe e não há relação prévia.
-     *      Enviar o pedido via POST.
-     *
-     *   4. No catch do POST: apenas race conditions residuais (409).
-     *      O 404 do POST nunca deve acontecer porque o passo 2 garantiu
-     *      que o nick existe. Se acontecer por alguma razão extrema
-     *      (nick apagado entre o GET e o POST), tratar silenciosamente.
-     */
     const handleSendInvite = async () => {
         const nick = inviteNick.trim();
         if (!nick) return;
 
-        // Passo 1 — validação local (sem custo de rede)
         const existingRelation = friends.find(
             f => f.nick.toLowerCase() === nick.toLowerCase()
         );
         if (existingRelation) {
             const message =
                 existingRelation.status === "accepted"
-                    ? "Este utilizador já é teu amigo."
-                    : "Já existe um pedido de amizade pendente com este utilizador.";
+                    ? "This user is already your friend."
+                    : "There is already a pending friend request with this user.";
             setModalMessage(message);
             return;
         }
 
         setIsInviting(true);
         try {
-            // Passo 2 — verificar existência do nick (sempre HTTP 200)
             const existsRes = await friendApi.checkNickExists(nick);
             if (!existsRes.data.exists) {
-                setModalMessage("Não foi encontrado nenhum utilizador com esse nickname.");
+                setModalMessage("No user found with this nickname.");
                 return;
             }
 
-            // Passo 3 — nick existe e não há relação: enviar pedido
             await friendApi.sendRequest(nick);
             await silentRefresh();
             setInviteNick("");
 
         } catch (error: any) {
-            // Passo 4 — tratamento de race conditions residuais.
-            // Neste ponto o único erro esperado é 409 (pedido já existente
-            // criado por outro cliente entre o passo 2 e o passo 3).
-            // Um 404 aqui seria uma situação extrema (nick apagado em ms),
-            // tratada silenciosamente para não quebrar o UX.
             const status = error?.response?.status;
             if (status === 409) {
                 await silentRefresh();
-                setModalMessage("Já existe um pedido de amizade pendente com este utilizador.");
+                setModalMessage("There is already a pending friend request with this user.");
             } else {
-                // Erro de rede ou outro inesperado — refresh silencioso
                 await silentRefresh();
             }
-            // Nenhum caminho chega a console.error
         } finally {
             setIsInviting(false);
         }
     };
 
-    /**
-     * Aceitar pedido.
-     * Padrão: fetch fresco → verificar → executar.
-     */
     const handleAccept = async (id: string) => {
         setActionLoadingId(id);
         try {
@@ -215,10 +161,6 @@ export function FriendList({ bettor }: { bettor?: any }) {
         }
     };
 
-    /**
-     * Rejeitar pedido.
-     * Padrão: fetch fresco → verificar → executar.
-     */
     const handleReject = async (id: string) => {
         setActionLoadingId(id);
         try {
@@ -238,10 +180,6 @@ export function FriendList({ bettor }: { bettor?: any }) {
         }
     };
 
-    /**
-     * Cancelar pedido enviado.
-     * Padrão: fetch fresco → verificar → executar.
-     */
     const handleCancel = async (id: string) => {
         setActionLoadingId(id);
         try {
@@ -261,10 +199,6 @@ export function FriendList({ bettor }: { bettor?: any }) {
         }
     };
 
-    /**
-     * Remover amigo.
-     * Padrão: fetch fresco → verificar → executar.
-     */
     const handleRemove = async (id: string) => {
         setActionLoadingId(id);
         try {
@@ -284,9 +218,6 @@ export function FriendList({ bettor }: { bettor?: any }) {
         }
     };
 
-    // -----------------------------------------------------------------------
-    // Render
-    // -----------------------------------------------------------------------
 
     return (
         <>
@@ -302,25 +233,25 @@ export function FriendList({ bettor }: { bettor?: any }) {
                     FriendList
                 </h1>
 
-                {/* Controlos do Topo: Pesquisa e Convite */}
+                { }
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    {/* Barra de Pesquisa */}
+                    { }
                     <div className="relative w-full sm:max-w-xs">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <input
                             type="text"
-                            placeholder="Procurar amigos..."
+                            placeholder="Search friends..."
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
                             className="w-full rounded-xl border border-border/60 bg-surface/40 py-2 pl-9 pr-4 text-sm outline-none transition-colors focus:border-primary/50 focus:bg-background/60"
                         />
                     </div>
 
-                    {/* Enviar Convite */}
+                    { }
                     <div className="flex w-full items-center gap-2 sm:w-auto">
                         <input
                             type="text"
-                            placeholder="Nick do utilizador"
+                            placeholder="User nickname"
                             value={inviteNick}
                             onChange={e => setInviteNick(e.target.value)}
                             onKeyDown={e => e.key === "Enter" && handleSendInvite()}
@@ -335,12 +266,12 @@ export function FriendList({ bettor }: { bettor?: any }) {
                                 ? <Loader2 className="h-4 w-4 animate-spin" />
                                 : <UserPlus className="h-4 w-4" />
                             }
-                            <span className="hidden sm:inline">Convidar</span>
+                            <span className="hidden sm:inline">Invite</span>
                         </button>
                     </div>
                 </div>
 
-                {/* Lista com Scroll */}
+                { }
                 <div className="rounded-2xl border border-border/60 bg-surface/20 p-2">
                     <div className="max-h-[500px] space-y-1 overflow-y-auto pr-2 custom-scrollbar">
                         {isLoading ? (
@@ -349,7 +280,7 @@ export function FriendList({ bettor }: { bettor?: any }) {
                             </div>
                         ) : filteredAndSortedFriends.length === 0 ? (
                             <div className="py-10 text-center text-sm text-muted-foreground">
-                                Nenhum utilizador encontrado.
+                                No users found.
                             </div>
                         ) : (
                             filteredAndSortedFriends.map(friend => (
@@ -370,17 +301,17 @@ export function FriendList({ bettor }: { bettor?: any }) {
                                             </Link>
 
                                             {friend.status === "received_request" && (
-                                                <p className="text-xs text-primary mt-0.5">Pedido recebido</p>
+                                                <p className="text-xs text-primary mt-0.5">Request received</p>
                                             )}
                                             {friend.status === "sent_request" && (
                                                 <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                                                    <Clock className="h-3 w-3" /> Aguardando
+                                                    <Clock className="h-3 w-3" /> Pending
                                                 </div>
                                             )}
                                         </div>
                                     </div>
 
-                                    {/* Ações baseadas no estado */}
+                                    { }
                                     <div className="flex gap-2">
                                         {actionLoadingId === friend.id ? (
                                             <div className="grid h-8 w-8 place-items-center text-muted-foreground">
@@ -392,14 +323,14 @@ export function FriendList({ bettor }: { bettor?: any }) {
                                                     <>
                                                         <button
                                                             onClick={() => handleAccept(friend.id)}
-                                                            title="Aceitar Pedido"
+                                                            title="Accept Request"
                                                             className="grid h-8 w-8 place-items-center rounded-lg bg-green-500/10 text-green-500 hover:bg-green-500/20 transition-colors"
                                                         >
                                                             <Check className="h-4 w-4" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleReject(friend.id)}
-                                                            title="Rejeitar Pedido"
+                                                            title="Reject Request"
                                                             className="grid h-8 w-8 place-items-center rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
                                                         >
                                                             <X className="h-4 w-4" />
@@ -410,7 +341,7 @@ export function FriendList({ bettor }: { bettor?: any }) {
                                                 {friend.status === "sent_request" && (
                                                     <button
                                                         onClick={() => handleCancel(friend.id)}
-                                                        title="Cancelar Pedido"
+                                                        title="Cancel Request"
                                                         className="grid h-8 w-8 place-items-center rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
                                                     >
                                                         <X className="h-4 w-4" />
@@ -420,7 +351,7 @@ export function FriendList({ bettor }: { bettor?: any }) {
                                                 {friend.status === "accepted" && (
                                                     <button
                                                         onClick={() => handleRemove(friend.id)}
-                                                        title="Remover Amigo"
+                                                        title="Remove Friend"
                                                         className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:bg-surface hover:text-red-400 transition-colors"
                                                     >
                                                         <UserMinus className="h-4 w-4" />

@@ -57,7 +57,6 @@ describe('UserController', () => {
     expect(controller).toBeDefined();
   });
 
-  // ─── create ──────────────────────────────────────────────────────────────────
 
   describe('create', () => {
     it('should return successResponse with created user', async () => {
@@ -83,7 +82,6 @@ describe('UserController', () => {
     });
   });
 
-  // ─── findAll ──────────────────────────────────────────────────────────────────
 
   describe('findAll', () => {
     it('should return successResponse with array of users', async () => {
@@ -106,7 +104,6 @@ describe('UserController', () => {
     });
   });
 
-  // ─── findOne ──────────────────────────────────────────────────────────────────
 
   describe('findOne', () => {
     it('should return successResponse with found user', async () => {
@@ -130,7 +127,6 @@ describe('UserController', () => {
     });
   });
 
-  // ─── getMe ────────────────────────────────────────────────────────────────────
 
   describe('getMe', () => {
     it('should return successResponse with the authenticated user', async () => {
@@ -161,7 +157,6 @@ describe('UserController', () => {
     });
   });
 
-  // ─── updateMe ─────────────────────────────────────────────────────────────────
 
   describe('updateMe', () => {
     it('should return successResponse with updated user', async () => {
@@ -193,7 +188,6 @@ describe('UserController', () => {
     });
   });
 
-  // ─── remove (me) ──────────────────────────────────────────────────────────────
 
   describe('remove', () => {
     it('should return successResponse with null data after deletion', async () => {
@@ -223,7 +217,6 @@ describe('UserController', () => {
     });
   });
 
-  // ─── admUpdate ────────────────────────────────────────────────────────────────
 
   describe('admUpdate', () => {
     it('should return successResponse with updated user', async () => {
@@ -248,7 +241,6 @@ describe('UserController', () => {
     });
   });
 
-  // ─── admRemove ────────────────────────────────────────────────────────────────
 
   describe('admRemove', () => {
     it('should return successResponse with null data after deletion', async () => {
