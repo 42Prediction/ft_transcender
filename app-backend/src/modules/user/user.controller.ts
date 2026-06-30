@@ -7,15 +7,16 @@ import { Roles } from '../auth/roles/roles.decorator';
 import { AdmUpdateUserDto } from './dto/admin-update-user.dto';
 import { User } from './entities/user.entity';
 import { errorResponse, successResponse, unauthorizedResponse } from '../../shared/helper/api-response.helper';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 
 @Controller('users')
 @UseInterceptors(ClassSerializerInterceptor)
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
   @Roles('admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @HttpCode(HttpStatus.OK)
   async create(@Body() createUserDto: AdmUpdateUserDto) {
     try {
@@ -28,6 +29,7 @@ export class UserController {
 
   @Get()
   @Roles('admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @HttpCode(HttpStatus.OK)
   async findAll() {
     try {
@@ -39,6 +41,7 @@ export class UserController {
   }
 
   @Get('me')
+  @UseGuards(OptionalJwtAuthGuard, RolesGuard)
   @HttpCode(HttpStatus.OK)
   async getMe(@Req() req){
     if (!req.user?.id) return unauthorizedResponse();
@@ -49,13 +52,9 @@ export class UserController {
       return errorResponse(error);
     }
   }
-  
-  //@Get('me')
-  //async getMe(@Req() req): Promise <User | null>{
-//      return await this.userService.findOne(req.user.id);
- // }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @HttpCode(HttpStatus.OK)
   async findOne(@Param('id') id: string) {
@@ -68,6 +67,7 @@ export class UserController {
   }
 
   @Patch('me')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @HttpCode(HttpStatus.OK)
   async updateMe(@Req() req, @Body() dto: UpdateUserDto) {
     if (!req.user?.id) return unauthorizedResponse();
@@ -80,6 +80,7 @@ export class UserController {
   }
 
   @Delete('me')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @HttpCode(HttpStatus.OK)
   async remove(@Req() req) {
     if (!req.user?.id) return unauthorizedResponse();
@@ -92,6 +93,7 @@ export class UserController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @HttpCode(HttpStatus.OK)
   async admUpdate(@Param('id') id: string, @Body() dto: AdmUpdateUserDto) {
@@ -104,6 +106,7 @@ export class UserController {
   }
   
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @HttpCode(HttpStatus.OK)
   async admRemove(@Param('id') id: string) {
