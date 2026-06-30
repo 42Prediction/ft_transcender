@@ -21,9 +21,15 @@ export class TwoFactorService {
   }
 
   async verifyToken(token: string, secret: string): Promise<boolean> {
-    return authenticator.verify({
+
+    const generated = authenticator.generate(secret);
+    const result = authenticator.verify({
       token,
       secret,
     });
+
+    console.log('VALIDO:', result);
+
+    return result;
   }
 }

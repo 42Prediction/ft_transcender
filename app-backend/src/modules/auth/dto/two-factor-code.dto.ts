@@ -1,4 +1,7 @@
-export class TwoFactorCodeDto {
+import { IsString, Length } from 'class-validator';
 
-    code!: string;
+export class TwoFactorCodeDto {
+  @IsString()
+  @Length(6, 6)
+  code!: string;
 }

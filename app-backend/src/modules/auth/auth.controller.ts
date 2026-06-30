@@ -60,10 +60,14 @@ export class AuthController {
         try {
             const { access_token, user, ...result } = await this.authService.signin(signinDto);
             if (user.isTwoFactorEnabled) {
+                
+                console.log('2FA is enabled for this user. Generating temp token...');
+
                 const tempToken = await this.authService.generateTempToken(user);
                 this.setTempTwoFactorCookie(res, tempToken);
                 return { message: '2FA required' };
             }
+            console.log('Acesso directo concedido. Gerando token de acesso...');
             this.setAuthCookie(res, access_token);
             return successResponse<any>(HttpStatus.OK, result);
         } catch (error) {
@@ -140,8 +144,8 @@ export class AuthController {
 
     //----------- 2FA Endpoints -----------//
 
-    @UseGuards(JwtAuthGuard)
     @Post('2fa/generate')
+    @UseGuards(JwtAuthGuard)
     async generate2FA(@Req() req) {
         const secret = this.twoFactorService.generateSecret();
         await this.userService.setTwoFactorSecret(req.user.id, secret);
@@ -152,9 +156,10 @@ export class AuthController {
         return { qrCode };
     }
 
-    @UseGuards(JwtAuthGuard)
     @Post('2fa/turn-on')
+    @UseGuards(JwtAuthGuard)
     async turnOn2FA(@Req() req, @Body() dto: TwoFactorCodeDto) {
+
         const user = await this.userService.findOne(req.user.id);
         const isValid = await this.twoFactorService.verifyToken(dto.code, user.twoFactorSecret);
 
@@ -166,14 +171,16 @@ export class AuthController {
         return { message: '2FA ativado com sucesso' };
     }
 
-    @UseGuards(JwtAuthGuard)
     @Post('2fa/turn-off')
+    @UseGuards(JwtAuthGuard)
     async turnOff2FA(@Req() req) {
         await this.userService.disableTwoFactor(req.user.id);
         return { message: '2FA desativado' };
     }
 
+
     @Post('2fa/authenticate')
+    @UseGuards(JwtAuthGuard)
     async authenticate2FA(@Req() req, @Body() dto: TwoFactorCodeDto, @Res({ passthrough: true }) res: Response) {
         const tempToken = req.cookies?.temp_2fa_token;
         if (!tempToken) {

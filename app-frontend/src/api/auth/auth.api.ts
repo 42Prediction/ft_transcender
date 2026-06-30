@@ -32,4 +32,23 @@ export const auth = {
 		const res = await api.post('/auth/signout');
 		return res.data;
 	},
+
+	twoFactor: {
+		generate: async (): Promise<{ qrCode: string }> => {
+			const res = await api.post('/auth/2fa/generate');
+			return res.data;
+		},
+
+		turnOn: async (code: string): Promise<void> => {
+			await api.post('/auth/2fa/turn-on', { code });
+		},
+
+		turnOff: async (): Promise<void> => {
+			await api.post('/auth/2fa/turn-off');
+		},
+
+		authenticate: async (code: string): Promise<void> => {
+			await api.post('/auth/2fa/authenticate', { code });
+		},
+	},
 };
