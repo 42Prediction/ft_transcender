@@ -1,8 +1,9 @@
 import { auth } from "@/api/auth/auth.api";
 import Logo from "@/components/Logo";
-import { Bell, ChevronDown, LogOut, Search, Settings, Wallet } from "lucide-react";
+import { Bell, ChevronDown, LogOut, PieChart, Plus, Search, Settings, Wallet } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useRevalidator, useRouteLoaderData } from "react-router-dom";
+import { CreateMarketModal } from "@/features/market/components/CreateMarketModal";
 
 
 export function Navbar() {
@@ -13,9 +14,9 @@ export function Navbar() {
   const location = useLocation();
   const from = location;
 
-
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  const [createMarketOpen, setCreateMarketOpen] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -47,8 +48,8 @@ export function Navbar() {
         </Link>
 
         <nav className="hidden items-center gap-1 text-sm text-muted-foreground lg:flex">
-          <Link to="/" className="rounded-lg px-3 py-1.5 transition hover:bg-surface hover:text-foreground">Markets</Link>
-          <Link to="/Leaderboard" className="rounded-lg px-3 py-1.5 transition hover:bg-surface hover:text-foreground">Leaderboard</Link>
+          <Link to="/markets" className="rounded-lg px-3 py-1.5 transition hover:bg-surface hover:text-foreground">Markets</Link>
+          <Link to="/leaderboard" className="rounded-lg px-3 py-1.5 transition hover:bg-surface hover:text-foreground">Leaderboard</Link>
         </nav>
 
         <div className="ml-auto flex flex-1 items-center gap-3 lg:flex-initial">
@@ -62,7 +63,17 @@ export function Navbar() {
             <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground md:block">⌘K</kbd>
           </div>
         </div>
-        {profile ? UserInfo(profile, dropdownRef, setOpen, open, auth.signout, revalidator, navigate) : SignButtons(from)}
+        {profile && (
+        <button
+          onClick={() => setCreateMarketOpen(true)}
+          className="hidden h-10 items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 text-sm font-medium text-primary transition hover:bg-primary/20 md:flex"
+        >
+          <Plus className="h-4 w-4" />
+          New Market
+        </button>
+      )}
+      {profile ? UserInfo(profile, dropdownRef, setOpen, open, auth.signout, revalidator, navigate) : SignButtons(from)}
+      <CreateMarketModal open={createMarketOpen} onOpenChange={setCreateMarketOpen} />
       </div>
     </header>
   );
@@ -138,6 +149,14 @@ function UserInfo(
                 <Settings className="h-4 w-4" />
               </Link>
             </div>
+            <Link
+              to="/user/portfolio"
+              onClick={() => setOpen(false)}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-surface hover:text-foreground"
+            >
+              <PieChart className="h-4 w-4" />
+              My Portfolio
+            </Link>
 
             <div className="my-1 border-t border-border/40" />
 

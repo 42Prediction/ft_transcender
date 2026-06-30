@@ -1,23 +1,38 @@
-import { ArrowRight } from "lucide-react";
-import type { Market } from "./mock/data";
-import { Link } from "react-router-dom";
+import { ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import type { MarketDto } from '@/api/market/market.api';
 
-
-const statusLabel: Record<Market["status"], string> = {
-  live: "Featured · Live",
-  closing: "Closing soon",
-  new: "New market",
+const statusLabel: Record<MarketDto['status'], string> = {
+  live: 'Featured · Live',
+  closing: 'Closing soon',
+  new: 'New market',
+  resolved: 'Resolved',
 };
 
-export function MarketCard({ m }: { m: Market }) {
+function timeUntil(closes: string): string {
+  const diff = new Date(closes).getTime() - Date.now();
+  if (diff <= 0) return 'Closed';
+  const h = Math.floor(diff / 3600000);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  const rem = h % 24;
+  return rem > 0 ? `${d}d ${rem}h` : `${d}d`;
+}
+
+function avatarFallback(name: string): string {
+  return `https://api.dicebear.com/9.x/glass/svg?seed=${encodeURIComponent(name)}&backgroundType=gradientLinear`;
+}
+
+export function MarketCard({ m }: { m: MarketDto }) {
   const yesPct = Math.round(m.yesPrice * 100);
   const noPct = Math.round(m.noPrice * 100);
   const initials = m.student
-    .split(" ")
+    .split(' ')
     .map((p) => p[0])
     .slice(0, 2)
-    .join("")
+    .join('')
     .toLowerCase();
+  const avatarSrc = m.avatar ?? avatarFallback(m.handle);
 
   return (
     <article className="group relative flex flex-col gap-5 rounded-3xl border border-border/60 bg-gradient-card p-6 shadow-card transition hover:border-primary/40 hover:shadow-glow">
@@ -27,23 +42,29 @@ export function MarketCard({ m }: { m: Market }) {
           {statusLabel[m.status]}
         </span>
         <span className="font-mono uppercase tracking-wider text-muted-foreground">
-          Closes in {m.closes}
+          Closes in {timeUntil(m.closes)}
         </span>
       </header>
 
       <div className="flex items-start gap-3">
-        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-brand font-mono text-sm font-bold text-primary-foreground shadow-glow">
-          {initials}
-        </div>
+        <img
+          src={avatarSrc}
+          alt={m.student}
+          className="h-11 w-11 shrink-0 rounded-xl bg-gradient-brand object-cover shadow-glow"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = avatarFallback(m.handle);
+          }}
+        />
         <div className="min-w-0 flex-1">
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
             {m.category} defense
           </p>
           <h3 className="mt-1 font-display text-lg font-bold leading-snug text-foreground">
-            Will <span className="text-primary">@{m.handle}</span> pass {m.project.split(" — ")[0]} on first defense?
+            Will <span className="text-primary">@{m.handle}</span> pass{' '}
+            {m.project.split(' — ')[0]} on first defense?
           </h3>
           <p className="mt-1.5 text-xs text-muted-foreground">
-            {m.category} · Cohort 2025 · 142 participants
+            {m.category} · Cohort 2025
           </p>
         </div>
       </div>
@@ -74,11 +95,12 @@ export function MarketCard({ m }: { m: Market }) {
 
       <footer className="flex items-center justify-between border-t border-border/50 pt-4 text-xs">
         <div className="flex items-center gap-4 text-muted-foreground">
-          <span>Vol <span className="font-mono font-semibold text-foreground">{m.volume}</span></span>
-          <span>Liquidity <span className="font-mono font-semibold text-foreground">₳ 62k</span></span>
+          <span>
+            Vol <span className="font-mono font-semibold text-foreground">{m.volume}</span>
+          </span>
         </div>
         <Link
-          to="/market/$id"
+          to={`/market/${m.id}`}
           className="inline-flex items-center gap-1.5 font-mono uppercase tracking-wider text-success transition hover:gap-2.5"
         >
           View market <ArrowRight className="h-3.5 w-3.5" />
