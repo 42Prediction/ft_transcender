@@ -29,7 +29,7 @@ const TABS: { key: TabKey; label: string; icon: typeof User }[] = [
 export function SettingsPage() {
   const [active, setActive] = useState<TabKey>("profile");
   const data = useRouteLoaderData('root');
-  const bettor = data.data;
+  const bettor = data?.data;
 
   return (
     <div className="min-h-screen bg-background">

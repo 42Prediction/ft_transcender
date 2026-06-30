@@ -2,15 +2,17 @@ import { auth } from "@/api/auth/auth.api";
 import Logo from "@/components/Logo";
 import { Bell, ChevronDown, LogOut, Search, Settings, Wallet } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useRevalidator, useRouteLoaderData } from "react-router-dom";
+import { Link, useLocation, useNavigate, useRevalidator, useRouteLoaderData } from "react-router-dom";
 
 
 export function Navbar() {
-  const revalidator = useRevalidator()
-  const data = useRouteLoaderData('root');
+  const navigate = useNavigate();
+  const revalidator = useRevalidator();
+  const data = useRouteLoaderData('root') as any;
   const profile = data?.data;
   const location = useLocation();
   const from = location;
+
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -37,10 +39,10 @@ export function Navbar() {
       <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-6 px-6">
         <Link to="/" className="flex items-center gap-2">
           <div className="relative h-15 w-15">
-            <Logo/>
+            <Logo />
           </div>
           <span className="font-display text-xl text-brand font-bold tracking-tight">
-           Prediction
+            Prediction
           </span>
         </Link>
 
@@ -60,13 +62,13 @@ export function Navbar() {
             <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground md:block">⌘K</kbd>
           </div>
         </div>
-        {profile ? UserInfo(profile, dropdownRef, setOpen, open, auth.signout, revalidator ) : SignButtons(from)}
+        {profile ? UserInfo(profile, dropdownRef, setOpen, open, auth.signout, revalidator, navigate) : SignButtons(from)}
       </div>
     </header>
   );
 }
 
-function SignButtons(from: any){
+function SignButtons(from: any) {
   return (
     <>
       <Link
@@ -94,8 +96,9 @@ function UserInfo(
   setOpen: (value: boolean) => void,
   open: boolean,
   signout: () => Promise<{ message: string }>,
-  revalidator: ReturnType<typeof useRevalidator>
-){
+  revalidator: ReturnType<typeof useRevalidator>,
+  navigate: ReturnType<typeof useNavigate>
+) {
   return (
     <>
     <button className="relative hidden h-10 w-10 place-items-center rounded-xl border border-border/60 bg-surface text-muted-foreground transition hover:text-foreground md:grid">
@@ -103,53 +106,56 @@ function UserInfo(
       <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary shadow-glow" />
     </button>
 
-    <button className="hidden h-10 items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 text-sm font-medium text-primary transition hover:bg-primary/20 md:flex">
+    <div className="relative" ref={dropdownRef}>
+      </div>
+      <button className="hidden h-10 items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 text-sm font-medium text-primary transition hover:bg-primary/20 md:flex">
       <Wallet className="h-4 w-4" />
       ₳ {profile?.wallet?.balance?.toLocaleString("pt-PT", { minimumFractionDigits: 2 }) || "4,820.50"}
     </button>
 
-    <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex h-10 items-center gap-2 rounded-xl bg-gradient-brand px-4 text-sm font-semibold text-primary-foreground shadow-glow transition hover:opacity-90"
-      >
-        <span className="hidden sm:inline">{profile?.nick || "lpiquet"}</span>
-        <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
-      </button>
+      <div className="relative" ref={dropdownRef}>
+        <button
+          onClick={() => setOpen(!open)}
+          className="flex h-10 items-center gap-2 rounded-xl bg-gradient-brand px-4 text-sm font-semibold text-primary-foreground shadow-glow transition hover:opacity-90"
+        >
+          <span className="hidden sm:inline">{profile?.nick}</span>
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+        </button>
 
-      {open && (
-        <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl border border-border/60 bg-background backdrop-blur-xl p-1.5 shadow-xl z-50">
-          <div className="flex items-center gap-1">
-            <Link
-              to={`user/${profile?.nick}`}
-              onClick={() => setOpen(false)}
-              className=" flex-1 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-surface hover:text-foreground"
-            >
-              <span>{profile?.nick}</span>
-            </Link>
-            <Link to="user/settings"
+        {open && (
+          <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl border border-border/60 bg-background backdrop-blur-xl p-1.5 shadow-xl z-50">
+            <div className="flex items-center gap-1">
+              <Link
+                to={`user/${profile?.nick}`}
+                onClick={() => setOpen(false)}
+                className=" flex-1 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-surface hover:text-foreground"
+              >
+                <span>{profile?.nick}</span>
+              </Link>
+              <Link to="user/settings"
                 className="rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-surface hover:text-foreground"
+              >
+                <Settings className="h-4 w-4" />
+              </Link>
+            </div>
+
+            <div className="my-1 border-t border-border/40" />
+
+            <button
+              onClick={async () => {
+                setOpen(false);
+                await signout();
+                await revalidator.revalidate();
+                navigate('/', { replace: true });
+              }}
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-red-500 transition hover:bg-red-500/10"
             >
-              <Settings className="h-4 w-4" />
-            </Link>
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </button>
           </div>
-
-          <div className="my-1 border-t border-border/40" />
-
-          <button
-            onClick={async () => {
-              setOpen(false);
-              await signout();
-              await revalidator.revalidate();
-            }}
-            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-red-500 transition hover:bg-red-500/10"
-          >
-            <LogOut className="h-4 w-4" />
-            Log out
-          </button>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
     </>
   )
 }

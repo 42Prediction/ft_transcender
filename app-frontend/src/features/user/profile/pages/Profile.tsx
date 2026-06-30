@@ -11,17 +11,20 @@ import { TopPerformances } from "../components/Topperformances";
 import type { Bettor } from "../route";
 import { useMemo } from "react";
 
+
 export default function ProfilePage() {
 
-  const data = useMemo(() => useLoaderData(), []);
-  data.sucesss
+  const loaderData = useLoaderData();
+  const data = useMemo(() => {
+    return loaderData; // Reference the value here
+  }, [loaderData]);
+
   const bettor = data?.data as Bettor;
 
   const authUser = useRouteLoaderData('root') as any;
+
   const isAuthenticated = authUser?.success === true;
   const isOwn = isAuthenticated && authUser?.data.nick === bettor?.nick;
-  console.log('isOwn: ', isOwn);
-  console.log('auth: ', isAuthenticated);
   return (
     <div className="dark min-h-screen bg-background text-foreground">
       <div className="pointer-events-none fixed inset-0 bg-gradient-hero opacity-60" />

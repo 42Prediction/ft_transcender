@@ -40,7 +40,6 @@ export function PerfilPanel({ bettor }: { bettor: any }) {
       await revalidator.revalidate();
       setPhoto(bettor?.avatar ?? null); // volta ao URL da BD após revalidate
     } catch (err) {
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -54,7 +53,6 @@ export function PerfilPanel({ bettor }: { bettor: any }) {
       setIsEditingName(false);
       await revalidator.revalidate();
     } catch (error) {
-      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -73,7 +71,6 @@ export function PerfilPanel({ bettor }: { bettor: any }) {
       setBioHasChanges(false);
       await revalidator.revalidate(); // estava em falta
     } catch (error) {
-      console.error(error);
     } finally {
       setLoading(false);
     }
