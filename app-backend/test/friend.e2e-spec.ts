@@ -21,6 +21,7 @@ describe('FriendController via BettorController (E2E)', () => {
   const mockBettorService = {
     findOne: jest.fn(),
     findByNick: jest.fn(),
+    nickExists: jest.fn(),
   };
 
   const mockFriendService = {
@@ -79,6 +80,18 @@ describe('FriendController via BettorController (E2E)', () => {
         .get('/bettor/me/friends')
         .set('x-bypass-auth', 'false')
         .expect(403);
+    });
+  });
+
+  describe('E2E - Nickname Existence Check', () => {
+    it('GET /bettor/@gildo/exists -> Deve responder com 200 OK e o payload adequado', async () => {
+      mockBettorService.nickExists.mockResolvedValueOnce(true);
+
+      const response = await request(app.getHttpServer())
+        .get('/bettor/@gildo/exists')
+        .expect(200);
+
+      expect(response.body).toEqual({ exists: true });
     });
   });
 

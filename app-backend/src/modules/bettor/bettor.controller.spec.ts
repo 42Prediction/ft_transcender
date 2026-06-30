@@ -23,6 +23,7 @@ describe('BettorController', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     findByNick: jest.fn(),
+    nickExists: jest.fn(),
   };
 
   const mockFriendService = {
@@ -104,6 +105,26 @@ describe('BettorController', () => {
 
       expect(bettorService.update).toHaveBeenCalledWith('user-id-123', updateDto, undefined);
       expect(result).toEqual(expectedResult);
+    });
+  });
+
+  describe('checkNickExists', () => {
+    it('Deve chamar o serviço com o parâmetro correto e retornar o formato { exists: true }', async () => {
+      mockBettorService.nickExists.mockResolvedValueOnce(true);
+
+      const result = await controller.checkNickExists('gildo');
+
+      expect(mockBettorService.nickExists).toHaveBeenCalledWith('gildo');
+      expect(result).toEqual({ exists: true });
+    });
+
+    it('Deve retornar { exists: false } quando o nickname não for encontrado no sistema', async () => {
+      mockBettorService.nickExists.mockResolvedValueOnce(false);
+
+      const result = await controller.checkNickExists('daniel_x');
+
+      expect(mockBettorService.nickExists).toHaveBeenCalledWith('daniel_x');
+      expect(result).toEqual({ exists: false });
     });
   });
 
