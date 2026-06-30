@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ClassSerializerInterceptor } from '@nestjs/common';
+import { INestApplication, ClassSerializerInterceptor, HttpStatus } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { BettorController } from '../src/modules/bettor/bettor.controller';
 import { BettorService } from '../src/modules/bettor/bettor.service';
@@ -60,9 +60,7 @@ describe('FriendController via BettorController (E2E)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-
     app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
-
     await app.init();
   });
 
@@ -79,7 +77,7 @@ describe('FriendController via BettorController (E2E)', () => {
       await request(app.getHttpServer())
         .get('/bettor/me/friends')
         .set('x-bypass-auth', 'false')
-        .expect(403);
+        .expect(HttpStatus.FORBIDDEN);
     });
   });
 
@@ -102,10 +100,15 @@ describe('FriendController via BettorController (E2E)', () => {
 
       const res = await request(app.getHttpServer())
         .get('/bettor/me/friends')
-        .expect(200);
+        .expect(HttpStatus.OK);
 
       expect(mockFriendService.getMyFriends).toHaveBeenCalledWith('user-id-123');
-      expect(res.body).toEqual(mockResult);
+      expect(res.body).toEqual({
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: mockResult,
+        error: null,
+      });
     });
 
     it('GET /bettor/@:nick/friends -> should return public friends list', async () => {
@@ -114,64 +117,104 @@ describe('FriendController via BettorController (E2E)', () => {
 
       const res = await request(app.getHttpServer())
         .get('/bettor/@daniel/friends')
-        .expect(200);
+        .expect(HttpStatus.OK);
 
       expect(mockFriendService.getPublicFriends).toHaveBeenCalledWith('daniel');
-      expect(res.body).toEqual(mockResult);
+      expect(res.body).toEqual({
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: mockResult,
+        error: null,
+      });
     });
   });
 
   describe('Friend Requests Cycle', () => {
     it('POST /bettor/me/friend-requests/:nick/send -> should send a request', async () => {
-      mockFriendService.sendFriendRequest.mockResolvedValue(undefined);
+      const mockResponseData = { status: 'request_sent' };
+      mockFriendService.sendFriendRequest.mockResolvedValue(mockResponseData);
 
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .post('/bettor/me/friend-requests/gildo/send')
-        .expect(201);
+        .expect(HttpStatus.OK); // Modificado para 200 refletindo seu @HttpCode
 
       expect(mockFriendService.sendFriendRequest).toHaveBeenCalledWith('user-id-123', 'gildo');
+      expect(res.body).toEqual({
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: mockResponseData,
+        error: null,
+      });
     });
 
     it('PATCH /bettor/me/friend-requests/:nick/accept -> should accept a request', async () => {
-      mockFriendService.acceptFriendRequest.mockResolvedValue(undefined);
+      const mockResponseData = { status: 'accepted' };
+      mockFriendService.acceptFriendRequest.mockResolvedValue(mockResponseData);
 
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .patch('/bettor/me/friend-requests/gildo/accept')
-        .expect(200);
+        .expect(HttpStatus.OK);
 
       expect(mockFriendService.acceptFriendRequest).toHaveBeenCalledWith('user-id-123', 'gildo');
+      expect(res.body).toEqual({
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: mockResponseData,
+        error: null,
+      });
     });
 
     it('DELETE /bettor/me/friend-requests/:nick/reject -> should reject a request', async () => {
-      mockFriendService.rejectFriendRequest.mockResolvedValue(undefined);
+      const mockResponseData = { status: 'rejected' };
+      mockFriendService.rejectFriendRequest.mockResolvedValue(mockResponseData);
 
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .delete('/bettor/me/friend-requests/gildo/reject')
-        .expect(200);
+        .expect(HttpStatus.OK);
 
       expect(mockFriendService.rejectFriendRequest).toHaveBeenCalledWith('user-id-123', 'gildo');
+      expect(res.body).toEqual({
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: mockResponseData,
+        error: null,
+      });
     });
 
     it('DELETE /bettor/me/friend-requests/:nick/cancel -> should cancel a pending request', async () => {
-      mockFriendService.cancelFriendRequest.mockResolvedValue(undefined);
+      const mockResponseData = { status: 'cancelled' };
+      mockFriendService.cancelFriendRequest.mockResolvedValue(mockResponseData);
 
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .delete('/bettor/me/friend-requests/gildo/cancel')
-        .expect(200);
+        .expect(HttpStatus.OK);
 
       expect(mockFriendService.cancelFriendRequest).toHaveBeenCalledWith('user-id-123', 'gildo');
+      expect(res.body).toEqual({
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: mockResponseData,
+        error: null,
+      });
     });
   });
 
   describe('Manage Existing Friends', () => {
     it('DELETE /bettor/me/friends/:nick -> should remove an existing friend', async () => {
-      mockFriendService.removeFriend.mockResolvedValue(undefined);
+      const mockResponseData = { status: 'removed' };
+      mockFriendService.removeFriend.mockResolvedValue(mockResponseData);
 
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .delete('/bettor/me/friends/gildo')
-        .expect(200);
+        .expect(HttpStatus.OK);
 
       expect(mockFriendService.removeFriend).toHaveBeenCalledWith('user-id-123', 'gildo');
+      expect(res.body).toEqual({
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: mockResponseData,
+        error: null,
+      });
     });
   });
 
@@ -182,10 +225,15 @@ describe('FriendController via BettorController (E2E)', () => {
 
       const res = await request(app.getHttpServer())
         .get('/bettor/me/friend-requests/received')
-        .expect(200);
+        .expect(HttpStatus.OK);
 
       expect(mockFriendService.getReceivedRequests).toHaveBeenCalledWith('user-id-123');
-      expect(res.body).toEqual(mockResult);
+      expect(res.body).toEqual({
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: mockResult,
+        error: null,
+      });
     });
 
     it('GET /bettor/me/friend-requests/sent -> should return outgoing requests', async () => {
@@ -194,10 +242,15 @@ describe('FriendController via BettorController (E2E)', () => {
 
       const res = await request(app.getHttpServer())
         .get('/bettor/me/friend-requests/sent')
-        .expect(200);
+        .expect(HttpStatus.OK);
 
       expect(mockFriendService.getSentRequests).toHaveBeenCalledWith('user-id-123');
-      expect(res.body).toEqual(mockResult);
+      expect(res.body).toEqual({
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: mockResult,
+        error: null,
+      });
     });
   });
 });
