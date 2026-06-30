@@ -24,7 +24,7 @@ function buildFriendMap(
     return map;
 }
 
-export function FriendList({ bettor }: { bettor?: any }) {
+export function FriendList({ bettor: _bettor }: { bettor?: any }) {
     const [friends, setFriends] = useState<FriendData[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [inviteNick, setInviteNick] = useState("");
