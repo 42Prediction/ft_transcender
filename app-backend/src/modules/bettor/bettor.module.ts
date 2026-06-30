@@ -7,9 +7,10 @@ import { User } from '../user/entities/user.entity';
 import { BettorFriendRequest } from './entities/friend.entity';
 import { FriendService } from './friend.service';
 import { AvatarService } from './avatar.service';
+import { WalletModule } from '../wallet/wallet.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Bettor, User, BettorFriendRequest])],
+  imports: [TypeOrmModule.forFeature([Bettor, User, BettorFriendRequest]), WalletModule],
   controllers: [BettorController],
   providers: [BettorService, FriendService, AvatarService],
   exports: [BettorService, FriendService],

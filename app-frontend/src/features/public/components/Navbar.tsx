@@ -101,15 +101,17 @@ function UserInfo(
 ) {
   return (
     <>
-      <button className="relative hidden h-10 w-10 place-items-center rounded-xl border border-border/60 bg-surface text-muted-foreground transition hover:text-foreground md:grid">
-        <Bell className="h-4 w-4" />
-        <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary shadow-glow" />
-      </button>
+    <button className="relative hidden h-10 w-10 place-items-center rounded-xl border border-border/60 bg-surface text-muted-foreground transition hover:text-foreground md:grid">
+      <Bell className="h-4 w-4" />
+      <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary shadow-glow" />
+    </button>
 
+    <div className="relative" ref={dropdownRef}>
+      </div>
       <button className="hidden h-10 items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 text-sm font-medium text-primary transition hover:bg-primary/20 md:flex">
-        <Wallet className="h-4 w-4" />
-        ₳ {profile?.balance?.toLocaleString("pt-PT", { minimumFractionDigits: 2 }) || "4,820.50"}
-      </button>
+      <Wallet className="h-4 w-4" />
+      ₳ {profile?.wallet?.balance?.toLocaleString("pt-PT", { minimumFractionDigits: 2 }) || "4,820.50"}
+    </button>
 
       <div className="relative" ref={dropdownRef}>
         <button
