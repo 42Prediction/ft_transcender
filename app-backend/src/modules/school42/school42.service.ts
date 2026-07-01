@@ -9,6 +9,29 @@ export interface Student42 {
   level: number;
 }
 
+export interface Exam42 {
+  id: number;
+  name: string;
+  beginAt: string;
+  endAt: string;
+  location: string | null;
+  /** id of the project this exam grades (e.g. "Exam Rank 06"); null if 42 didn't link one. */
+  projectId: number | null;
+}
+
+export interface ExamCadet42 {
+  login: string;
+  name: string;
+  avatar: string | null;
+  /** Final grade for the exam once published by 42, 0-100. `null` while pending. */
+  finalMark: number | null;
+}
+
+export interface ExamRosterEntry42 extends ExamCadet42 {
+  /** Raw 42 `projects_users` status, e.g. "in_progress" / "finished". */
+  status: string;
+}
+
 interface AppToken {
   access_token: string;
   expires_at: number;
@@ -22,7 +45,10 @@ export class School42Service {
   private cachedToken: AppToken | null = null;
 
   constructor(private readonly configService: ConfigService) {
-    this.campusId = this.configService.get<number>('_42SCHOOL_CAMPUS_ID', 68);
+    // ConfigService reads env vars as strings regardless of the generic type
+    // param — cast explicitly so numeric comparisons against 42 API payloads
+    // (which return real numbers) don't silently fail.
+    this.campusId = Number(this.configService.get<string>('_42SCHOOL_CAMPUS_ID', '68'));
   }
 
   private async getAppToken(): Promise<string> {
@@ -67,10 +93,49 @@ export class School42Service {
 
     if (!res.ok) {
       const err = await res.text();
-      throw new Error(`42 API error ${res.status} on ${path}: ${err}`);
+      const error = new Error(`42 API error ${res.status} on ${path}: ${err}`) as Error & {
+        status?: number;
+      };
+      error.status = res.status;
+      throw error;
     }
 
     return res.json() as Promise<T>;
+  }
+
+  /**
+   * Follows `page[number]` until every result is collected (per `X-Total`),
+   * capped at `maxPages` as a safety net. `basePath` must not already carry
+   * a `page[...]` param — this appends its own.
+   */
+  private async get42AllPages<T>(basePath: string, maxPages = 10): Promise<T[]> {
+    const results: T[] = [];
+    const separator = basePath.includes('?') ? '&' : '?';
+
+    for (let page = 1; page <= maxPages; page++) {
+      const token = await this.getAppToken();
+      const res = await fetch(
+        `${this.baseUrl}${basePath}${separator}page[number]=${page}&page[size]=100`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      if (!res.ok) {
+        const err = await res.text();
+        const error = new Error(`42 API error ${res.status} on ${basePath}: ${err}`) as Error & {
+          status?: number;
+        };
+        error.status = res.status;
+        throw error;
+      }
+
+      const batch = (await res.json()) as T[];
+      results.push(...batch);
+
+      const total = Number(res.headers.get('x-total') ?? results.length);
+      if (results.length >= total || batch.length === 0) break;
+    }
+
+    return results;
   }
 
   async searchStudents(query: string, limit = 10): Promise<Student42[]> {
@@ -120,6 +185,140 @@ export class School42Service {
       this.logger.warn(`getTopStudents failed: ${err}`);
       return [];
     }
+  }
+
+  /**
+   * Exams scheduled at the campus within the next `days`, used to auto-generate
+   * prediction markets. Defensive against the couple of key-naming variants
+   * seen across 42 intra API deployments (campus_id vs campus_ids).
+   */
+  async getUpcomingExams(days = 14): Promise<Exam42[]> {
+    try {
+      const now = new Date();
+      const until = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+      const params = new URLSearchParams({
+        'range[begin_at]': `${now.toISOString()},${until.toISOString()}`,
+      });
+
+      const exams = await this.get42AllPages<any>(
+        `/campus/${this.campusId}/exams?${params.toString()}`,
+      );
+
+      return exams.filter((e) => e && e.id && e.begin_at).map((e) => this.mapExam(e));
+    } catch (err) {
+      this.logger.warn(`getUpcomingExams failed: ${err}`);
+      return [];
+    }
+  }
+
+  /** Single exam lookup, used when only the numeric id is on hand (e.g. resolving a stored market). */
+  async getExam(examId: number): Promise<Exam42 | null> {
+    try {
+      const e = await this.get42<any>(`/exams/${examId}`);
+      if (!e?.id) return null;
+      return this.mapExam(e);
+    } catch (err) {
+      this.logger.warn(`getExam(${examId}) failed: ${err}`);
+      return null;
+    }
+  }
+
+  /**
+   * `projects_users?filter[campus]=X` matches wherever the *attempt* took
+   * place, not the cadet's home campus — network-wide staff/QA test accounts
+   * (which hold a `campus_users` record at nearly every campus) slip through
+   * that filter. This checks the cadet's actual `is_primary` campus membership
+   * so markets only ever cover real 42 Luanda cadets.
+   */
+  /**
+   * `null` means "couldn't verify" (API error/rate limit) — callers must
+   * treat that as "do nothing" rather than as a confirmed non-match. Under
+   * load this endpoint gets slow/rate-limited; conflating "unverifiable"
+   * with "not a Luanda cadet" would wrongly cancel real students' markets
+   * on a transient hiccup.
+   */
+  async isPrimaryCampusStudent(login: string): Promise<boolean | null> {
+    try {
+      const u = await this.get42<any>(`/users/${encodeURIComponent(login)}`);
+      const campusUsers: any[] = u.campus_users ?? [];
+      return campusUsers.some((cu) => Number(cu.campus_id) === this.campusId && cu.is_primary === true);
+    } catch (err) {
+      this.logger.warn(`isPrimaryCampusStudent(${login}) failed: ${err}`);
+      return null;
+    }
+  }
+
+  private mapExam(e: any): Exam42 {
+    return {
+      id: Number(e.id),
+      name: e.name ?? `Exam ${e.id}`,
+      beginAt: e.begin_at,
+      endAt: e.end_at ?? e.begin_at,
+      location: e.location ?? null,
+      projectId: e.projects?.[0]?.id != null ? Number(e.projects[0].id) : null,
+    };
+  }
+
+  /**
+   * Grades for everyone with a `projects_users` record on the exam's linked
+   * project, regardless of status — used to resolve markets once 42 marks a
+   * cadet's attempt.
+   *
+   * `exams_users` (the direct exam-subscriber list) requires an
+   * elevated/staff-scoped app token that this app doesn't have (403 for
+   * plain client_credentials). Every 42 exam is graded through a linked
+   * project of the same name (e.g. "Exam Rank 06" -> project "Exam Rank 06"),
+   * and `projects_users` for that project *is* reachable with a normal app
+   * token when filtered by campus. `finalMark` is `null` until 42 publishes
+   * the grade; callers should treat that as "not graded yet", not "failed".
+   */
+  async getExamGrades(exam: Exam42): Promise<ExamCadet42[]> {
+    const entries = await this.fetchProjectUsers(exam);
+    return entries.map(({ status, ...c }) => c);
+  }
+
+  /**
+   * Full roster (any status) with status kept, so callers can tell "gone
+   * entirely" (deregistered) apart from "finished" (should resolve, not
+   * cancel) — `getExamCadets`/`getExamGrades` alone can't distinguish those.
+   */
+  async getExamRoster(exam: Exam42): Promise<ExamRosterEntry42[]> {
+    return this.fetchProjectUsers(exam);
+  }
+
+  /**
+   * Deliberately does NOT swallow fetch errors into `[]` — an empty roster
+   * here is indistinguishable from "everyone deregistered" to callers doing
+   * deregistration cleanup, and a transient failure returned as `[]` would
+   * make `syncExamMarkets` cancel every legitimate market for the exam. Let
+   * it throw; the per-exam try/catch in the caller skips that exam for this
+   * cycle instead.
+   */
+  private async fetchProjectUsers(exam: Exam42): Promise<ExamRosterEntry42[]> {
+    const projectId = exam.projectId;
+    if (projectId == null) {
+      this.logger.warn(`fetchProjectUsers(${exam.id}): exam has no linked project, skipping`);
+      return [];
+    }
+
+    const params = new URLSearchParams({ 'filter[campus]': String(this.campusId) });
+    const projectsUsers = await this.get42AllPages<any>(
+      `/projects/${projectId}/projects_users?${params.toString()}`,
+    );
+
+    return projectsUsers
+      .map((pu) => {
+        const u = pu.user;
+        if (!u?.login) return null;
+        return {
+          login: u.login,
+          name: u.usual_full_name ?? u.displayname ?? u.login,
+          avatar: this.extractAvatar(u.image),
+          finalMark: pu.final_mark != null ? Number(pu.final_mark) : null,
+          status: pu.status as string,
+        };
+      })
+      .filter((c): c is ExamCadet42 & { status: string } => c !== null);
   }
 
   async getStudent(login: string): Promise<Student42 | null> {

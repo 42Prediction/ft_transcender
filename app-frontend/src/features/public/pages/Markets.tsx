@@ -25,14 +25,23 @@ export async function marketsLoader(): Promise<MarketsLoaderData> {
 }
 
 export function Markets() {
-  const { markets: initial, categories } = useLoaderData() as MarketsLoaderData;
+  const { markets: initial, categories: initialCategories } = useLoaderData() as MarketsLoaderData;
   const root = useRouteLoaderData('root') as any;
-  const isLoggedIn = !!root?.data;
+  const isAdmin = root?.data?.role === 'admin';
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
   const [markets, setMarkets] = useState<MarketDto[]>(initial);
+  const [categories, setCategories] = useState<CategoryStat[]>(initialCategories);
   const [loading, setLoading] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+
+  // Category badge counts are a server-side aggregate independent of the
+  // current search/category filter, so a market appearing/disappearing (via
+  // the exam sync's create/cancel/resolve) needs its own lightweight refetch
+  // to stay accurate — the filtered `markets` list alone can't derive it.
+  function refreshCategoryCounts() {
+    marketApi.getCategories().then(setCategories).catch(() => {});
+  }
 
   async function applyFilters(category: string, q: string) {
     setLoading(true);
@@ -74,7 +83,7 @@ export function Markets() {
 
   function matchesFilters(m: MarketDto): boolean {
     const { activeCategory: category, search: q } = filtersRef.current;
-    if (m.status === 'resolved') return false;
+    if (m.status === 'resolved' || m.status === 'cancelled') return false;
     if (category !== 'All' && m.category !== category) return false;
     if (q) {
       const needle = q.toLowerCase();
@@ -88,8 +97,11 @@ export function Markets() {
     setMarkets((prev) => {
       const exists = prev.some((m) => m.id === updated.id);
       if (!matchesFilters(updated)) {
-        return exists ? prev.filter((m) => m.id !== updated.id) : prev;
+        if (!exists) return prev;
+        refreshCategoryCounts();
+        return prev.filter((m) => m.id !== updated.id);
       }
+      if (!exists) refreshCategoryCounts();
       return exists
         ? prev.map((m) => (m.id === updated.id ? updated : m))
         : [updated, ...prev];
@@ -97,7 +109,11 @@ export function Markets() {
   }, []);
 
   const handleMarketRemove = useCallback((marketId: string) => {
-    setMarkets((prev) => prev.filter((m) => m.id !== marketId));
+    setMarkets((prev) => {
+      if (!prev.some((m) => m.id === marketId)) return prev;
+      refreshCategoryCounts();
+      return prev.filter((m) => m.id !== marketId);
+    });
   }, []);
 
   useMarketUpdates(handleMarketUpdate, handleMarketRemove);
@@ -108,16 +124,16 @@ export function Markets() {
         <div>
           <h1 className="font-display text-4xl font-bold">All Markets</h1>
           <p className="mt-2 text-muted-foreground">
-            Browse and trade on 42 student outcomes.
+            Auto-generated from upcoming 42 Luanda exams — bet on who scores 100.
           </p>
         </div>
-        {isLoggedIn && (
+        {isAdmin && (
           <button
             onClick={() => setCreateOpen(true)}
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
           >
             <Plus className="h-4 w-4" />
-            New Market
+            New Market (override)
           </button>
         )}
       </div>

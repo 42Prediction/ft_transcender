@@ -9,6 +9,7 @@ const statusLabel: Record<MarketDto['status'], string> = {
   closing: 'Closing soon',
   new: 'New market',
   resolved: 'Resolved',
+  cancelled: 'Cancelled',
 };
 
 function timeUntil(closes: string): string {
@@ -38,9 +39,10 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
   const yesPct = Math.round(m.yesPrice * 100);
   const noPct = Math.round(m.noPrice * 100);
   const avatarSrc = m.avatar ?? avatarFallback(m.handle);
-  const canBet = m.status !== 'resolved';
+  const isSettled = m.status === 'resolved' || m.status === 'cancelled';
+  const canBet = !isSettled;
   const isAdmin = role === 'admin';
-  const canResolve = isAdmin && m.status !== 'resolved';
+  const canResolve = isAdmin && !isSettled;
 
   function openBet(side: 'YES' | 'NO') {
     navigate(`/market/${m.id}?side=${side}`);
@@ -87,8 +89,17 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
               {m.category} defense
             </p>
             <h3 className="mt-1 font-display text-lg font-bold leading-snug text-foreground">
-              Will <span className="text-primary">@{m.handle}</span> pass{' '}
-              {m.project.split(' — ')[0]} on first defense?
+              {m.category === 'Exams' ? (
+                <>
+                  Will <span className="text-primary">@{m.handle}</span> score 100 on{' '}
+                  {m.project.split(' — ')[0]}?
+                </>
+              ) : (
+                <>
+                  Will <span className="text-primary">@{m.handle}</span> pass{' '}
+                  {m.project.split(' — ')[0]} on first defense?
+                </>
+              )}
             </h3>
             <p className="mt-1.5 text-xs text-muted-foreground">
               {m.category} · Cohort 2025
@@ -177,6 +188,12 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
         {m.status === 'resolved' && m.resolution && (
           <div className={`rounded-xl border p-3 text-center text-sm font-semibold ${m.resolution === 'YES' ? 'border-success/30 bg-success/10 text-success' : 'border-destructive/30 bg-destructive/10 text-destructive'}`}>
             Resolved: {m.resolution}
+          </div>
+        )}
+
+        {m.status === 'cancelled' && (
+          <div className="rounded-xl border border-muted-foreground/30 bg-surface p-3 text-center text-sm font-semibold text-muted-foreground">
+            Cancelled — bets refunded
           </div>
         )}
 

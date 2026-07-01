@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -16,6 +17,9 @@ export enum MarketStatus {
   CLOSING = 'closing',
   NEW = 'new',
   RESOLVED = 'resolved',
+  // Auto-generated exam markets are voided (bets refunded) when the cadet
+  // deregisters from the exam before it ends.
+  CANCELLED = 'cancelled',
 }
 
 export enum MarketResolution {
@@ -34,9 +38,18 @@ export enum MarketCategory {
 }
 
 @Entity('markets')
+@Index('UQ_markets_exam_subject', ['examId', 'subjectLogin'], {
+  unique: true,
+  where: '"exam_id" IS NOT NULL',
+})
 export class Market {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
+
+  // Set when this market was auto-generated from a 42 School exam; pairs with
+  // subjectLogin to dedupe one market per (exam, cadet).
+  @Column({ name: 'exam_id', type: 'varchar', nullable: true })
+  examId?: string | null;
 
   @Column({ name: 'subject_login' })
   subjectLogin!: string;

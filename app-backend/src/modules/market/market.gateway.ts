@@ -25,10 +25,10 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   emitMarketUpdate(market: unknown) {
-    this.server.emit('market:update', market);
+    this.server?.emit('market:update', market);
   }
 
   emitMarketRemoved(marketId: string) {
-    this.server.emit('market:removed', marketId);
+    this.server?.emit('market:removed', marketId);
   }
 }

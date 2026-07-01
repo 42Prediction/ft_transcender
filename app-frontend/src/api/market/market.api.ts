@@ -1,6 +1,6 @@
 import api from '../api';
 
-export type MarketStatus = 'live' | 'closing' | 'new' | 'resolved';
+export type MarketStatus = 'live' | 'closing' | 'new' | 'resolved' | 'cancelled';
 
 export interface MarketDto {
   id: string;

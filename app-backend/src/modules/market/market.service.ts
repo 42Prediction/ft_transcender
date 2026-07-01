@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cron } from '@nestjs/schedule';
-import { Not, Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { Market, MarketResolution, MarketStatus } from './entities/market.entity';
 import { BetSide, MarketPosition } from './entities/market-position.entity';
 import { Bettor } from '../bettor/entities/bettor.entity';
@@ -45,9 +45,11 @@ export class MarketService {
     if (status) {
       qb.andWhere('m.status = :status', { status });
     } else {
-      // Default view only shows active markets — resolved/closed markets are hidden
-      // unless a status is explicitly requested.
-      qb.andWhere('m.status != :resolved', { resolved: MarketStatus.RESOLVED });
+      // Default view only shows active markets — resolved/cancelled markets are
+      // hidden unless a status is explicitly requested.
+      qb.andWhere('m.status NOT IN (:...inactive)', {
+        inactive: [MarketStatus.RESOLVED, MarketStatus.CANCELLED],
+      });
     }
     if (search) {
       qb.andWhere(
@@ -64,7 +66,9 @@ export class MarketService {
     const markets = await this.marketRepo
       .createQueryBuilder('m')
       .leftJoinAndSelect('m.creator', 'creator')
-      .where('m.status != :status', { status: MarketStatus.RESOLVED })
+      .where('m.status NOT IN (:...inactive)', {
+        inactive: [MarketStatus.RESOLVED, MarketStatus.CANCELLED],
+      })
       .orderBy('(m.yes_pool + m.no_pool)', 'DESC')
       .limit(limit)
       .getMany();
@@ -195,6 +199,40 @@ export class MarketService {
     return { resolved: true, resolution, totalPool, winnersCount: winners.length };
   }
 
+  /**
+   * Voids a market — e.g. an auto-generated exam market whose cadet
+   * deregistered before the exam ended. Every position is refunded in full
+   * (not a payout, since the event no longer resolves either way).
+   */
+  async cancelMarket(id: string, reason: string) {
+    const market = await this.marketRepo.findOne({ where: { id } });
+    if (!market) throw new NotFoundException('Market not found');
+    if (market.status === MarketStatus.RESOLVED || market.status === MarketStatus.CANCELLED) {
+      return;
+    }
+
+    market.status = MarketStatus.CANCELLED;
+    market.resolvedAt = new Date();
+    await this.marketRepo.save(market);
+    this.marketGateway.emitMarketUpdate(this.toDto(market));
+    this.marketGateway.emitMarketRemoved(market.id);
+
+    const positions = await this.positionRepo.find({ where: { marketId: id } });
+    for (const pos of positions) {
+      if (pos.payout != null) continue;
+      pos.payout = pos.amount;
+      await this.positionRepo.save(pos);
+
+      await this.walletService.credit(pos.bettorId, {
+        amount: Number(pos.amount),
+        type: TransactionType.PAYOUT,
+        description: `Refund: market cancelled (${reason}) — ${market.project}`,
+      });
+    }
+
+    return { cancelled: true, refundedPositions: positions.length };
+  }
+
   async getStats() {
     const [liveCount, totalBettors] = await Promise.all([
       this.marketRepo.count({
@@ -285,7 +323,9 @@ export class MarketService {
       .createQueryBuilder('pos')
       .leftJoinAndSelect('pos.market', 'market')
       .where('pos.bettor_id = :bettorId', { bettorId: bettor.id })
-      .andWhere('market.status != :status', { status: MarketStatus.RESOLVED })
+      .andWhere('market.status NOT IN (:...inactive)', {
+        inactive: [MarketStatus.RESOLVED, MarketStatus.CANCELLED],
+      })
       .orderBy('pos.created_at', 'DESC')
       .getMany();
 
@@ -347,7 +387,9 @@ export class MarketService {
       .createQueryBuilder('m')
       .select('m.category', 'category')
       .addSelect('COUNT(m.id)', 'count')
-      .where('m.status != :status', { status: MarketStatus.RESOLVED })
+      .where('m.status NOT IN (:...inactive)', {
+        inactive: [MarketStatus.RESOLVED, MarketStatus.CANCELLED],
+      })
       .groupBy('m.category')
       .getRawMany();
 
@@ -358,7 +400,7 @@ export class MarketService {
     ];
   }
 
-  private computeStatus(closesAt: Date, now: Date, createdAt?: Date): MarketStatus {
+  computeStatus(closesAt: Date, now: Date, createdAt?: Date): MarketStatus {
     const diff = closesAt.getTime() - now.getTime();
     if (diff < 0) return MarketStatus.RESOLVED;
     if (diff < 24 * 60 * 60 * 1000) return MarketStatus.CLOSING;
@@ -377,7 +419,7 @@ export class MarketService {
   @Cron('*/15 * * * * *')
   async refreshMarketStatuses() {
     const markets = await this.marketRepo.find({
-      where: { status: Not(MarketStatus.RESOLVED) },
+      where: { status: Not(In([MarketStatus.RESOLVED, MarketStatus.CANCELLED])) },
     });
     const now = new Date();
 
@@ -398,7 +440,7 @@ export class MarketService {
     }
   }
 
-  private toDto(market: Market) {
+  toDto(market: Market) {
     const yesPool = Number(market.yesPool);
     const noPool = Number(market.noPool);
     const total = yesPool + noPool;

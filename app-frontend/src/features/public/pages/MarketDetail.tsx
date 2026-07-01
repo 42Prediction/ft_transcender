@@ -191,7 +191,7 @@ function MarketHeader({ market }: { market: MarketDto }) {
             <span
               className={cn(
                 'rounded-md border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider',
-                market.status === 'resolved'
+                market.status === 'resolved' || market.status === 'cancelled'
                   ? 'border-muted-foreground/30 bg-surface text-muted-foreground'
                   : 'border-success/30 bg-success/10 text-success',
               )}
@@ -199,12 +199,22 @@ function MarketHeader({ market }: { market: MarketDto }) {
               {market.status === 'live' ? '● Live'
                 : market.status === 'closing' ? '● Closing'
                 : market.status === 'new' ? '● New'
+                : market.status === 'cancelled' ? 'Cancelled'
                 : 'Resolved'}
             </span>
           </div>
           <h1 className="mt-2 font-display text-3xl font-bold tracking-tight md:text-4xl">
-            Will <span className="text-brand">@{market.handle}</span> pass{' '}
-            {market.project.split(' — ')[0]}?
+            {market.category === 'Exams' ? (
+              <>
+                Will <span className="text-brand">@{market.handle}</span> score 100 on{' '}
+                {market.project.split(' — ')[0]}?
+              </>
+            ) : (
+              <>
+                Will <span className="text-brand">@{market.handle}</span> pass{' '}
+                {market.project.split(' — ')[0]}?
+              </>
+            )}
           </h1>
           <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span>42 Luanda</span>
@@ -531,7 +541,9 @@ function TradePanel({
   const [success, setSuccess] = useState(false);
 
   const isResolved = market.status === 'resolved';
-  const canBet = isLoggedIn && !isResolved && amount >= 1 && amount <= balance;
+  const isCancelled = market.status === 'cancelled';
+  const isSettled = isResolved || isCancelled;
+  const canBet = isLoggedIn && !isSettled && amount >= 1 && amount <= balance;
 
   async function handleBet() {
     if (!canBet) return;
@@ -565,13 +577,13 @@ function TradePanel({
       <div className="mt-4 grid grid-cols-2 gap-2">
         <button
           onClick={() => setBetSide('YES')}
-          disabled={isResolved}
+          disabled={isSettled}
           className={cn(
             'rounded-xl border px-3 py-3 text-left transition',
             betSide === 'YES'
               ? 'border-success bg-success/15 shadow-[0_0_24px_oklch(0.78_0.20_150/0.25)]'
               : 'border-success/30 bg-success/5 hover:bg-success/10',
-            isResolved && 'cursor-not-allowed opacity-50',
+            isSettled && 'cursor-not-allowed opacity-50',
           )}
         >
           <div className="font-mono text-[10px] uppercase tracking-wider text-success/80">Yes</div>
@@ -579,13 +591,13 @@ function TradePanel({
         </button>
         <button
           onClick={() => setBetSide('NO')}
-          disabled={isResolved}
+          disabled={isSettled}
           className={cn(
             'rounded-xl border px-3 py-3 text-left transition',
             betSide === 'NO'
               ? 'border-destructive bg-destructive/15 shadow-[0_0_24px_oklch(0.68_0.22_18/0.25)]'
               : 'border-destructive/30 bg-destructive/5 hover:bg-destructive/10',
-            isResolved && 'cursor-not-allowed opacity-50',
+            isSettled && 'cursor-not-allowed opacity-50',
           )}
         >
           <div className="font-mono text-[10px] uppercase tracking-wider text-destructive/80">No</div>
@@ -606,7 +618,7 @@ function TradePanel({
           value={amount || ''}
           onChange={(e) => setAmount(Number(e.target.value))}
           placeholder="0"
-          disabled={isResolved || !isLoggedIn}
+          disabled={isSettled || !isLoggedIn}
           className="mt-2 h-11 w-full rounded-xl border border-border/60 bg-surface px-3 font-mono text-base focus:border-primary/60 focus:outline-none disabled:opacity-50"
         />
         <div className="mt-3 grid grid-cols-5 gap-2">
@@ -614,7 +626,7 @@ function TradePanel({
             <button
               key={q}
               onClick={() => setAmount(Math.min(amount + q, Math.floor(balance)))}
-              disabled={isResolved || !isLoggedIn}
+              disabled={isSettled || !isLoggedIn}
               className="rounded-lg border border-border/60 bg-surface px-1 py-1.5 font-mono text-xs text-muted-foreground transition hover:border-primary/40 hover:text-foreground disabled:opacity-40"
             >
               +{q}
@@ -660,6 +672,10 @@ function TradePanel({
             : 'border-destructive/40 bg-destructive/10 text-destructive',
         )}>
           Resolved: {market.resolution}
+        </div>
+      ) : isCancelled ? (
+        <div className="mt-4 flex h-12 w-full items-center justify-center rounded-xl border border-muted-foreground/30 bg-surface text-sm font-semibold text-muted-foreground">
+          Cancelled — bets refunded
         </div>
       ) : !isLoggedIn ? (
         <Link
@@ -742,15 +758,25 @@ function MarketInfoCard({ market }: { market: MarketDto }) {
         <div className="border-t border-border/40 pt-3">
           <dt className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Rules</dt>
           <dd className="mt-1 text-sm leading-relaxed text-foreground/80">
-            Resolves <span className="font-semibold text-success">"Yes"</span> if{' '}
-            <span className="font-mono">@{market.handle}</span> passes{' '}
-            {market.project.split(' — ')[0]} before the deadline.
+            {market.category === 'Exams' ? (
+              <>
+                Resolves <span className="font-semibold text-success">"Yes"</span> if{' '}
+                <span className="font-mono">@{market.handle}</span> scores 100 on{' '}
+                {market.project.split(' — ')[0]}, automatically once 42 publishes the grade.
+              </>
+            ) : (
+              <>
+                Resolves <span className="font-semibold text-success">"Yes"</span> if{' '}
+                <span className="font-mono">@{market.handle}</span> passes{' '}
+                {market.project.split(' — ')[0]} before the deadline.
+              </>
+            )}
           </dd>
         </div>
       </dl>
 
       {/* admin resolve */}
-      {isAdmin && market.status !== 'resolved' && (
+      {isAdmin && market.status !== 'resolved' && market.status !== 'cancelled' && (
         <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-3">
           {resolveConfirm ? (
             <div className="space-y-2">

@@ -16,7 +16,9 @@ export function Trending() {
   const handleMarketUpdate = useCallback((updated: MarketDto) => {
     setTrending((prev) => {
       if (!prev.some((m) => m.id === updated.id)) return prev;
-      if (updated.status === 'resolved') return prev.filter((m) => m.id !== updated.id);
+      if (updated.status === 'resolved' || updated.status === 'cancelled') {
+        return prev.filter((m) => m.id !== updated.id);
+      }
       return prev.map((m) => (m.id === updated.id ? updated : m));
     });
   }, []);

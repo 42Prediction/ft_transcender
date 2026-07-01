@@ -144,8 +144,11 @@ export class MarketController {
     }
   }
 
+  // Markets are normally sourced automatically from the 42 API (see
+  // ExamMarketSyncService); this stays admin-only as a manual override.
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateMarketDto, @Req() req: any) {
     try {
@@ -178,6 +181,21 @@ export class MarketController {
   ) {
     try {
       const data = await this.marketService.resolveMarket(id, resolution);
+      return successResponse(HttpStatus.OK, data);
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+
+  // Manual override alongside auto-resolve — e.g. voiding a market the sync
+  // job would otherwise have cancelled on its own next run.
+  @Patch(':id/cancel')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  async cancel(@Param('id') id: string, @Body('reason') reason?: string) {
+    try {
+      const data = await this.marketService.cancelMarket(id, reason ?? 'cancelled by admin');
       return successResponse(HttpStatus.OK, data);
     } catch (error) {
       return errorResponse(error);
