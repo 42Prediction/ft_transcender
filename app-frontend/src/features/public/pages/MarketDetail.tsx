@@ -701,7 +701,9 @@ function TradePanel({
 
 function MarketInfoCard({ market }: { market: MarketDto }) {
   const root = useRouteLoaderData('root') as any;
-  const role: string | undefined = root?.data?.role;
+  // GET /bettor/me nests the account under `.user` — role lives at
+  // data.user.role, not data.role.
+  const role: string | undefined = root?.data?.user?.role;
   const isAdmin = role === 'admin';
   const revalidator = useRevalidator();
 

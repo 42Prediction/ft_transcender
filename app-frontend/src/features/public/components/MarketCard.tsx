@@ -28,7 +28,9 @@ function avatarFallback(name: string): string {
 
 export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => void }) {
   const root = useRouteLoaderData('root') as any;
-  const role: string | undefined = root?.data?.role;
+  // GET /bettor/me nests the account under `.user` — role lives at
+  // data.user.role, not data.role.
+  const role: string | undefined = root?.data?.user?.role;
   const isLoggedIn = !!root?.data;
   const revalidator = useRevalidator();
   const navigate = useNavigate();

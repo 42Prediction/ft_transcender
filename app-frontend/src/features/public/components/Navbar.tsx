@@ -11,6 +11,9 @@ export function Navbar() {
   const revalidator = useRevalidator();
   const data = useRouteLoaderData('root') as any;
   const profile = data?.data;
+  // GET /bettor/me nests the account under `.user` — role lives at
+  // profile.user.role, not profile.role.
+  const isAdmin = profile?.user?.role === 'admin';
   const location = useLocation();
   const from = location;
 
@@ -63,7 +66,7 @@ export function Navbar() {
             <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground md:block">⌘K</kbd>
           </div>
         </div>
-        {profile && (
+        {isAdmin && (
         <button
           onClick={() => setCreateMarketOpen(true)}
           className="hidden h-10 items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 text-sm font-medium text-primary transition hover:bg-primary/20 md:flex"

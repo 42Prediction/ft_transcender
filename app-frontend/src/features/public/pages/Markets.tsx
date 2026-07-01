@@ -27,7 +27,9 @@ export async function marketsLoader(): Promise<MarketsLoaderData> {
 export function Markets() {
   const { markets: initial, categories: initialCategories } = useLoaderData() as MarketsLoaderData;
   const root = useRouteLoaderData('root') as any;
-  const isAdmin = root?.data?.role === 'admin';
+  // authMiddleware backs this with GET /bettor/me — the response nests the
+  // account under `.user`, so the role lives at data.user.role, not data.role.
+  const isAdmin = root?.data?.user?.role === 'admin';
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
   const [markets, setMarkets] = useState<MarketDto[]>(initial);
