@@ -3,6 +3,7 @@ import { PrivacyPage } from './pages/Privacy';
 import { TermsPage } from './pages/Terms';
 import { Markets, marketsLoader } from './pages/Markets';
 import { Leaderboard, leaderboardLoader } from './pages/Leaderboard';
+import { MarketDetail, marketDetailLoader } from './pages/MarketDetail';
 import { marketApi } from '@/api/market/market.api';
 
 async function homeLoader() {
@@ -33,6 +34,11 @@ export const publicRouter = [
     path: '/leaderboard',
     Component: Leaderboard,
     loader: leaderboardLoader,
+  },
+  {
+    path: '/market/:id',
+    Component: MarketDetail,
+    loader: marketDetailLoader,
   },
   {
     path: '/privacy',

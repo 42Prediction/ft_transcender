@@ -131,4 +131,9 @@ export const marketApi = {
     const res = await api.post('/market', dto);
     return unwrap(res);
   },
+
+  resolveMarket: async (marketId: string, resolution: 'YES' | 'NO') => {
+    const res = await api.patch(`/market/${marketId}/resolve`, { resolution });
+    return unwrap(res);
+  },
 };
