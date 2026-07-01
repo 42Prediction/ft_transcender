@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLoaderData, useRouteLoaderData } from 'react-router-dom';
 import { Plus, Search } from 'lucide-react';
 import { MarketCard } from '../components/MarketCard';
 import type { CategoryStat, MarketDto } from '@/api/market/market.api';
 import { marketApi } from '@/api/market/market.api';
 import { CreateMarketModal } from '@/features/market/components/CreateMarketModal';
+import { useMarketUpdates } from '@/features/market/hooks/useMarketUpdates';
 
 export interface MarketsLoaderData {
   markets: MarketDto[];
@@ -63,6 +64,43 @@ export function Markets() {
     });
     setMarkets(data);
   }
+
+  // Keep the currently active filters available to the socket handlers below
+  // without re-subscribing on every keystroke/category change.
+  const filtersRef = useRef({ activeCategory, search });
+  useEffect(() => {
+    filtersRef.current = { activeCategory, search };
+  }, [activeCategory, search]);
+
+  function matchesFilters(m: MarketDto): boolean {
+    const { activeCategory: category, search: q } = filtersRef.current;
+    if (m.status === 'resolved') return false;
+    if (category !== 'All' && m.category !== category) return false;
+    if (q) {
+      const needle = q.toLowerCase();
+      const haystack = `${m.student} ${m.handle} ${m.project}`.toLowerCase();
+      if (!haystack.includes(needle)) return false;
+    }
+    return true;
+  }
+
+  const handleMarketUpdate = useCallback((updated: MarketDto) => {
+    setMarkets((prev) => {
+      const exists = prev.some((m) => m.id === updated.id);
+      if (!matchesFilters(updated)) {
+        return exists ? prev.filter((m) => m.id !== updated.id) : prev;
+      }
+      return exists
+        ? prev.map((m) => (m.id === updated.id ? updated : m))
+        : [updated, ...prev];
+    });
+  }, []);
+
+  const handleMarketRemove = useCallback((marketId: string) => {
+    setMarkets((prev) => prev.filter((m) => m.id !== marketId));
+  }, []);
+
+  useMarketUpdates(handleMarketUpdate, handleMarketRemove);
 
   return (
     <div className="mx-auto max-w-[1400px] px-6 py-12">

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Link,
   useLoaderData,
@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { marketApi, type ActivityEntry, type MarketDto } from '@/api/market/market.api';
 import { cn } from '@/lib/utils';
+import { useMarketUpdates } from '@/features/market/hooks/useMarketUpdates';
 
 /* ─── types ─────────────────────────────────────────── */
 
@@ -92,13 +93,28 @@ function formatDate(iso: string) {
 /* ─── page ───────────────────────────────────────────── */
 
 export function MarketDetail() {
-  const { market, activity } = useLoaderData() as MarketDetailLoaderData;
+  const { market: loaderMarket, activity } = useLoaderData() as MarketDetailLoaderData;
   const [searchParams] = useSearchParams();
   const initialSide = (searchParams.get('side') === 'NO' ? 'NO' : 'YES') as 'YES' | 'NO';
 
   const [range, setRange] = useState<Range>('ALL');
   const [betSide, setBetSide] = useState<'YES' | 'NO'>(initialSide);
   const [amount, setAmount] = useState(0);
+  const [market, setMarket] = useState<MarketDto>(loaderMarket);
+
+  useEffect(() => {
+    setMarket(loaderMarket);
+  }, [loaderMarket]);
+
+  const handleMarketUpdate = useCallback(
+    (updated: MarketDto) => {
+      if (updated.id === loaderMarket.id) setMarket(updated);
+    },
+    [loaderMarket.id],
+  );
+  const handleMarketRemove = useCallback(() => {}, []);
+
+  useMarketUpdates(handleMarketUpdate, handleMarketRemove);
 
   const data = useMemo(() => {
     const pts = { '1H': 60, '6H': 72, '1D': 96, '1W': 84, '1M': 90, ALL: 140 }[range];

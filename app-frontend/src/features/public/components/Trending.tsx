@@ -1,11 +1,31 @@
+import { useCallback, useEffect, useState } from 'react';
 import { ArrowUpRight, Flame } from 'lucide-react';
 import { MarketCard } from './MarketCard';
 import { Link, useRouteLoaderData } from 'react-router-dom';
 import type { MarketDto } from '@/api/market/market.api';
+import { useMarketUpdates } from '@/features/market/hooks/useMarketUpdates';
 
 export function Trending() {
   const data = useRouteLoaderData('home') as { trending: MarketDto[] } | null;
-  const trending = data?.trending ?? [];
+  const [trending, setTrending] = useState<MarketDto[]>(data?.trending ?? []);
+
+  useEffect(() => {
+    setTrending(data?.trending ?? []);
+  }, [data]);
+
+  const handleMarketUpdate = useCallback((updated: MarketDto) => {
+    setTrending((prev) => {
+      if (!prev.some((m) => m.id === updated.id)) return prev;
+      if (updated.status === 'resolved') return prev.filter((m) => m.id !== updated.id);
+      return prev.map((m) => (m.id === updated.id ? updated : m));
+    });
+  }, []);
+
+  const handleMarketRemove = useCallback((marketId: string) => {
+    setTrending((prev) => prev.filter((m) => m.id !== marketId));
+  }, []);
+
+  useMarketUpdates(handleMarketUpdate, handleMarketRemove);
 
   return (
     <section className="mx-auto max-w-[1400px] px-6 py-16">

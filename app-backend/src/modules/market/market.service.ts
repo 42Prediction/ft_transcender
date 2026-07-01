@@ -4,7 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Cron } from '@nestjs/schedule';
+import { Not, Repository } from 'typeorm';
 import { Market, MarketResolution, MarketStatus } from './entities/market.entity';
 import { BetSide, MarketPosition } from './entities/market-position.entity';
 import { Bettor } from '../bettor/entities/bettor.entity';
@@ -13,6 +14,7 @@ import { WalletService } from '../wallet/wallet.service';
 import { TransactionType } from '../wallet/entities/transaction.entity';
 import { CreateMarketDto } from './dto/create-market.dto';
 import { PlaceBetDto } from './dto/place-bet.dto';
+import { MarketGateway } from './market.gateway';
 import { createAvatar } from '@dicebear/core';
 import { avataaarsNeutral } from '@dicebear/collection';
 
@@ -28,6 +30,7 @@ export class MarketService {
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     private readonly walletService: WalletService,
+    private readonly marketGateway: MarketGateway,
   ) {}
 
   async findAll(category?: string, status?: string, search?: string) {
@@ -41,6 +44,10 @@ export class MarketService {
     }
     if (status) {
       qb.andWhere('m.status = :status', { status });
+    } else {
+      // Default view only shows active markets — resolved/closed markets are hidden
+      // unless a status is explicitly requested.
+      qb.andWhere('m.status != :resolved', { resolved: MarketStatus.RESOLVED });
     }
     if (search) {
       qb.andWhere(
@@ -49,7 +56,6 @@ export class MarketService {
       );
     }
 
-    this.updateStatuses(qb);
     const markets = await qb.getMany();
     return markets.map(this.toDto);
   }
@@ -101,7 +107,9 @@ export class MarketService {
     });
 
     const saved = await this.marketRepo.save(market);
-    return this.toDto(saved);
+    const payload = this.toDto(saved);
+    this.marketGateway.emitMarketUpdate(payload);
+    return payload;
   }
 
   async placeBet(marketId: string, userId: string, dto: PlaceBetDto) {
@@ -138,6 +146,7 @@ export class MarketService {
     }
     market.status = this.computeStatus(market.closesAt, new Date(), market.createdAt);
     await this.marketRepo.save(market);
+    this.marketGateway.emitMarketUpdate(this.toDto(market));
 
     const position = this.positionRepo.create({
       marketId: market.id,
@@ -162,6 +171,8 @@ export class MarketService {
     market.status = MarketStatus.RESOLVED;
     market.resolvedAt = new Date();
     await this.marketRepo.save(market);
+    this.marketGateway.emitMarketUpdate(this.toDto(market));
+    this.marketGateway.emitMarketRemoved(market.id);
 
     const positions = await this.positionRepo.find({ where: { marketId: id } });
     const winSide = resolution === MarketResolution.YES ? BetSide.YES : BetSide.NO;
@@ -358,8 +369,33 @@ export class MarketService {
     return MarketStatus.LIVE;
   }
 
-  private updateStatuses(qb: any) {
-    return qb;
+  /**
+   * Markets close purely based on time (`closesAt`), so status can go stale
+   * between requests. Recompute it periodically and broadcast anything that
+   * changed so connected clients stay in sync without polling.
+   */
+  @Cron('*/15 * * * * *')
+  async refreshMarketStatuses() {
+    const markets = await this.marketRepo.find({
+      where: { status: Not(MarketStatus.RESOLVED) },
+    });
+    const now = new Date();
+
+    for (const market of markets) {
+      const nextStatus = this.computeStatus(market.closesAt, now, market.createdAt);
+      if (nextStatus === market.status) continue;
+
+      market.status = nextStatus;
+      if (nextStatus === MarketStatus.RESOLVED) {
+        market.resolvedAt = now;
+      }
+      await this.marketRepo.save(market);
+
+      this.marketGateway.emitMarketUpdate(this.toDto(market));
+      if (nextStatus === MarketStatus.RESOLVED) {
+        this.marketGateway.emitMarketRemoved(market.id);
+      }
+    }
   }
 
   private toDto(market: Market) {
