@@ -5,15 +5,8 @@ import { cn } from '@/lib/utils';
 import { school42Api, type Student42 } from '@/api/market/school42.api';
 import { marketApi } from '@/api/market/market.api';
 
-const CATEGORIES = [
-  'Common Core',
-  'Exams',
-  'Rushes',
-  'Piscine',
-  'Projects',
-  'Internships',
-  'Peer Evals',
-] as const;
+// Platform scope is strictly Exam Rank 02-06 — no other category exists.
+const CATEGORIES = ['Exam 02', 'Exam 03', 'Exam 04', 'Exam 05', 'Exam 06'] as const;
 
 type Category = (typeof CATEGORIES)[number];
 
@@ -35,7 +28,7 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
   const [showDropdown, setShowDropdown] = useState(false);
 
   const [project, setProject] = useState('');
-  const [category, setCategory] = useState<Category>('Common Core');
+  const [category, setCategory] = useState<Category>('Exam 02');
   const [closesAt, setClosesAt] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
@@ -94,7 +87,7 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
     setResults([]);
     setSelected(null);
     setProject('');
-    setCategory('Common Core');
+    setCategory('Exam 02');
     setClosesAt('');
     setError(null);
     setSuccess(false);

@@ -204,17 +204,8 @@ function MarketHeader({ market }: { market: MarketDto }) {
             </span>
           </div>
           <h1 className="mt-2 font-display text-3xl font-bold tracking-tight md:text-4xl">
-            {market.category === 'Exams' ? (
-              <>
-                Will <span className="text-brand">@{market.handle}</span> score 100 on{' '}
-                {market.project.split(' — ')[0]}?
-              </>
-            ) : (
-              <>
-                Will <span className="text-brand">@{market.handle}</span> pass{' '}
-                {market.project.split(' — ')[0]}?
-              </>
-            )}
+            Will <span className="text-brand">@{market.handle}</span> score 100 on{' '}
+            {market.project.split(' — ')[0]}?
           </h1>
           <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span>42 Luanda</span>
@@ -758,19 +749,9 @@ function MarketInfoCard({ market }: { market: MarketDto }) {
         <div className="border-t border-border/40 pt-3">
           <dt className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Rules</dt>
           <dd className="mt-1 text-sm leading-relaxed text-foreground/80">
-            {market.category === 'Exams' ? (
-              <>
-                Resolves <span className="font-semibold text-success">"Yes"</span> if{' '}
-                <span className="font-mono">@{market.handle}</span> scores 100 on{' '}
-                {market.project.split(' — ')[0]}, automatically once 42 publishes the grade.
-              </>
-            ) : (
-              <>
-                Resolves <span className="font-semibold text-success">"Yes"</span> if{' '}
-                <span className="font-mono">@{market.handle}</span> passes{' '}
-                {market.project.split(' — ')[0]} before the deadline.
-              </>
-            )}
+            Resolves <span className="font-semibold text-success">"Yes"</span> if{' '}
+            <span className="font-mono">@{market.handle}</span> scores 100 on{' '}
+            {market.project.split(' — ')[0]}, automatically once 42 publishes the grade.
           </dd>
         </div>
       </dl>

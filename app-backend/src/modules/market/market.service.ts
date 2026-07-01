@@ -6,7 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cron } from '@nestjs/schedule';
 import { In, Not, Repository } from 'typeorm';
-import { Market, MarketResolution, MarketStatus } from './entities/market.entity';
+import { Market, MarketCategory, MarketResolution, MarketStatus } from './entities/market.entity';
 import { BetSide, MarketPosition } from './entities/market-position.entity';
 import { Bettor } from '../bettor/entities/bettor.entity';
 import { User } from '../user/entities/user.entity';
@@ -393,10 +393,18 @@ export class MarketService {
       .groupBy('m.category')
       .getRawMany();
 
+    const countByCategory = new Map(rows.map((r) => [r.category, Number(r.count)]));
     const all = rows.reduce((s, r) => s + Number(r.count), 0);
+
+    // Always list the full Exam 02-06 scope, even with zero markets right
+    // now, so the /markets filter buttons are stable rather than appearing
+    // and disappearing as exams come and go.
     return [
       { name: 'All', count: all },
-      ...rows.map((r) => ({ name: r.category, count: Number(r.count) })),
+      ...Object.values(MarketCategory).map((category) => ({
+        name: category,
+        count: countByCategory.get(category) ?? 0,
+      })),
     ];
   }
 

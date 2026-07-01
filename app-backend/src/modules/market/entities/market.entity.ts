@@ -27,14 +27,14 @@ export enum MarketResolution {
   NO = 'NO',
 }
 
+// The only markets this platform runs are 42 exam-rank predictions —
+// deliberately no broader category scope (no Piscine/Projects/etc).
 export enum MarketCategory {
-  COMMON_CORE = 'Common Core',
-  EXAMS = 'Exams',
-  RUSHES = 'Rushes',
-  PISCINE = 'Piscine',
-  PROJECTS = 'Projects',
-  INTERNSHIPS = 'Internships',
-  PEER_EVALS = 'Peer Evals',
+  EXAM_02 = 'Exam 02',
+  EXAM_03 = 'Exam 03',
+  EXAM_04 = 'Exam 04',
+  EXAM_05 = 'Exam 05',
+  EXAM_06 = 'Exam 06',
 }
 
 @Entity('markets')

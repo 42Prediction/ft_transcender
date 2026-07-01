@@ -86,20 +86,11 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
           />
           <div className="min-w-0 flex-1">
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-              {m.category} defense
+              {m.category}
             </p>
             <h3 className="mt-1 font-display text-lg font-bold leading-snug text-foreground">
-              {m.category === 'Exams' ? (
-                <>
-                  Will <span className="text-primary">@{m.handle}</span> score 100 on{' '}
-                  {m.project.split(' — ')[0]}?
-                </>
-              ) : (
-                <>
-                  Will <span className="text-primary">@{m.handle}</span> pass{' '}
-                  {m.project.split(' — ')[0]} on first defense?
-                </>
-              )}
+              Will <span className="text-primary">@{m.handle}</span> score 100 on{' '}
+              {m.project.split(' — ')[0]}?
             </h3>
             <p className="mt-1.5 text-xs text-muted-foreground">
               {m.category} · Cohort 2025

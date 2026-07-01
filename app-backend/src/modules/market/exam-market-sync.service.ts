@@ -13,6 +13,26 @@ import { MarketService } from './market.service';
 import { createAvatar } from '@dicebear/core';
 import { avataaarsNeutral } from '@dicebear/collection';
 
+const EXAM_CATEGORY_BY_RANK: Record<string, MarketCategory> = {
+  '02': MarketCategory.EXAM_02,
+  '03': MarketCategory.EXAM_03,
+  '04': MarketCategory.EXAM_04,
+  '05': MarketCategory.EXAM_05,
+  '06': MarketCategory.EXAM_06,
+};
+
+/**
+ * The platform's whole scope is Exam Rank 02-06 — anything else (Rank 01,
+ * non-rank exams/events) is deliberately out of scope and must not produce a
+ * market. Returns `null` for anything outside that.
+ */
+function mapExamNameToCategory(examName: string): MarketCategory | null {
+  const match = examName.match(/rank\s*0*(\d+)/i);
+  if (!match) return null;
+  const rank = match[1].padStart(2, '0');
+  return EXAM_CATEGORY_BY_RANK[rank] ?? null;
+}
+
 /**
  * Markets are no longer created by hand: this service sources them straight
  * from the 42 School API. Every cadet registered for an upcoming exam at the
@@ -51,6 +71,12 @@ export class ExamMarketSyncService {
 
     for (const exam of exams) {
       try {
+        const category = mapExamNameToCategory(exam.name);
+        if (!category) {
+          this.logger.debug(`syncExamMarkets: "${exam.name}" is outside the Exam 02-06 scope, skipping`);
+          continue;
+        }
+
         const roster = await this.school42Service.getExamRoster(exam);
         const rosterLogins = new Set(roster.map((c) => c.login));
 
@@ -98,6 +124,7 @@ export class ExamMarketSyncService {
             existing.subjectName = cadet.name;
             existing.subjectAvatar = cadet.avatar ?? undefined;
             existing.status = status;
+            existing.category = category;
             market = existing;
           } else {
             market = this.marketRepo.create({
@@ -106,7 +133,7 @@ export class ExamMarketSyncService {
               subjectName: cadet.name,
               subjectAvatar: cadet.avatar ?? undefined,
               project: exam.name,
-              category: MarketCategory.EXAMS,
+              category,
               closesAt,
               creatorId,
               status,
