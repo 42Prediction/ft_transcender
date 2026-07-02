@@ -42,7 +42,7 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
   const noPct = Math.round(m.noPrice * 100);
   const avatarSrc = m.avatar ?? avatarFallback(m.handle);
   const isSettled = m.status === 'resolved' || m.status === 'cancelled';
-  const canBet = !isSettled;
+  const canBet = !isSettled && new Date(m.closes).getTime() > Date.now();
   const isAdmin = role === 'admin';
   const canResolve = isAdmin && !isSettled;
 

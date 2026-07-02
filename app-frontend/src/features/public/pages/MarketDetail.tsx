@@ -534,7 +534,8 @@ function TradePanel({
   const isResolved = market.status === 'resolved';
   const isCancelled = market.status === 'cancelled';
   const isSettled = isResolved || isCancelled;
-  const canBet = isLoggedIn && !isSettled && amount >= 1 && amount <= balance;
+  const isClosed = new Date(market.closes).getTime() <= Date.now();
+  const canBet = isLoggedIn && !isSettled && !isClosed && amount >= 1 && amount <= balance;
 
   async function handleBet() {
     if (!canBet) return;
@@ -568,13 +569,13 @@ function TradePanel({
       <div className="mt-4 grid grid-cols-2 gap-2">
         <button
           onClick={() => setBetSide('YES')}
-          disabled={isSettled}
+          disabled={isSettled || isClosed}
           className={cn(
             'rounded-xl border px-3 py-3 text-left transition',
             betSide === 'YES'
               ? 'border-success bg-success/15 shadow-[0_0_24px_oklch(0.78_0.20_150/0.25)]'
               : 'border-success/30 bg-success/5 hover:bg-success/10',
-            isSettled && 'cursor-not-allowed opacity-50',
+            (isSettled || isClosed) && 'cursor-not-allowed opacity-50',
           )}
         >
           <div className="font-mono text-[10px] uppercase tracking-wider text-success/80">Yes</div>
@@ -582,13 +583,13 @@ function TradePanel({
         </button>
         <button
           onClick={() => setBetSide('NO')}
-          disabled={isSettled}
+          disabled={isSettled || isClosed}
           className={cn(
             'rounded-xl border px-3 py-3 text-left transition',
             betSide === 'NO'
               ? 'border-destructive bg-destructive/15 shadow-[0_0_24px_oklch(0.68_0.22_18/0.25)]'
               : 'border-destructive/30 bg-destructive/5 hover:bg-destructive/10',
-            isSettled && 'cursor-not-allowed opacity-50',
+            (isSettled || isClosed) && 'cursor-not-allowed opacity-50',
           )}
         >
           <div className="font-mono text-[10px] uppercase tracking-wider text-destructive/80">No</div>
@@ -609,7 +610,7 @@ function TradePanel({
           value={amount || ''}
           onChange={(e) => setAmount(Number(e.target.value))}
           placeholder="0"
-          disabled={isSettled || !isLoggedIn}
+          disabled={isSettled || isClosed || !isLoggedIn}
           className="mt-2 h-11 w-full rounded-xl border border-border/60 bg-surface px-3 font-mono text-base focus:border-primary/60 focus:outline-none disabled:opacity-50"
         />
         <div className="mt-3 grid grid-cols-5 gap-2">
@@ -617,7 +618,7 @@ function TradePanel({
             <button
               key={q}
               onClick={() => setAmount(Math.min(amount + q, Math.floor(balance)))}
-              disabled={isSettled || !isLoggedIn}
+              disabled={isSettled || isClosed || !isLoggedIn}
               className="rounded-lg border border-border/60 bg-surface px-1 py-1.5 font-mono text-xs text-muted-foreground transition hover:border-primary/40 hover:text-foreground disabled:opacity-40"
             >
               +{q}

@@ -191,13 +191,21 @@ export class School42Service {
    * Exams scheduled at the campus within the next `days`, used to auto-generate
    * prediction markets. Defensive against the couple of key-naming variants
    * seen across 42 intra API deployments (campus_id vs campus_ids).
+   *
+   * `pastBufferDays` extends the lower bound backwards from "now" — a
+   * `range[begin_at]` starting exactly at "now" excludes an exam that began
+   * a few hours ago today but is still running (cadets `in_progress`,
+   * corrections ongoing). Without this, a session found via the app's own
+   * clock would silently vanish from sync the moment its `begin_at` ticks
+   * into the past, even though registrants are still actively being graded.
    */
-  async getUpcomingExams(days = 14): Promise<Exam42[]> {
+  async getUpcomingExams(days = 14, pastBufferDays = 2): Promise<Exam42[]> {
     try {
       const now = new Date();
+      const from = new Date(now.getTime() - pastBufferDays * 24 * 60 * 60 * 1000);
       const until = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
       const params = new URLSearchParams({
-        'range[begin_at]': `${now.toISOString()},${until.toISOString()}`,
+        'range[begin_at]': `${from.toISOString()},${until.toISOString()}`,
       });
 
       const exams = await this.get42AllPages<any>(

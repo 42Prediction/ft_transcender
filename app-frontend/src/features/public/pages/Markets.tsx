@@ -32,6 +32,7 @@ export function Markets() {
   const isAdmin = root?.data?.user?.role === 'admin';
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
+  const [showClosed, setShowClosed] = useState(false);
   const [markets, setMarkets] = useState<MarketDto[]>(initial);
   const [categories, setCategories] = useState<CategoryStat[]>(initialCategories);
   const [loading, setLoading] = useState(false);
@@ -45,12 +46,13 @@ export function Markets() {
     marketApi.getCategories().then(setCategories).catch(() => {});
   }
 
-  async function applyFilters(category: string, q: string) {
+  async function applyFilters(category: string, q: string, closed: boolean) {
     setLoading(true);
     try {
       const data = await marketApi.getAll({
         category: category !== 'All' ? category : undefined,
         search: q || undefined,
+        status: closed ? 'closed' : undefined,
       });
       setMarkets(data);
     } finally {
@@ -60,32 +62,44 @@ export function Markets() {
 
   function handleCategory(cat: string) {
     setActiveCategory(cat);
-    applyFilters(cat, search);
+    applyFilters(cat, search, showClosed);
   }
 
   function handleSearch(q: string) {
     setSearch(q);
-    applyFilters(activeCategory, q);
+    applyFilters(activeCategory, q, showClosed);
+  }
+
+  function handleShowClosed(closed: boolean) {
+    setShowClosed(closed);
+    applyFilters(activeCategory, search, closed);
   }
 
   async function refreshMarkets() {
     const data = await marketApi.getAll({
       category: activeCategory !== 'All' ? activeCategory : undefined,
       search: search || undefined,
+      status: showClosed ? 'closed' : undefined,
     });
     setMarkets(data);
   }
 
   // Keep the currently active filters available to the socket handlers below
   // without re-subscribing on every keystroke/category change.
-  const filtersRef = useRef({ activeCategory, search });
+  const filtersRef = useRef({ activeCategory, search, showClosed });
   useEffect(() => {
-    filtersRef.current = { activeCategory, search };
-  }, [activeCategory, search]);
+    filtersRef.current = { activeCategory, search, showClosed };
+  }, [activeCategory, search, showClosed]);
 
   function matchesFilters(m: MarketDto): boolean {
-    const { activeCategory: category, search: q } = filtersRef.current;
-    if (m.status === 'resolved' || m.status === 'cancelled') return false;
+    const { activeCategory: category, search: q, showClosed: closed } = filtersRef.current;
+    const isClosed = m.status === 'resolved' || m.status === 'cancelled'
+      || new Date(m.closes).getTime() <= Date.now();
+    // Live socket pushes only ever reflect real-time events (bets, new
+    // markets, resolutions) — a market can't flip from open to closed
+    // purely from the clock ticking without one of those firing, so this
+    // doesn't need its own polling to stay accurate.
+    if (isClosed !== closed) return false;
     if (category !== 'All' && m.category !== category) return false;
     if (q) {
       const needle = q.toLowerCase();
@@ -171,6 +185,28 @@ export function Markets() {
               <span className="ml-1.5 font-mono text-xs opacity-60">{c.count}</span>
             </button>
           ))}
+        </div>
+        <div className="ml-auto flex gap-1 rounded-xl border border-border/60 bg-surface p-1">
+          <button
+            onClick={() => handleShowClosed(false)}
+            className={`rounded-lg px-3 py-1 text-sm font-medium transition ${
+              !showClosed
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Open
+          </button>
+          <button
+            onClick={() => handleShowClosed(true)}
+            className={`rounded-lg px-3 py-1 text-sm font-medium transition ${
+              showClosed
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Closed
+          </button>
         </div>
       </div>
 

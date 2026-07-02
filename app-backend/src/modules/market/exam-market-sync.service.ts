@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, IsNull, LessThanOrEqual, Not, Repository } from 'typeorm';
+import { In, IsNull, Not, Repository } from 'typeorm';
 import { Market, MarketCategory, MarketResolution, MarketStatus } from './entities/market.entity';
 import { Bettor } from '../bettor/entities/bettor.entity';
 import { User } from '../user/entities/user.entity';
@@ -186,13 +186,21 @@ export class ExamMarketSyncService {
     }
   }
 
+  /**
+   * Deliberately does NOT wait for `closesAt` — 42 can publish a cadet's
+   * grade before the market's nominal close time, and `resolveMarket` is
+   * what actually locks betting (via its status flip, which `placeBet`
+   * checks). Gating this on `closesAt` would leave a window where the
+   * outcome is already known on 42's side but this platform still accepts
+   * bets on it. Every active exam market is checked every cycle instead;
+   * `finalMark == null` (not graded yet) is simply skipped, same as before.
+   */
   @Cron('0 */10 * * * *')
   async autoResolveExamMarkets() {
     const pending = await this.marketRepo.find({
       where: {
         examId: Not(IsNull()),
         status: Not(In([MarketStatus.RESOLVED, MarketStatus.CANCELLED])),
-        closesAt: LessThanOrEqual(new Date()),
       },
     });
     if (pending.length === 0) return;

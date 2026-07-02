@@ -42,14 +42,25 @@ export class MarketService {
     if (category && category !== 'All') {
       qb.andWhere('m.category = :category', { category });
     }
-    if (status) {
+    if (status === 'closed') {
+      // Virtual status, not a real MarketStatus value — the inverse of the
+      // default view below: resolved/cancelled markets, plus any whose
+      // closesAt has simply passed regardless of what `status` column says
+      // (it stays CLOSING until an outcome is actually recorded).
+      qb.andWhere(
+        '(m.status IN (:...settled) OR m.closes_at <= :now)',
+        { settled: [MarketStatus.RESOLVED, MarketStatus.CANCELLED], now: new Date() },
+      );
+    } else if (status) {
       qb.andWhere('m.status = :status', { status });
     } else {
-      // Default view only shows active markets — resolved/cancelled markets are
+      // Default view only shows markets still open for betting — resolved,
+      // cancelled, and time-closed-but-not-yet-resolved markets are all
       // hidden unless a status is explicitly requested.
       qb.andWhere('m.status NOT IN (:...inactive)', {
         inactive: [MarketStatus.RESOLVED, MarketStatus.CANCELLED],
       });
+      qb.andWhere('m.closes_at > :now', { now: new Date() });
     }
     if (search) {
       qb.andWhere(
@@ -69,6 +80,9 @@ export class MarketService {
       .where('m.status NOT IN (:...inactive)', {
         inactive: [MarketStatus.RESOLVED, MarketStatus.CANCELLED],
       })
+      // Same "open only" rule as the default /markets view — closed markets
+      // are only ever browsable through the dedicated Closed filter there.
+      .andWhere('m.closes_at > :now', { now: new Date() })
       .orderBy('(m.yes_pool + m.no_pool)', 'DESC')
       .limit(limit)
       .getMany();
@@ -119,8 +133,10 @@ export class MarketService {
   async placeBet(marketId: string, userId: string, dto: PlaceBetDto) {
     const market = await this.marketRepo.findOne({ where: { id: marketId } });
     if (!market) throw new NotFoundException('Market not found');
-    if (market.status === MarketStatus.RESOLVED)
-      throw new BadRequestException('Market is already resolved');
+    if (market.status === MarketStatus.RESOLVED || market.status === MarketStatus.CANCELLED)
+      throw new BadRequestException('Market is no longer open');
+    if (new Date() >= market.closesAt)
+      throw new BadRequestException('Betting is closed for this market');
 
     const bettor = await this.bettorRepo.findOne({
       where: { user: { id: userId } },
@@ -390,6 +406,7 @@ export class MarketService {
       .where('m.status NOT IN (:...inactive)', {
         inactive: [MarketStatus.RESOLVED, MarketStatus.CANCELLED],
       })
+      .andWhere('m.closes_at > :now', { now: new Date() })
       .groupBy('m.category')
       .getRawMany();
 
@@ -408,9 +425,19 @@ export class MarketService {
     ];
   }
 
+  /**
+   * Never returns RESOLVED — that status means "an outcome was recorded and
+   * paid out", which only `resolveMarket()` can do. Treating a passed
+   * `closesAt` as resolved-by-time-alone left exam markets whose exam had
+   * already started (closesAt in the past at creation, or the 15s status
+   * sweep beating the 10min grade-check cron) permanently stuck: flagged
+   * RESOLVED with no resolution/payout, and invisible to both
+   * `autoResolveExamMarkets` (which skips RESOLVED) and admins (hidden from
+   * the default market list). Once betting time is up, cap at CLOSING —
+   * betting itself is separately blocked by `placeBet`'s closesAt check.
+   */
   computeStatus(closesAt: Date, now: Date, createdAt?: Date): MarketStatus {
     const diff = closesAt.getTime() - now.getTime();
-    if (diff < 0) return MarketStatus.RESOLVED;
     if (diff < 24 * 60 * 60 * 1000) return MarketStatus.CLOSING;
     if (createdAt) {
       const ageHours = (now.getTime() - createdAt.getTime()) / (60 * 60 * 1000);
