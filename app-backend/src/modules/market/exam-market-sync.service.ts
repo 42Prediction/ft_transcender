@@ -21,28 +21,6 @@ const EXAM_CATEGORY_BY_RANK: Record<string, MarketCategory> = {
   '06': MarketCategory.EXAM_06,
 };
 
-/** How many `isPrimaryCampusStudent` lookups run at once per exam, to keep this well under 42's rate limit. */
-const CAMPUS_CHECK_CONCURRENCY = 8;
-
-/**
- * Runs `fn` over `items` with at most `limit` calls in flight at once,
- * preserving input order in the returned array.
- */
-async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
-  const results: R[] = new Array(items.length);
-  let next = 0;
-
-  async function worker() {
-    while (next < items.length) {
-      const current = next++;
-      results[current] = await fn(items[current]);
-    }
-  }
-
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  return results;
-}
-
 /**
  * The platform's whole scope is Exam Rank 02-06 — anything else (Rank 01,
  * non-rank exams/events) is deliberately out of scope and must not produce a
@@ -109,6 +87,16 @@ export class ExamMarketSyncService implements OnModuleInit {
     const exams = await this.school42Service.getUpcomingExams(14);
     if (exams.length === 0) return;
 
+    // One bulk (cached) fetch for the whole cycle instead of a `/users/:login`
+    // call per candidate — the per-candidate calls were what kept tripping
+    // 42's spam rate limit. `null` = couldn't verify anyone this cycle: skip
+    // creation and campus-based cancellation, retry next run (deregistration
+    // cleanup below only needs the roster, so it still proceeds).
+    const primaryCampusLogins = await this.school42Service.getPrimaryCampusLogins();
+    if (!primaryCampusLogins) {
+      this.logger.warn('syncExamMarkets: primary-campus list unavailable, candidates unverifiable this cycle');
+    }
+
     for (const exam of exams) {
       try {
         const category = mapExamNameToCategory(exam.name);
@@ -123,25 +111,20 @@ export class ExamMarketSyncService implements OnModuleInit {
         // `projects_users?filter[campus]=X` matches where the attempt took
         // place, not the cadet's home campus — network-wide staff/QA test
         // accounts hold a record at nearly every campus and slip through
-        // that filter. Verify each in_progress candidate's actual primary
-        // campus before it's allowed to get a market.
+        // that filter. Verify each in_progress candidate against the actual
+        // primary-campus membership list before it's allowed to get a market.
         const candidates = roster.filter((c) => c.status === 'in_progress' && c.finalMark !== 100);
         const invalidCampusLogins = new Set<string>();
         const eligible: typeof candidates = [];
-        const campusChecks = await mapWithConcurrency(
-          candidates,
-          CAMPUS_CHECK_CONCURRENCY,
-          (cadet) => this.school42Service.isPrimaryCampusStudent(cadet.login),
-        );
-        candidates.forEach((cadet, i) => {
-          const isLuandaStudent = campusChecks[i];
-          if (isLuandaStudent === true) {
-            eligible.push(cadet);
-          } else if (isLuandaStudent === false) {
-            invalidCampusLogins.add(cadet.login);
+        if (primaryCampusLogins) {
+          for (const cadet of candidates) {
+            if (primaryCampusLogins.has(cadet.login)) {
+              eligible.push(cadet);
+            } else {
+              invalidCampusLogins.add(cadet.login);
+            }
           }
-          // null (couldn't verify) — skip this cycle entirely, retry next run.
-        });
+        }
 
         const existingMarkets = eligible.length
           ? await this.marketRepo.find({

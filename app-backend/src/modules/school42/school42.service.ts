@@ -57,6 +57,10 @@ export class School42Service {
   private readonly projectUsersCache = new Map<number, { data: ExamRosterEntry42[]; expiresAt: number }>();
   private static readonly PROJECT_USERS_CACHE_TTL_MS = 2 * 60 * 1000;
 
+  /** Campus membership shifts on the scale of weeks (piscines/kickoffs), so a long TTL is safe. */
+  private primaryCampusLoginsCache: { data: Set<string>; expiresAt: number } | null = null;
+  private static readonly PRIMARY_CAMPUS_CACHE_TTL_MS = 20 * 60 * 1000;
+
   /**
    * 42's secondary "spam" limit is far tighter than its hourly quota — bursts
    * of concurrent calls (e.g. checking several candidates' campus at once)
@@ -297,24 +301,51 @@ export class School42Service {
    * `projects_users?filter[campus]=X` matches wherever the *attempt* took
    * place, not the cadet's home campus — network-wide staff/QA test accounts
    * (which hold a `campus_users` record at nearly every campus) slip through
-   * that filter. This checks the cadet's actual `is_primary` campus membership
-   * so markets only ever cover real 42 Luanda cadets.
+   * that filter. This is the campus-primary membership list used to keep
+   * markets covering only real 42 Luanda cadets.
+   *
+   * Fetched in bulk (`filter[primary_campus_id]`, a handful of paginated
+   * requests for the whole campus) instead of one `/users/:login` call per
+   * candidate — the per-candidate variant was the main source of 42's spam
+   * rate limit kicking in, since it scaled linearly with exam registrations.
+   *
+   * `null` means "couldn't verify at all" (fresh fetch failed and nothing
+   * cached) — callers must treat that as "do nothing" rather than as a
+   * confirmed non-match; conflating "unverifiable" with "not a Luanda cadet"
+   * would wrongly cancel real students' markets on a transient hiccup. On a
+   * failed refresh with a previous list still in memory, the stale list is
+   * returned instead: campus membership changes on the scale of weeks, so an
+   * outdated list beats skipping the whole cycle.
    */
-  /**
-   * `null` means "couldn't verify" (API error/rate limit) — callers must
-   * treat that as "do nothing" rather than as a confirmed non-match. Under
-   * load this endpoint gets slow/rate-limited; conflating "unverifiable"
-   * with "not a Luanda cadet" would wrongly cancel real students' markets
-   * on a transient hiccup.
-   */
-  async isPrimaryCampusStudent(login: string): Promise<boolean | null> {
+  async getPrimaryCampusLogins(): Promise<Set<string> | null> {
+    const cached = this.primaryCampusLoginsCache;
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.data;
+    }
+
     try {
-      const u = await this.get42<any>(`/users/${encodeURIComponent(login)}`);
-      const campusUsers: any[] = u.campus_users ?? [];
-      return campusUsers.some((cu) => Number(cu.campus_id) === this.campusId && cu.is_primary === true);
+      const users = await this.get42AllPages<any>(
+        `/users?filter[primary_campus_id]=${this.campusId}`,
+        20,
+      );
+      const logins = new Set(users.map((u) => u?.login as string).filter(Boolean));
+
+      // A campus always has students — an empty result means the filter
+      // misbehaved, not that nobody studies here. Treating it as valid would
+      // classify every candidate as "not a Luanda cadet" and cancel real
+      // markets, so fall through to the stale/null path instead.
+      if (logins.size === 0) {
+        throw new Error('empty primary-campus list');
+      }
+
+      this.primaryCampusLoginsCache = {
+        data: logins,
+        expiresAt: Date.now() + School42Service.PRIMARY_CAMPUS_CACHE_TTL_MS,
+      };
+      return logins;
     } catch (err) {
-      this.logger.warn(`isPrimaryCampusStudent(${login}) failed: ${err}`);
-      return null;
+      this.logger.warn(`getPrimaryCampusLogins failed: ${err}`);
+      return cached ? cached.data : null;
     }
   }
 

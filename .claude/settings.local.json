@@ -13,7 +13,13 @@
       "Bash(npx tsc *)",
       "Bash(curl -s \"http://localhost:3000/market/students/search?q=jo&limit=4\")",
       "Bash(npx eslint *)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(grep -nA5 \"^dev-stop:\\\\|^dev:\" /home/ajacinto/Documents/ft_transcender/Makefile)",
+      "Bash(make dev *)",
+      "Bash(timeout 300 bash -c 'tail -n +110 -f /home/ajacinto/Documents/ft_transcender/logs/backend.log | grep -m1 \"syncExamMarkets: processed\"')",
+      "Bash(curl -s \"http://localhost:3000/market\")",
+      "Bash(docker exec *)",
+      "Bash(curl -s \"http://localhost:3000/market?status=closed\")"
     ]
   }
 }
