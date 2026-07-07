@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
+import { JwtModule } from '@nestjs/jwt';
 import { MarketService } from './market.service';
 import { MarketController } from './market.controller';
 import { MarketGateway } from './market.gateway';
@@ -16,6 +17,9 @@ import { School42Module } from '../school42/school42.module';
   imports: [
     TypeOrmModule.forFeature([Market, MarketPosition, Bettor, User]),
     ScheduleModule.forRoot(),
+    // Secret-less registration: the gateway verifies socket-handshake JWTs
+    // explicitly with the same JWT_SECRET the auth module signs with.
+    JwtModule.register({}),
     WalletModule,
     School42Module,
   ],

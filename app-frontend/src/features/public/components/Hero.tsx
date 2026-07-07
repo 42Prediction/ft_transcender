@@ -26,8 +26,8 @@ export function Hero() {
             <span className="h-1.5 w-1.5 animate-pulse-glow rounded-full bg-primary" />
             Live • {stats?.activeBettors?.toLocaleString('pt-PT') ?? '—'} traders online
           </span>
-          <h1 className="font-display text-5xl font-bold leading-[1.05] tracking-tight md:text-6xl lg:text-7xl">
-            Predict the next <br />
+          <h1 className="font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+            Predict the next <br className="hidden sm:block" />
             <span className="text-brand">42 success evaluation.</span>
           </h1>
           <p className="mt-6 max-w-xl text-lg text-muted-foreground">
@@ -46,7 +46,7 @@ export function Hero() {
             </button>
           </div>
 
-          <dl className="mt-12 grid grid-cols-3 gap-6 border-t border-border/50 pt-8">
+          <dl className="mt-12 grid grid-cols-3 gap-3 border-t border-border/50 pt-8 sm:gap-6">
             {[
               {
                 icon: TrendingUp,

@@ -134,7 +134,7 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
         aria-describedby={undefined}
       >
         <DialogTitle className="sr-only">Create Prediction Market</DialogTitle>
-        <div className="rounded-2xl border border-border/60 bg-gradient-card p-7 shadow-elevated backdrop-blur-2xl">
+        <div className="rounded-2xl border border-border/60 bg-gradient-card p-5 shadow-elevated backdrop-blur-2xl sm:p-7">
 
           <div className="mb-6">
             <h2 className="font-display text-2xl font-bold">New Market</h2>

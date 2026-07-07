@@ -8,16 +8,17 @@ export default function AdminLogin() {
 
     return (
         <>
-        
-             <button
-                onClick={() => (window.location.href = "/")}
-                className="flex items-center fo rounded-md bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground"
-            >
-                <ChevronLeft className="h-4 w-4" />
-                Go back
-            </button>
-        <div className="grid h-screen place-items-center overflow-hidden bg-background text-foreground">
-            <Form method="post" className="w-80 space-y-4">
+            <div className="p-4">
+                <button
+                    onClick={() => (window.location.href = "/")}
+                    className="flex items-center gap-1 rounded-md bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground"
+                >
+                    <ChevronLeft className="h-4 w-4" />
+                    Go back
+                </button>
+            </div>
+        <div className="grid h-screen place-items-center overflow-hidden bg-background px-4 text-foreground">
+            <Form method="post" className="w-full max-w-xs space-y-4">
                 <h1 className="text-2xl font-bold">Admin Login</h1>
 
                 {actionData?.error && (

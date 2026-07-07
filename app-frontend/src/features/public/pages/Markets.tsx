@@ -138,7 +138,7 @@ export function Markets() {
     <div className="mx-auto max-w-[1400px] px-6 py-12">
       <div className="mb-8 flex items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl font-bold">All Markets</h1>
+          <h1 className="font-display text-3xl font-bold md:text-4xl">All Markets</h1>
           <p className="mt-2 text-muted-foreground">
             Auto-generated from upcoming 42 Luanda exams — bet on who scores 100.
           </p>

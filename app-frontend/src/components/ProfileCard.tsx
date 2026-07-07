@@ -18,14 +18,12 @@ export default function ProfileCard({ profile }: ProfileCardProps) {
     year: "numeric",
   });
   return (
-    <div className="md:col-span-1 bg-[#1A1A1A
-] border border-[#333] rounded-lg p-6 flex flex-col items-center text-center">
+    <div className="md:col-span-1 bg-[#1A1A1A] border border-[#333] rounded-lg p-6 flex flex-col items-center text-center">
       <div className="relative mb-4">
         <img
           src={profile.avatar_url || "https://github.com/marccarv.png"}
           alt={profile.username}
-          className="w-32 h-32 rounded-full border-2 border-[#00FF9D
-] object-cover"
+          className="w-32 h-32 rounded-full border-2 border-[#00FF9D] object-cover"
         />
         <span className={`absolute bottom-1 right-2 w-4 h-4 rounded-full border-2 border-black ${profile.is_online ? "bg-[#00FF9D]" : "bg-zinc-600"}`} />
       </div>      <h2 className="text-2xl font-black text-white uppercase tracking-wide">{profile.username}</h2>

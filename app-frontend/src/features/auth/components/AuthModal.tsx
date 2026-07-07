@@ -81,7 +81,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
       >
         <DialogTitle className="sr-only">{tab === "signin" ? "Sign in to 42 Prediction" : "Create your 42 Prediction account"}</DialogTitle>
 
-        <div className="relative rounded-2xl border border-border/60 bg-gradient-card p-7 shadow-elevated backdrop-blur-2xl">
+        <div className="relative rounded-2xl border border-border/60 bg-gradient-card p-5 shadow-elevated backdrop-blur-2xl sm:p-7">
           {/* Tabs */}
           <div className="relative mb-7 flex items-center border-b border-border/50">
             {(["signin", "signup"] as Tab[]).map((t) => (

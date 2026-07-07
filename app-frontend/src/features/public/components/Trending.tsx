@@ -36,7 +36,7 @@ export function Trending() {
           <span className="inline-flex items-center gap-2 rounded-full border border-warning/30 bg-warning/10 px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-warning">
             <Flame className="h-3 w-3" /> Trending now
           </span>
-          <h2 className="mt-3 font-display text-4xl font-bold">
+          <h2 className="mt-3 font-display text-3xl font-bold md:text-4xl">
             Hottest predictions this week
           </h2>
           <p className="mt-2 text-muted-foreground">

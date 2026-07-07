@@ -81,7 +81,7 @@ export function BetModal({ market, initialSide, open, onOpenChange, onBetPlaced 
         aria-describedby={undefined}
       >
         <DialogTitle className="sr-only">Place Bet</DialogTitle>
-        <div className="rounded-2xl border border-border/60 bg-gradient-card p-7 shadow-elevated backdrop-blur-2xl">
+        <div className="rounded-2xl border border-border/60 bg-gradient-card p-5 shadow-elevated backdrop-blur-2xl sm:p-7">
 
           {/* Market info */}
           <div className="mb-6">
