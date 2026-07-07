@@ -15,6 +15,8 @@ import { TransactionType } from '../wallet/entities/transaction.entity';
 import { CreateMarketDto } from './dto/create-market.dto';
 import { PlaceBetDto } from './dto/place-bet.dto';
 import { MarketGateway } from './market.gateway';
+import { NotificationService } from './notification.service';
+import { NotificationType } from './entities/notification.entity';
 import { createAvatar } from '@dicebear/core';
 import { avataaarsNeutral } from '@dicebear/collection';
 
@@ -31,6 +33,7 @@ export class MarketService {
     private readonly userRepo: Repository<User>,
     private readonly walletService: WalletService,
     private readonly marketGateway: MarketGateway,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async findAll(category?: string, status?: string, search?: string) {
@@ -200,17 +203,47 @@ export class MarketService {
     const totalWinShares = winners.reduce((s, p) => s + Number(p.shares), 0);
     const totalPool = Number(market.yesPool) + Number(market.noPool);
 
-    for (const pos of winners) {
-      const payout = (Number(pos.shares) / totalWinShares) * totalPool;
+    // Payout for winners; a settled 0 for losers so history/stats can tell a
+    // resolved-loss (payout 0) apart from a still-open bet (payout null).
+    const notifications: {
+      bettorId: string;
+      type: NotificationType;
+      marketId: string;
+      data: Record<string, unknown>;
+    }[] = [];
+
+    for (const pos of positions) {
+      const won = pos.side === winSide;
+      const payout = won ? (Number(pos.shares) / totalWinShares) * totalPool : 0;
       pos.payout = payout;
       await this.positionRepo.save(pos);
 
-      await this.walletService.credit(pos.bettorId, {
-        amount: payout,
-        type: TransactionType.PAYOUT,
-        description: `Payout for ${resolution} on market: ${market.project}`,
+      if (won && payout > 0) {
+        await this.walletService.credit(pos.bettorId, {
+          amount: payout,
+          type: TransactionType.PAYOUT,
+          description: `Payout for ${resolution} on market: ${market.project}`,
+        });
+      }
+
+      notifications.push({
+        bettorId: pos.bettorId,
+        type: NotificationType.BET_RESOLVED,
+        marketId: market.id,
+        data: {
+          project: market.project,
+          subject: market.subjectLogin ?? null,
+          side: pos.side,
+          resolution,
+          outcome: won && payout > 0 ? 'won' : 'lost',
+          amount: Number(pos.amount),
+          payout,
+          pnl: Number((payout - Number(pos.amount)).toFixed(2)),
+        },
       });
     }
+
+    await this.notificationService.createMany(notifications);
 
     return { resolved: true, resolution, totalPool, winnersCount: winners.length };
   }
@@ -234,6 +267,13 @@ export class MarketService {
     this.marketGateway.emitMarketRemoved(market.id);
 
     const positions = await this.positionRepo.find({ where: { marketId: id } });
+    const notifications: {
+      bettorId: string;
+      type: NotificationType;
+      marketId: string;
+      data: Record<string, unknown>;
+    }[] = [];
+
     for (const pos of positions) {
       if (pos.payout != null) continue;
       pos.payout = pos.amount;
@@ -244,7 +284,22 @@ export class MarketService {
         type: TransactionType.PAYOUT,
         description: `Refund: market cancelled (${reason}) — ${market.project}`,
       });
+
+      notifications.push({
+        bettorId: pos.bettorId,
+        type: NotificationType.BET_CANCELLED,
+        marketId: market.id,
+        data: {
+          project: market.project,
+          subject: market.subjectLogin ?? null,
+          side: pos.side,
+          amount: Number(pos.amount),
+          reason,
+        },
+      });
     }
+
+    await this.notificationService.createMany(notifications);
 
     return { cancelled: true, refundedPositions: positions.length };
   }

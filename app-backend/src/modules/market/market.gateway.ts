@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { forwardRef, Inject, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -15,6 +15,8 @@ import { randomUUID } from 'crypto';
 import { Server, Socket } from 'socket.io';
 import { Repository } from 'typeorm';
 import { Bettor } from '../bettor/entities/bettor.entity';
+import { Notification } from './entities/notification.entity';
+import { NotificationService } from './notification.service';
 
 export interface ChatMessage {
   id: string;
@@ -53,15 +55,25 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly configService: ConfigService,
     @InjectRepository(Bettor)
     private readonly bettorRepo: Repository<Bettor>,
+    @Inject(forwardRef(() => NotificationService))
+    private readonly notificationService: NotificationService,
   ) {}
 
-  handleConnection(client: Socket) {
+  async handleConnection(client: Socket) {
     // The browser sends the auth cookie on the socket handshake
     // (withCredentials), but handshakes bypass the HTTP cookie-parser
     // middleware — extract and verify the JWT by hand. Anonymous sockets
     // stay connected: market updates are public, only chat:send needs an
     // identity.
-    client.data.userId = this.extractUserId(client);
+    const userId = this.extractUserId(client);
+    client.data.userId = userId;
+
+    // Authenticated sockets join a private room so bet-resolution and mention
+    // notifications can be pushed to this bettor on any page, not just chats.
+    if (userId) {
+      const bettor = await this.resolveBettor(client, userId);
+      if (bettor) void client.join(this.notificationRoom(bettor.id));
+    }
     this.logger.debug(`Client connected: ${client.id}`);
   }
 
@@ -75,6 +87,11 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   emitMarketRemoved(marketId: string) {
     this.server?.emit('market:removed', marketId);
+  }
+
+  /** Pushes a notification to every live socket of one bettor. */
+  emitNotification(bettorId: string, notification: Notification) {
+    this.server?.to(this.notificationRoom(bettorId)).emit('notification:new', notification);
   }
 
   /** Joins the market's chat room; the ack carries the rolling history so the client can render instantly. */
@@ -139,11 +156,29 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.chatHistory.set(marketId, history);
 
     this.server.to(this.chatRoom(marketId)).emit('chat:message', message);
+
+    // Notify any @mentioned bettors — fire-and-forget so a lookup hiccup never
+    // blocks the message the sender already sees delivered.
+    if (text.includes('@')) {
+      this.notificationService
+        .createChatMention({
+          marketId,
+          fromBettorId: bettor.id,
+          fromNick: bettor.nick,
+          text,
+        })
+        .catch((err) => this.logger.warn(`chat mention notify failed: ${err}`));
+    }
+
     return { message };
   }
 
   private chatRoom(marketId: string): string {
     return `chat:${marketId}`;
+  }
+
+  private notificationRoom(bettorId: string): string {
+    return `notif:${bettorId}`;
   }
 
   private extractUserId(client: Socket): string | null {

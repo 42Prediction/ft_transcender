@@ -40,7 +40,14 @@
       "Bash(curl -s -m 5 -w \"HTTP %{http_code}\" 'http://localhost:3000/market/search?q=ajac')",
       "Bash(curl -s 'http://localhost:3000/market/search?q=exam')",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\)['data']; print\\('markets:', len\\(d['markets']\\), 'bettors:', len\\(d['bettors']\\)\\); [print\\(' -', m['project'], '|', m['subjectLogin'], '|', m['status']\\) for m in d['markets'][:3]]\")",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\)['data']; print\\('short query -> markets:', len\\(d['markets']\\), 'bettors:', len\\(d['bettors']\\)\\)\")"
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\)['data']; print\\('short query -> markets:', len\\(d['markets']\\), 'bettors:', len\\(d['bettors']\\)\\)\")",
+      "Bash(curl -s 'http://localhost:3000/bettor/search?q=ajac')",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('status:', d['statusCode']\\); [print\\(' -', b['nick'], '|', b['campus'], '| avatar:', bool\\(b['avatar']\\)\\) for b in d['data']]\")",
+      "Bash(curl -s 'http://localhost:3000/bettor/search?q=a')",
+      "Bash(python3 -c \"import json,sys; print\\('short query ->', json.load\\(sys.stdin\\)['data']\\)\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('status:', d['statusCode'], '| results:', [b['nick'] for b in d['data']]\\)\")",
+      "Bash(npm run *)",
+      "Bash(python3 -c \"import json,sys;d=json.load\\(sys.stdin\\)['data'];print\\('unread:',d['unread'],'items:',len\\(d['items']\\)\\)\")"
     ]
   }
 }
