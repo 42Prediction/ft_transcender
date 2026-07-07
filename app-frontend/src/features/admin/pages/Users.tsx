@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { user as userApi, type UserMe } from "@/api/user/user.api";
 import { auth } from "@/api/auth/auth.api";
-import { Loader2, LogOut, Search, Trash2 } from "lucide-react";
-import { useRevalidator, useRouteLoaderData } from "react-router-dom";
+import { ChevronLeft, Loader2, LogOut, Search, Trash2 } from "lucide-react";
+import { Link, useRevalidator, useRouteLoaderData } from "react-router-dom";
 
 export default function UsersPage() {
     const [users, setUsers] = useState<UserMe[]>([]);
@@ -51,9 +51,18 @@ export default function UsersPage() {
 
             {/* header */}
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <h1 className="text-lg font-medium text-foreground">Users</h1>
-                    <p className="text-xs text-muted-foreground">{filtered.length} user{filtered.length !== 1 ? "s" : ""}</p>
+                <div className="flex items-center gap-3">
+                    <Link
+                        to="/"
+                        className="flex items-center gap-1 rounded-lg bg-secondary px-2.5 py-1.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/80 transition-colors"
+                    >
+                        <ChevronLeft className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">Home</span>
+                    </Link>
+                    <div>
+                        <h1 className="text-lg font-medium text-foreground">Users</h1>
+                        <p className="text-xs text-muted-foreground">{filtered.length} user{filtered.length !== 1 ? "s" : ""}</p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="relative">

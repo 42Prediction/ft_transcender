@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s http://localhost:3000/market/trending)",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl --silent --max-time 10 'https://api.intra.42.fr/v2/users?filter%5Bprimary_campus_id%5D=68&sort=-level&page%5Bsize%5D=3' -H 'Authorization: Bearer c854944f141ab4d83931f51bc96b0047b14f4bc70c4554575a6fbbcb8645bb7c')",
+      "Bash(python3 -c ' *)",
+      "Bash(curl --silent --max-time 10 'https://api.intra.42.fr/v2/users?filter%5Bprimary_campus_id%5D=68&page%5Bsize%5D=3' -H 'Authorization: Bearer c854944f141ab4d83931f51bc96b0047b14f4bc70c4554575a6fbbcb8645bb7c')",
+      "Bash(curl --silent --max-time 10 'https://api.intra.42.fr/v2/users?search%5Blogin%5D=acj&filter%5Bprimary_campus_id%5D=68&page%5Bsize%5D=5' -H 'Authorization: Bearer c854944f141ab4d83931f51bc96b0047b14f4bc70c4554575a6fbbcb8645bb7c')",
+      "Bash(curl --silent --max-time 10 'https://api.intra.42.fr/v2/users?filter%5Bprimary_campus_id%5D=68&search%5Bfirst_name%5D=an&page%5Bsize%5D=5' -H 'Authorization: Bearer c854944f141ab4d83931f51bc96b0047b14f4bc70c4554575a6fbbcb8645bb7c')",
+      "Bash(curl --silent --max-time 10 'https://api.intra.42.fr/v2/users?filter%5Bprimary_campus_id%5D=68&search%5Bfirst_name%5D=an&page%5Bsize%5D=3' -H 'Authorization: Bearer c854944f141ab4d83931f51bc96b0047b14f4bc70c4554575a6fbbcb8645bb7c')",
+      "Bash(curl --silent --max-time 10 'https://api.intra.42.fr/v2/cursus/21/cursus_users?filter%5Bcampus_id%5D=68&page%5Bsize%5D=3&sort=-level' -H 'Authorization: Bearer c854944f141ab4d83931f51bc96b0047b14f4bc70c4554575a6fbbcb8645bb7c')",
+      "Bash(npx tsc *)",
+      "Bash(curl -s \"http://localhost:3000/market/students/search?q=jo&limit=4\")"
+    ]
+  }
+}
