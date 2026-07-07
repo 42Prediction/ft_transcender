@@ -1,9 +1,10 @@
 import { auth } from "@/api/auth/auth.api";
 import Logo from "@/components/Logo";
-import { Bell, ChevronDown, LogOut, Menu, PieChart, Plus, Search, Settings, Wallet, X } from "lucide-react";
+import { Bell, ChevronDown, LogOut, Menu, Plus, Settings, Wallet, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useRevalidator, useRouteLoaderData } from "react-router-dom";
 import { CreateMarketModal } from "@/features/market/components/CreateMarketModal";
+import { SearchBox } from "./SearchBox";
 
 
 export function Navbar() {
@@ -61,15 +62,10 @@ export function Navbar() {
         </nav>
 
         <div className="ml-auto flex flex-1 items-center gap-3 lg:flex-initial">
-          <div className="relative flex-1 lg:w-80 lg:flex-initial">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              name="search"
-              placeholder="Search students, projects, exams…"
-              className="h-10 w-full rounded-xl border border-border/60 bg-surface pl-10 pr-12 text-sm placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none"
-            />
-            <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground md:block">⌘K</kbd>
-          </div>
+        {
+          profile && 
+          <SearchBox />
+        }
         </div>
         {isAdmin && (
         <button
@@ -199,15 +195,6 @@ function UserInfo(
                 <Settings className="h-4 w-4" />
               </Link>
             </div>
-            <Link
-              to="/user/portfolio"
-              onClick={() => setOpen(false)}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-surface hover:text-foreground"
-            >
-              <PieChart className="h-4 w-4" />
-              My Portfolio
-            </Link>
-
             <div className="my-1 border-t border-border/40" />
 
             <button

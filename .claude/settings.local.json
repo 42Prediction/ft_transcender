@@ -23,7 +23,24 @@
       "Bash(git stash *)",
       "Bash(npx jest *)",
       "Bash(npm test *)",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "Bash(find app-backend/src/modules/market app-backend/src/modules/wallet -type f -name \"*.ts\")",
+      "Bash(find app-backend/src -name \"bettor*.ts\")",
+      "Bash(curl -s \"http://localhost:3000/market/bettor/ajacinto_2381/stats\")",
+      "Bash(curl -s \"http://localhost:3000/market/bettor/naoexiste/stats\")",
+      "Bash(curl -s \"http://localhost:3000/bettor/@ajacinto_2381\")",
+      "Bash(curl -s \"http://localhost:3000/market/bettor/ajacinto_2381/positions\")",
+      "Bash(curl -s \"http://localhost:3000/market/search?q=rank\")",
+      "Bash(curl -s \"http://localhost:3000/market/search?q=ajacinto\")",
+      "Bash(curl -s 'http://localhost:3000/market/search?q=ajac')",
+      "Bash(curl -s 'http://localhost:3000/market/search?q=a')",
+      "Bash(make dev-status *)",
+      "Bash(curl -s -m 3 http://localhost:3000/market/stats)",
+      "Bash(ps -p 5546 -o pid,cmd=)",
+      "Bash(curl -s -m 5 -w \"HTTP %{http_code}\" 'http://localhost:3000/market/search?q=ajac')",
+      "Bash(curl -s 'http://localhost:3000/market/search?q=exam')",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\)['data']; print\\('markets:', len\\(d['markets']\\), 'bettors:', len\\(d['bettors']\\)\\); [print\\(' -', m['project'], '|', m['subjectLogin'], '|', m['status']\\) for m in d['markets'][:3]]\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\)['data']; print\\('short query -> markets:', len\\(d['markets']\\), 'bettors:', len\\(d['bettors']\\)\\)\")"
     ]
   }
 }

@@ -1,39 +1,19 @@
-import { useLoaderData } from 'react-router-dom';
 import { TrendingUp, TrendingDown, Wallet, Target } from 'lucide-react';
 import type { Portfolio } from '@/api/market/market.api';
-import { marketApi } from '@/api/market/market.api';
 
-export async function portfolioLoader(): Promise<Portfolio | null> {
-  try {
-    return await marketApi.getPortfolio();
-  } catch {
-    return null;
-  }
-}
-
-export function PortfolioPage() {
-  const portfolio = useLoaderData() as Portfolio | null;
-
-  if (!portfolio) {
-    return (
-      <div className="flex h-64 items-center justify-center text-muted-foreground">
-        Could not load portfolio.
-      </div>
-    );
-  }
-
+/**
+ * The old standalone /user/portfolio page, merged into the profile. Only
+ * rendered on the viewer's own profile — balance and open positions are
+ * private (JWT-guarded endpoint).
+ */
+export function PortfolioSection({ portfolio }: { portfolio: Portfolio }) {
   const pnlNum = parseFloat(portfolio.pnl);
   const isPos = pnlNum >= 0;
 
   return (
-    <div className="mx-auto max-w-[1400px] px-6 py-12">
-      <div className="mb-8">
-        <h1 className="font-display text-3xl font-bold md:text-4xl">My Portfolio</h1>
-        <p className="mt-2 text-muted-foreground">Your open positions and performance.</p>
-      </div>
-
+    <section className="space-y-6">
       {/* Stats row */}
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           {
             icon: Wallet,
@@ -140,6 +120,6 @@ export function PortfolioPage() {
           </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }
