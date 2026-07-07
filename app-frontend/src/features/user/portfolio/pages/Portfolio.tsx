@@ -28,7 +28,7 @@ export function PortfolioPage() {
   return (
     <div className="mx-auto max-w-[1400px] px-6 py-12">
       <div className="mb-8">
-        <h1 className="font-display text-4xl font-bold">My Portfolio</h1>
+        <h1 className="font-display text-3xl font-bold md:text-4xl">My Portfolio</h1>
         <p className="mt-2 text-muted-foreground">Your open positions and performance.</p>
       </div>
 

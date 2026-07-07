@@ -44,7 +44,7 @@ export function Leaderboard() {
         <span className="inline-flex items-center gap-2 rounded-full border border-warning/30 bg-warning/10 px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-warning">
           <Crown className="h-3 w-3" /> Rankings
         </span>
-        <h1 className="mt-3 font-display text-4xl font-bold">Leaderboard</h1>
+        <h1 className="mt-3 font-display text-3xl font-bold md:text-4xl">Leaderboard</h1>
         <p className="mt-2 text-muted-foreground">
           Top predictors ranked by profit & loss across all markets.
         </p>
@@ -53,12 +53,12 @@ export function Leaderboard() {
       <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
         {/* Leaderboard table */}
         <div className="rounded-2xl border border-border/60 bg-gradient-card overflow-hidden">
-          <div className="grid grid-cols-[40px_1fr_100px_80px_80px] gap-4 border-b border-border/50 px-5 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+          <div className="grid grid-cols-[32px_1fr_92px] gap-3 border-b border-border/50 px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground sm:grid-cols-[40px_1fr_100px_80px_80px] sm:gap-4 sm:px-5">
             <span>#</span>
             <span>Bettor</span>
             <span className="text-right">P&amp;L</span>
-            <span className="text-right">Win rate</span>
-            <span className="text-right">Bets</span>
+            <span className="hidden text-right sm:block">Win rate</span>
+            <span className="hidden text-right sm:block">Bets</span>
           </div>
 
           {leaderboard.length === 0 ? (
@@ -72,7 +72,7 @@ export function Leaderboard() {
               return (
                 <div
                   key={entry.nick}
-                  className="grid grid-cols-[40px_1fr_100px_80px_80px] items-center gap-4 border-b border-border/30 px-5 py-4 last:border-0 hover:bg-surface/50 transition"
+                  className="grid grid-cols-[32px_1fr_92px] items-center gap-3 border-b border-border/30 px-4 py-4 last:border-0 hover:bg-surface/50 transition sm:grid-cols-[40px_1fr_100px_80px_80px] sm:gap-4 sm:px-5"
                 >
                   <div className="flex items-center justify-center">
                     {rankIcon[entry.rank] ?? (
@@ -97,8 +97,8 @@ export function Leaderboard() {
                   <p className={`text-right font-mono text-sm font-semibold ${isPos ? 'text-success' : 'text-destructive'}`}>
                     {isPos ? '+' : ''}₳ {Math.abs(pnlNum).toLocaleString('pt-PT', { minimumFractionDigits: 2 })}
                   </p>
-                  <p className="text-right font-mono text-sm text-muted-foreground">{entry.winRate}</p>
-                  <p className="text-right font-mono text-sm text-muted-foreground">{entry.totalBets}</p>
+                  <p className="hidden text-right font-mono text-sm text-muted-foreground sm:block">{entry.winRate}</p>
+                  <p className="hidden text-right font-mono text-sm text-muted-foreground sm:block">{entry.totalBets}</p>
                 </div>
               );
             })

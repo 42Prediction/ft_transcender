@@ -37,6 +37,7 @@ import {
 import { marketApi, type ActivityEntry, type MarketDto } from '@/api/market/market.api';
 import { cn } from '@/lib/utils';
 import { useMarketUpdates } from '@/features/market/hooks/useMarketUpdates';
+import { MarketChat } from '@/features/market/components/MarketChat';
 
 /* ─── types ─────────────────────────────────────────── */
 
@@ -147,6 +148,7 @@ export function MarketDetail() {
             <StatsRow market={market} />
             <OutcomesTable market={market} />
             <RecentActivity activity={activity} />
+            <MarketChat marketId={market.id} />
           </div>
 
           <aside className="space-y-6 lg:sticky lg:top-20 lg:self-start">

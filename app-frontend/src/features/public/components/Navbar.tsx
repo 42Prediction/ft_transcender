@@ -1,6 +1,6 @@
 import { auth } from "@/api/auth/auth.api";
 import Logo from "@/components/Logo";
-import { Bell, ChevronDown, LogOut, PieChart, Plus, Search, Settings, Wallet } from "lucide-react";
+import { Bell, ChevronDown, LogOut, Menu, PieChart, Plus, Search, Settings, Wallet, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useRevalidator, useRouteLoaderData } from "react-router-dom";
 import { CreateMarketModal } from "@/features/market/components/CreateMarketModal";
@@ -20,6 +20,11 @@ export function Navbar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [createMarketOpen, setCreateMarketOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -76,8 +81,50 @@ export function Navbar() {
         </button>
       )}
       {profile ? UserInfo(profile, dropdownRef, setOpen, open, auth.signout, revalidator, navigate) : SignButtons(from)}
+      <button
+        onClick={() => setMobileOpen(!mobileOpen)}
+        aria-label="Menu"
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border/60 bg-surface text-muted-foreground transition hover:text-foreground lg:hidden"
+      >
+        {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+      </button>
       <CreateMarketModal open={createMarketOpen} onOpenChange={setCreateMarketOpen} />
       </div>
+
+      {mobileOpen && (
+        <nav className="border-t border-border/40 px-6 py-3 lg:hidden">
+          <div className="flex flex-col gap-1 text-sm">
+            <Link to="/markets" className="rounded-lg px-3 py-2 text-muted-foreground transition hover:bg-surface hover:text-foreground">Markets</Link>
+            <Link to="/leaderboard" className="rounded-lg px-3 py-2 text-muted-foreground transition hover:bg-surface hover:text-foreground">Leaderboard</Link>
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  setMobileOpen(false);
+                  setCreateMarketOpen(true);
+                }}
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-left font-medium text-primary transition hover:bg-primary/10 md:hidden"
+              >
+                <Plus className="h-4 w-4" />
+                New Market
+              </button>
+            )}
+            {profile ? (
+              <div className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-primary md:hidden">
+                <Wallet className="h-4 w-4" />
+                ₳ {profile?.wallet?.balance?.toLocaleString("pt-PT", { minimumFractionDigits: 2 }) || "0.00"}
+              </div>
+            ) : (
+              <Link
+                to="/signin"
+                state={{ backgroundLocation: from }}
+                className="rounded-lg px-3 py-2 text-muted-foreground transition hover:bg-surface hover:text-foreground md:hidden"
+              >
+                Sign In
+              </Link>
+            )}
+          </div>
+        </nav>
+      )}
     </header>
   );
 }
@@ -96,9 +143,9 @@ function SignButtons(from: any) {
       <Link
         to="/signup"
         state={{ backgroundLocation: from }}
-        className="flex h-10 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-80"
+        className="flex h-10 shrink-0 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-80"
       >
-        <span className="hidden sm:inline">Sign Up</span>
+        <span>Sign Up</span>
       </Link>
     </>
   )
