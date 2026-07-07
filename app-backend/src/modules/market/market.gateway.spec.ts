@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Bettor } from '../bettor/entities/bettor.entity';
 import { MarketGateway } from './market.gateway';
+import { NotificationService } from './notification.service';
 
 function fakeSocket(cookie?: string) {
   return {
@@ -19,11 +20,13 @@ describe('MarketGateway chat', () => {
   let gateway: MarketGateway;
   let bettorRepo: { findOne: jest.Mock };
   let jwtService: { verify: jest.Mock };
+  let notificationService: { createChatMention: jest.Mock };
   let roomEmit: jest.Mock;
 
   beforeEach(async () => {
     bettorRepo = { findOne: jest.fn() };
     jwtService = { verify: jest.fn() };
+    notificationService = { createChatMention: jest.fn().mockResolvedValue(undefined) };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -34,6 +37,7 @@ describe('MarketGateway chat', () => {
           useValue: { getOrThrow: jest.fn().mockReturnValue('test-secret') },
         },
         { provide: getRepositoryToken(Bettor), useValue: bettorRepo },
+        { provide: NotificationService, useValue: notificationService },
       ],
     }).compile();
 
@@ -190,6 +194,37 @@ describe('MarketGateway chat', () => {
       await gateway.handleChatSend(client, { marketId: 'm1', text: 'two' });
 
       expect(bettorRepo.findOne).toHaveBeenCalledTimes(1);
+    });
+
+    it('dispatches mention notifications when the message contains @', async () => {
+      const client = authedSocket();
+
+      await gateway.handleChatSend(client, { marketId: 'm1', text: 'gg @amigo' });
+
+      expect(notificationService.createChatMention).toHaveBeenCalledWith({
+        marketId: 'm1',
+        fromBettorId: 'bettor-1',
+        fromNick: 'zenick',
+        text: 'gg @amigo',
+      });
+    });
+
+    it('skips mention lookup when there is no @ in the message', async () => {
+      const client = authedSocket();
+
+      await gateway.handleChatSend(client, { marketId: 'm1', text: 'no mentions here' });
+
+      expect(notificationService.createChatMention).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('emitNotification', () => {
+    it('pushes to the recipient bettor private room', () => {
+      const notif = { id: 'n1', bettorId: 'bettor-9' } as any;
+      gateway.emitNotification('bettor-9', notif);
+
+      expect(gateway.server.to).toHaveBeenCalledWith('notif:bettor-9');
+      expect(roomEmit).toHaveBeenCalledWith('notification:new', notif);
     });
   });
 });

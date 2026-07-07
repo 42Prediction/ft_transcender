@@ -71,6 +71,24 @@ export class BettorService {
     return count > 0;
   }
 
+  async searchByNick(q: string, limit = 8, excludeUserId?: string) {
+    const query = q.trim();
+    if (query.length < 2) return [];
+    const qb = this.bettorRepository
+      .createQueryBuilder('b')
+      .where('b.nick ILIKE :like', { like: `%${query}%` });
+    if (excludeUserId) {
+      qb.andWhere('b.user_id != :excludeUserId', { excludeUserId });
+    }
+    const bettors = await qb.orderBy('b.nick', 'ASC').limit(limit).getMany();
+    return bettors.map((b) => ({
+      id: b.id,
+      nick: b.nick,
+      avatar: b.avatar ?? null,
+      campus: b.campus ?? null,
+    }));
+  }
+
   async update(userId: string,
     updateBettorDto: UpdateBettorDto, 
     avatarFile?:Express.Multer.File ) {

@@ -1,10 +1,12 @@
 import { auth } from "@/api/auth/auth.api";
 import Logo from "@/components/Logo";
-import { Bell, ChevronDown, LogOut, Menu, Plus, Settings, Wallet, X } from "lucide-react";
+import { ChevronDown, LogOut, Menu, Plus, Settings, Wallet, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useRevalidator, useRouteLoaderData } from "react-router-dom";
 import { CreateMarketModal } from "@/features/market/components/CreateMarketModal";
 import { SearchBox } from "./SearchBox";
+import { FriendsMenu } from "@/features/user/friends/FriendsMenu";
+import { NotificationsBell } from "@/features/user/notifications/NotificationsBell";
 
 
 export function Navbar() {
@@ -158,10 +160,8 @@ function UserInfo(
 ) {
   return (
     <>
-    <button className="relative hidden h-10 w-10 place-items-center rounded-xl border border-border/60 bg-surface text-muted-foreground transition hover:text-foreground md:grid">
-      <Bell className="h-4 w-4" />
-      <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary shadow-glow" />
-    </button>
+    <FriendsMenu />
+    <NotificationsBell />
 
     <div className="relative" ref={dropdownRef}>
       </div>
