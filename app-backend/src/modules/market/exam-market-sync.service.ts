@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, IsNull, Not, Repository } from 'typeorm';
@@ -21,6 +21,28 @@ const EXAM_CATEGORY_BY_RANK: Record<string, MarketCategory> = {
   '06': MarketCategory.EXAM_06,
 };
 
+/** How many `isPrimaryCampusStudent` lookups run at once per exam, to keep this well under 42's rate limit. */
+const CAMPUS_CHECK_CONCURRENCY = 8;
+
+/**
+ * Runs `fn` over `items` with at most `limit` calls in flight at once,
+ * preserving input order in the returned array.
+ */
+async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+
+  async function worker() {
+    while (next < items.length) {
+      const current = next++;
+      results[current] = await fn(items[current]);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
 /**
  * The platform's whole scope is Exam Rank 02-06 — anything else (Rank 01,
  * non-rank exams/events) is deliberately out of scope and must not produce a
@@ -40,7 +62,7 @@ function mapExamNameToCategory(examName: string): MarketCategory | null {
  * markets auto-resolve once 42 publishes the grade.
  */
 @Injectable()
-export class ExamMarketSyncService {
+export class ExamMarketSyncService implements OnModuleInit {
   private readonly logger = new Logger(ExamMarketSyncService.name);
   private systemBettorId: string | null = null;
 
@@ -58,6 +80,23 @@ export class ExamMarketSyncService {
   ) {}
 
   /**
+   * `@Cron` only fires on its configured ticks — after a fresh deploy/restart
+   * that leaves a gap of up to 15 minutes with no markets in the DB at all,
+   * so the first users to log in see an empty list. Kick off one sync
+   * shortly after the app boots, without blocking startup on it (42's API
+   * can be slow; `syncExamMarkets` already contains its own failure
+   * handling). The short delay gives TypeORM's connection time to settle
+   * first — this hook can otherwise fire before the DB driver is ready.
+   */
+  onModuleInit() {
+    setTimeout(() => {
+      void this.syncExamMarkets().catch((err) =>
+        this.logger.error(`initial syncExamMarkets on startup failed: ${err}`),
+      );
+    }, 5000);
+  }
+
+  /**
    * Runs for every upcoming exam at the campus (not just a specific project —
    * whatever `/campus/:id/exams` returns), covering both directions of
    * market membership up until the exam ends:
@@ -66,6 +105,7 @@ export class ExamMarketSyncService {
    */
   @Cron('0 */15 * * * *')
   async syncExamMarkets() {
+    const startedAt = Date.now();
     const exams = await this.school42Service.getUpcomingExams(14);
     if (exams.length === 0) return;
 
@@ -88,20 +128,30 @@ export class ExamMarketSyncService {
         const candidates = roster.filter((c) => c.status === 'in_progress' && c.finalMark !== 100);
         const invalidCampusLogins = new Set<string>();
         const eligible: typeof candidates = [];
-        for (const cadet of candidates) {
-          const isLuandaStudent = await this.school42Service.isPrimaryCampusStudent(cadet.login);
+        const campusChecks = await mapWithConcurrency(
+          candidates,
+          CAMPUS_CHECK_CONCURRENCY,
+          (cadet) => this.school42Service.isPrimaryCampusStudent(cadet.login),
+        );
+        candidates.forEach((cadet, i) => {
+          const isLuandaStudent = campusChecks[i];
           if (isLuandaStudent === true) {
             eligible.push(cadet);
           } else if (isLuandaStudent === false) {
             invalidCampusLogins.add(cadet.login);
           }
           // null (couldn't verify) — skip this cycle entirely, retry next run.
-        }
+        });
+
+        const existingMarkets = eligible.length
+          ? await this.marketRepo.find({
+              where: { examId: String(exam.id), subjectLogin: In(eligible.map((c) => c.login)) },
+            })
+          : [];
+        const existingByLogin = new Map(existingMarkets.map((m) => [m.subjectLogin, m]));
 
         for (const cadet of eligible) {
-          const existing = await this.marketRepo.findOne({
-            where: { examId: String(exam.id), subjectLogin: cadet.login },
-          });
+          const existing = existingByLogin.get(cadet.login);
 
           // A cadet who re-registers after a deregistration finds their old
           // (unique-indexed) market row still there, just CANCELLED — revive
@@ -149,6 +199,8 @@ export class ExamMarketSyncService {
         this.logger.warn(`syncExamMarkets failed for exam ${exam.id}: ${err}`);
       }
     }
+
+    this.logger.log(`syncExamMarkets: processed ${exams.length} exam(s) in ${Date.now() - startedAt}ms`);
   }
 
   /**
@@ -197,6 +249,7 @@ export class ExamMarketSyncService {
    */
   @Cron('0 */10 * * * *')
   async autoResolveExamMarkets() {
+    const startedAt = Date.now();
     const pending = await this.marketRepo.find({
       where: {
         examId: Not(IsNull()),
@@ -229,6 +282,10 @@ export class ExamMarketSyncService {
         this.logger.warn(`autoResolveExamMarkets failed for exam ${examId}: ${err}`);
       }
     }
+
+    this.logger.log(
+      `autoResolveExamMarkets: processed ${examIds.length} exam(s), ${pending.length} pending market(s) in ${Date.now() - startedAt}ms`,
+    );
   }
 
   private async getOrCreateSystemBettorId(): Promise<string | null> {
