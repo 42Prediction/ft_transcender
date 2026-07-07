@@ -383,6 +383,141 @@ export class MarketService {
     };
   }
 
+  /**
+   * Public betting stats for any bettor by nick — aggregates only, never
+   * balance or the open-position details (those stay behind the
+   * JWT-guarded /market/portfolio "me" endpoint).
+   */
+  async getBettorStats(nick: string) {
+    const bettor = await this.bettorRepo.findOne({ where: { nick } });
+    if (!bettor) throw new NotFoundException('Bettor not found');
+
+    const agg = await this.positionRepo
+      .createQueryBuilder('pos')
+      .select('SUM(COALESCE(pos.payout, 0)) - SUM(pos.amount)', 'pnl')
+      .addSelect('COUNT(*)', 'totalBets')
+      .addSelect('SUM(CASE WHEN pos.payout > 0 THEN 1 ELSE 0 END)', 'wins')
+      .addSelect(
+        'SUM(CASE WHEN pos.payout IS NOT NULL AND pos.payout <= 0 THEN 1 ELSE 0 END)',
+        'losses',
+      )
+      .addSelect(
+        'ROUND(100.0 * SUM(CASE WHEN pos.payout > 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 0)',
+        'winRate',
+      )
+      .where('pos.bettor_id = :bettorId', { bettorId: bettor.id })
+      .getRawOne();
+
+    const open = await this.positionRepo
+      .createQueryBuilder('pos')
+      .innerJoin('pos.market', 'market')
+      .where('pos.bettor_id = :bettorId', { bettorId: bettor.id })
+      .andWhere('market.status NOT IN (:...inactive)', {
+        inactive: [MarketStatus.RESOLVED, MarketStatus.CANCELLED],
+      })
+      .getCount();
+
+    return {
+      nick: bettor.nick,
+      pnl: Number(agg?.pnl ?? 0).toFixed(2),
+      totalBets: Number(agg?.totalBets ?? 0),
+      wins: Number(agg?.wins ?? 0),
+      losses: Number(agg?.losses ?? 0),
+      open,
+      winRate: Number(agg?.winRate ?? 0),
+    };
+  }
+
+  /**
+   * Public bet history for any bettor by nick — same visibility level as the
+   * global activity feed (nick + market + side + amount are already public
+   * there); balance stays private.
+   */
+  async getBettorPositions(nick: string, limit = 50) {
+    const bettor = await this.bettorRepo.findOne({ where: { nick } });
+    if (!bettor) throw new NotFoundException('Bettor not found');
+
+    const positions = await this.positionRepo
+      .createQueryBuilder('pos')
+      .leftJoinAndSelect('pos.market', 'market')
+      .where('pos.bettor_id = :bettorId', { bettorId: bettor.id })
+      .orderBy('pos.created_at', 'DESC')
+      .limit(limit)
+      .getMany();
+
+    return positions.map((pos) => {
+      const market = pos.market;
+      let status: 'WON' | 'LOST' | 'OPEN' | 'CANCELLED';
+      if (market.status === MarketStatus.CANCELLED) {
+        status = 'CANCELLED';
+      } else if (pos.payout != null) {
+        status = Number(pos.payout) > 0 ? 'WON' : 'LOST';
+      } else {
+        status = 'OPEN';
+      }
+      const pnl = pos.payout != null ? Number(pos.payout) - Number(pos.amount) : null;
+
+      return {
+        id: pos.id,
+        marketId: market.id,
+        market: market.project,
+        subject: market.subjectLogin ?? null,
+        side: pos.side,
+        amount: Number(pos.amount),
+        entry: Number(pos.entryPrice),
+        payout: pos.payout != null ? Number(pos.payout) : null,
+        pnl: pnl != null ? pnl.toFixed(2) : null,
+        status,
+        createdAt: pos.createdAt,
+      };
+    });
+  }
+
+  /**
+   * Navbar search: markets and registered bettors in one round-trip.
+   * Markets match on subject login/name or project across ALL statuses —
+   * a search is a lookup, not the "open for betting" browse view.
+   */
+  async globalSearch(query: string) {
+    const q = query.trim();
+    if (q.length < 2) return { markets: [], bettors: [] };
+
+    const like = `%${q}%`;
+    const [markets, bettors] = await Promise.all([
+      this.marketRepo
+        .createQueryBuilder('m')
+        .where(
+          '(m.subject_login ILIKE :like OR m.subject_name ILIKE :like OR m.project ILIKE :like)',
+          { like },
+        )
+        .orderBy('m.closes_at', 'DESC')
+        .limit(8)
+        .getMany(),
+      this.bettorRepo
+        .createQueryBuilder('b')
+        .where('b.nick ILIKE :like', { like })
+        .limit(8)
+        .getMany(),
+    ]);
+
+    return {
+      markets: markets.map((m) => ({
+        id: m.id,
+        project: m.project,
+        subjectLogin: m.subjectLogin ?? null,
+        subjectName: m.subjectName ?? null,
+        subjectAvatar: m.subjectAvatar ?? null,
+        category: m.category,
+        status: m.status,
+      })),
+      bettors: bettors.map((b) => ({
+        nick: b.nick,
+        avatar: b.avatar ?? null,
+        campus: b.campus ?? null,
+      })),
+    };
+  }
+
   async searchStudents(query: string) {
     const bettors = await this.bettorRepo
       .createQueryBuilder('b')

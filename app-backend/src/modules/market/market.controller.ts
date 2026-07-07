@@ -133,6 +133,39 @@ export class MarketController {
     }
   }
 
+  @Get('search')
+  @HttpCode(HttpStatus.OK)
+  async search(@Query('q') q: string) {
+    try {
+      const data = await this.marketService.globalSearch(q ?? '');
+      return successResponse(HttpStatus.OK, data);
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+
+  @Get('bettor/:nick/stats')
+  @HttpCode(HttpStatus.OK)
+  async bettorStats(@Param('nick') nick: string) {
+    try {
+      const data = await this.marketService.getBettorStats(nick);
+      return successResponse(HttpStatus.OK, data);
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+
+  @Get('bettor/:nick/positions')
+  @HttpCode(HttpStatus.OK)
+  async bettorPositions(@Param('nick') nick: string, @Query('limit') limit?: string) {
+    try {
+      const data = await this.marketService.getBettorPositions(nick, limit ? Number(limit) : 50);
+      return successResponse(HttpStatus.OK, data);
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async findOne(@Param('id') id: string) {
