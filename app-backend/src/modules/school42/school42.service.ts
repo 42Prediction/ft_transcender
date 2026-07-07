@@ -37,12 +37,39 @@ interface AppToken {
   expires_at: number;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 @Injectable()
 export class School42Service {
   private readonly logger = new Logger(School42Service.name);
   private readonly baseUrl = 'https://api.intra.42.fr/v2';
   private readonly campusId: number;
   private cachedToken: AppToken | null = null;
+
+  /**
+   * `syncExamMarkets` (every 15min) and `autoResolveExamMarkets` (every 10min)
+   * both end up calling `fetchProjectUsers` for the same exam when their
+   * schedules coincide (every 30min). A short TTL is enough to dedupe that
+   * overlap without meaningfully delaying either job outside of it.
+   */
+  private readonly projectUsersCache = new Map<number, { data: ExamRosterEntry42[]; expiresAt: number }>();
+  private static readonly PROJECT_USERS_CACHE_TTL_MS = 2 * 60 * 1000;
+
+  /**
+   * 42's secondary "spam" limit is far tighter than its hourly quota — bursts
+   * of concurrent calls (e.g. checking several candidates' campus at once)
+   * get 429'd, and 42 then briefly 429s unrelated follow-up requests too.
+   * Every outgoing call is funneled through `fetch42`, which serializes
+   * dispatch to at most one request per `MIN_REQUEST_INTERVAL_MS` no matter
+   * how many callers are in flight, and retries a 429 with backoff instead
+   * of abandoning the exam/candidate until the next cron cycle.
+   */
+  private static readonly MIN_REQUEST_INTERVAL_MS = 600;
+  private static readonly MAX_429_RETRIES = 4;
+  private throttleChain: Promise<void> = Promise.resolve();
+  private lastRequestAt = 0;
 
   constructor(private readonly configService: ConfigService) {
     // ConfigService reads env vars as strings regardless of the generic type
@@ -85,11 +112,50 @@ export class School42Service {
     return this.cachedToken.access_token;
   }
 
-  private async get42<T>(path: string): Promise<T> {
-    const token = await this.getAppToken();
-    const res = await fetch(`${this.baseUrl}${path}`, {
-      headers: { Authorization: `Bearer ${token}` },
+  /** Serializes dispatch so concurrent callers still respect a single global minimum interval. */
+  private async throttle(): Promise<void> {
+    const next = this.throttleChain.then(async () => {
+      const wait = this.lastRequestAt + School42Service.MIN_REQUEST_INTERVAL_MS - Date.now();
+      if (wait > 0) {
+        await sleep(wait);
+      }
+      this.lastRequestAt = Date.now();
     });
+    this.throttleChain = next;
+    await next;
+  }
+
+  /**
+   * Rate-limited, retrying fetch used by every 42 API call. A 429 is retried
+   * with backoff (honoring `Retry-After` when 42 sends it) instead of being
+   * thrown straight away — callers only ever see a final, non-429 response
+   * or the last 429 once retries are exhausted.
+   */
+  private async fetch42(path: string): Promise<Response> {
+    for (let attempt = 0; ; attempt++) {
+      await this.throttle();
+      const token = await this.getAppToken();
+      const res = await fetch(`${this.baseUrl}${path}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.status !== 429 || attempt >= School42Service.MAX_429_RETRIES) {
+        return res;
+      }
+
+      const retryAfterSeconds = Number(res.headers.get('retry-after'));
+      const backoffMs = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+        ? retryAfterSeconds * 1000
+        : 1000 * 2 ** attempt;
+      this.logger.warn(
+        `42 API rate limited on ${path}, retrying in ${backoffMs}ms (attempt ${attempt + 1}/${School42Service.MAX_429_RETRIES})`,
+      );
+      await sleep(backoffMs);
+    }
+  }
+
+  private async get42<T>(path: string): Promise<T> {
+    const res = await this.fetch42(path);
 
     if (!res.ok) {
       const err = await res.text();
@@ -113,11 +179,7 @@ export class School42Service {
     const separator = basePath.includes('?') ? '&' : '?';
 
     for (let page = 1; page <= maxPages; page++) {
-      const token = await this.getAppToken();
-      const res = await fetch(
-        `${this.baseUrl}${basePath}${separator}page[number]=${page}&page[size]=100`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const res = await this.fetch42(`${basePath}${separator}page[number]=${page}&page[size]=100`);
 
       if (!res.ok) {
         const err = await res.text();
@@ -303,6 +365,11 @@ export class School42Service {
    * cycle instead.
    */
   private async fetchProjectUsers(exam: Exam42): Promise<ExamRosterEntry42[]> {
+    const cached = this.projectUsersCache.get(exam.id);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.data;
+    }
+
     const projectId = exam.projectId;
     if (projectId == null) {
       this.logger.warn(`fetchProjectUsers(${exam.id}): exam has no linked project, skipping`);
@@ -314,7 +381,7 @@ export class School42Service {
       `/projects/${projectId}/projects_users?${params.toString()}`,
     );
 
-    return projectsUsers
+    const entries = projectsUsers
       .map((pu) => {
         const u = pu.user;
         if (!u?.login) return null;
@@ -327,6 +394,12 @@ export class School42Service {
         };
       })
       .filter((c): c is ExamCadet42 & { status: string } => c !== null);
+
+    this.projectUsersCache.set(exam.id, {
+      data: entries,
+      expiresAt: Date.now() + School42Service.PROJECT_USERS_CACHE_TTL_MS,
+    });
+    return entries;
   }
 
   async getStudent(login: string): Promise<Student42 | null> {
