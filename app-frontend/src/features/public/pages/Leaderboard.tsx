@@ -36,7 +36,10 @@ const rankIcon: Record<number, React.ReactNode> = {
 };
 
 export function Leaderboard() {
-  const { leaderboard, activity } = useLoaderData() as LeaderboardLoaderData;
+  // Falls back to empty data when rendered as the frozen background behind the
+  // auth modal (route inactive → loader data purged), instead of crashing.
+  const { leaderboard, activity } =
+    (useLoaderData() as LeaderboardLoaderData | undefined) ?? { leaderboard: [], activity: [] };
 
   return (
     <div className="mx-auto max-w-[1400px] px-6 py-12">
