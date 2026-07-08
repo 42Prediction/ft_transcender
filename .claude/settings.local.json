@@ -47,7 +47,9 @@
       "Bash(python3 -c \"import json,sys; print\\('short query ->', json.load\\(sys.stdin\\)['data']\\)\")",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('status:', d['statusCode'], '| results:', [b['nick'] for b in d['data']]\\)\")",
       "Bash(npm run *)",
-      "Bash(python3 -c \"import json,sys;d=json.load\\(sys.stdin\\)['data'];print\\('unread:',d['unread'],'items:',len\\(d['items']\\)\\)\")"
+      "Bash(python3 -c \"import json,sys;d=json.load\\(sys.stdin\\)['data'];print\\('unread:',d['unread'],'items:',len\\(d['items']\\)\\)\")",
+      "Bash(xargs cat)",
+      "Bash(node *)"
     ]
   }
 }

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,7 +11,7 @@ import { Market, MarketCategory, MarketResolution, MarketStatus } from './entiti
 import { BetSide, MarketPosition } from './entities/market-position.entity';
 import { Bettor } from '../bettor/entities/bettor.entity';
 import { User } from '../user/entities/user.entity';
-import { WalletService } from '../wallet/wallet.service';
+import { ADMIN_TREASURY_BALANCE, WalletService } from '../wallet/wallet.service';
 import { TransactionType } from '../wallet/entities/transaction.entity';
 import { CreateMarketDto } from './dto/create-market.dto';
 import { PlaceBetDto } from './dto/place-bet.dto';
@@ -22,6 +23,23 @@ import { avataaarsNeutral } from '@dicebear/collection';
 
 @Injectable()
 export class MarketService {
+  private readonly logger = new Logger(MarketService.name);
+
+  /**
+   * House rake: the fraction of the losing side's total stake that the market
+   * creator (admin) collects on each resolution. Carved out of the pool before
+   * winners are paid, so winners split the pool net of rake.
+   */
+  private static readonly HOUSE_RAKE_RATE = 0.05;
+
+  /**
+   * Initial liquidity seeded into each side of a new market's pool. The admin
+   * funds it from their own wallet on creation (see `create`), so the seed that
+   * winners ultimately collect at resolution is real, ledgered money rather
+   * than currency minted from nowhere.
+   */
+  private static readonly MARKET_SEED_PER_SIDE = 100;
+
   constructor(
     @InjectRepository(Market)
     private readonly marketRepo: Repository<Market>,
@@ -113,9 +131,11 @@ export class MarketService {
       bettor = await this.bettorRepo.save(
         this.bettorRepo.create({ nick: `${prefix}_${Math.floor(1000 + Math.random() * 9000)}`, avatar, user }),
       );
-      await this.walletService.createWallet(bettor.id);
+      // Only admins reach create() (@Roles(ADMIN)); provision the house treasury.
+      await this.walletService.createWallet(bettor.id, ADMIN_TREASURY_BALANCE, 'Admin treasury');
     }
 
+    const seedPerSide = MarketService.MARKET_SEED_PER_SIDE;
     const market = this.marketRepo.create({
       subjectLogin: dto.subjectLogin,
       subjectName: dto.subjectName,
@@ -124,10 +144,28 @@ export class MarketService {
       category: dto.category,
       closesAt: new Date(dto.closesAt),
       creatorId: bettor.id,
+      yesPool: seedPerSide,
+      noPool: seedPerSide,
       status: this.computeStatus(new Date(dto.closesAt), new Date()),
     });
 
     const saved = await this.marketRepo.save(market);
+
+    // The admin funds the market's seed liquidity from their own wallet, so no
+    // currency is minted when winners collect the pool at resolution. If the
+    // admin can't cover it, `debit` throws (insufficient balance) — undo the
+    // just-created market so we never leave an unfunded one behind.
+    try {
+      await this.walletService.debit(bettor.id, {
+        amount: seedPerSide * 2,
+        type: TransactionType.MARKET_SEED,
+        description: `Seed liquidity for market: ${dto.project}`,
+      });
+    } catch (err) {
+      await this.marketRepo.remove(saved);
+      throw err;
+    }
+
     const payload = this.toDto(saved);
     this.marketGateway.emitMarketUpdate(payload);
     return payload;
@@ -203,6 +241,16 @@ export class MarketService {
     const totalWinShares = winners.reduce((s, p) => s + Number(p.shares), 0);
     const totalPool = Number(market.yesPool) + Number(market.noPool);
 
+    // House rake: the admin who opened this market takes a cut of what the
+    // losing side staked (classic bookmaker "vig"). It's carved out of the
+    // pool before winners are paid, so winners split the pool net of rake.
+    // No losers → no rake.
+    const losersStake = positions
+      .filter((p) => p.side !== winSide)
+      .reduce((s, p) => s + Number(p.amount), 0);
+    const rake = Number((losersStake * MarketService.HOUSE_RAKE_RATE).toFixed(2));
+    const distributable = totalPool - rake;
+
     // Payout for winners; a settled 0 for losers so history/stats can tell a
     // resolved-loss (payout 0) apart from a still-open bet (payout null).
     const notifications: {
@@ -214,7 +262,7 @@ export class MarketService {
 
     for (const pos of positions) {
       const won = pos.side === winSide;
-      const payout = won ? (Number(pos.shares) / totalWinShares) * totalPool : 0;
+      const payout = won ? (Number(pos.shares) / totalWinShares) * distributable : 0;
       pos.payout = payout;
       await this.positionRepo.save(pos);
 
@@ -243,9 +291,26 @@ export class MarketService {
       });
     }
 
+    // Pay the house rake to the market creator (admin). Guarded so a missing
+    // creator wallet can't undo an otherwise-complete resolution — winners
+    // have already been paid at this point.
+    if (rake > 0) {
+      try {
+        await this.walletService.credit(market.creatorId, {
+          amount: rake,
+          type: TransactionType.COMMISSION,
+          description: `House rake (${(MarketService.HOUSE_RAKE_RATE * 100).toFixed(0)}%) on market: ${market.project}`,
+        });
+      } catch (err) {
+        this.logger.warn(
+          `Rake credit of ${rake} to creator ${market.creatorId} failed on market ${market.id}: ${err}`,
+        );
+      }
+    }
+
     await this.notificationService.createMany(notifications);
 
-    return { resolved: true, resolution, totalPool, winnersCount: winners.length };
+    return { resolved: true, resolution, totalPool, rake, winnersCount: winners.length };
   }
 
   /**

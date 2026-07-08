@@ -9,6 +9,10 @@ import { CreditWalletDto } from "./dto/credit.dto";
 import { DebitWalletDto } from "./dto/debit.dto";
 
 const INITIAL_BALANCE = 1000;
+// The single admin acts as the house: it funds every market's seed liquidity
+// and collects the rake. It therefore starts with a large treasury rather than
+// the regular new-user bonus.
+export const ADMIN_TREASURY_BALANCE = 1_000_000;
 
 @Injectable()
 export class WalletService {
@@ -20,31 +24,35 @@ export class WalletService {
         private readonly dataSource: DataSource
     ) { }
 
-    async createWallet(idBettor: string): Promise<WalletResponseDto> {
+    async createWallet(
+        idBettor: string,
+        initialBalance: number = INITIAL_BALANCE,
+        description = 'New user bonus',
+    ): Promise<WalletResponseDto> {
         const existing = await this.walletRepository.findOne({ where: { idBettor } });
         if (existing)
             throw new ConflictException(`Wallet already exists for user ${idBettor}`);
         return this.dataSource.transaction(async (manager) => {
             const wallet = manager.create(Wallet, {
                 idBettor,
-                balance: INITIAL_BALANCE,
+                balance: initialBalance,
             });
             const savedWallet = await manager.save(Wallet, wallet);
 
             const transaction = manager.create(Transaction, {
                 idWallet: savedWallet.id,
-                amount: INITIAL_BALANCE,
+                amount: initialBalance,
                 type: TransactionType.DEPOSIT,
                 status: TransactionStatus.COMPLETED,
                 balanceBefore: 0,
-                balanceAfter: INITIAL_BALANCE,
-                description: 'New user bonus'
+                balanceAfter: initialBalance,
+                description,
 
             });
 
             await manager.save(Transaction, transaction);
 
-            this.logger.log(`Wallet created for user ${idBettor} with initial balance of ${INITIAL_BALANCE}`);
+            this.logger.log(`Wallet created for user ${idBettor} with initial balance of ${initialBalance}`);
             return this.toWalletDto(savedWallet);
         });
     }

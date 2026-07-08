@@ -12,8 +12,9 @@ import { avataaarsNeutral } from '@dicebear/collection';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AvatarService } from './avatar.service';
-import { WalletService } from '../wallet/wallet.service';
+import { ADMIN_TREASURY_BALANCE, WalletService } from '../wallet/wallet.service';
 import { Profile42Dto } from './dto/profile-42.dto';
+import { Role } from '../../shared/enums/roles.enum';
 
 @Injectable()
 export class BettorService {
@@ -49,7 +50,17 @@ export class BettorService {
       campus: campus,
     });
     const bettorSaved =  await this.bettorRepository.save(bettor);
-    await this.walletService.createWallet(bettorSaved.id);
+    // The admin is the house — it seeds every market and needs a treasury, not
+    // the regular new-user bonus.
+    if (user.role === Role.ADMIN) {
+      await this.walletService.createWallet(
+        bettorSaved.id,
+        ADMIN_TREASURY_BALANCE,
+        'Admin treasury',
+      );
+    } else {
+      await this.walletService.createWallet(bettorSaved.id);
+    }
     return bettorSaved;
   }
 
