@@ -7,6 +7,7 @@ import { Bettor } from '../bettor/entities/bettor.entity';
 import { User } from '../user/entities/user.entity';
 import { Role } from '../../shared/enums/roles.enum';
 import { WalletService } from '../wallet/wallet.service';
+import { TransactionType } from '../wallet/entities/transaction.entity';
 import { Exam42, School42Service } from '../school42/school42.service';
 import { MarketGateway } from './market.gateway';
 import { MarketService } from './market.service';
@@ -43,6 +44,12 @@ function mapExamNameToCategory(examName: string): MarketCategory | null {
 export class ExamMarketSyncService implements OnModuleInit {
   private readonly logger = new Logger(ExamMarketSyncService.name);
   private systemBettorId: string | null = null;
+
+  /**
+   * ₳ the admin (house) funds per auto-generated exam market — the full 100/100
+   * pool, matching what manual markets debit, so no currency is minted.
+   */
+  private static readonly AUTO_MARKET_SEED = 200;
 
   constructor(
     @InjectRepository(Market)
@@ -160,6 +167,22 @@ export class ExamMarketSyncService implements OnModuleInit {
           const creatorId = await this.getOrCreateSystemBettorId();
           if (!creatorId) continue;
 
+          // The admin (house) funds a fixed seed for every auto-generated
+          // market, so its creation is ledgered rather than free. Skip this
+          // cadet if the treasury can't cover it instead of minting.
+          try {
+            await this.walletService.debit(creatorId, {
+              amount: ExamMarketSyncService.AUTO_MARKET_SEED,
+              type: TransactionType.MARKET_SEED,
+              description: `Auto exam market seed: ${exam.name} — ${cadet.login}`,
+            });
+          } catch (err) {
+            this.logger.warn(
+              `syncExamMarkets: skipping ${cadet.login} (${exam.name}), admin seed debit failed: ${err}`,
+            );
+            continue;
+          }
+
           const closesAt = new Date(exam.beginAt);
           const status = this.marketService.computeStatus(closesAt, new Date());
 
@@ -238,13 +261,17 @@ export class ExamMarketSyncService implements OnModuleInit {
   }
 
   /**
-   * Deliberately does NOT wait for `closesAt` — 42 can publish a cadet's
-   * grade before the market's nominal close time, and `resolveMarket` is
-   * what actually locks betting (via its status flip, which `placeBet`
-   * checks). Gating this on `closesAt` would leave a window where the
-   * outcome is already known on 42's side but this platform still accepts
-   * bets on it. Every active exam market is checked every cycle instead;
-   * `finalMark == null` (not graded yet) is simply skipped, same as before.
+   * Settles exam markets, but only once the exam session is over ("trancado")
+   * AND the cadet's attempt is `finished` with a published grade. Waiting on
+   * both matters because:
+   *  - a still-`in_progress` attempt reports `finalMark` 0 by default (meaning
+   *    "not graded yet", not "scored 0"); and
+   *  - a 0 on a not-yet-locked exam is typically a cadet re-sitting after an
+   *    earlier 0 — settling now would decide a bet they can still overturn,
+   *    and a `finished`-with-0 record can even belong to a *future* session
+   *    the cadet is re-registered for.
+   * Betting already closes at the exam's start (`closesAt` / `placeBet`), so
+   * delaying settlement never reopens a betting window.
    */
   @Cron('0 */10 * * * *')
   async autoResolveExamMarkets() {
@@ -264,9 +291,18 @@ export class ExamMarketSyncService implements OnModuleInit {
         const exam = await this.school42Service.getExam(Number(examId));
         if (!exam) continue;
 
-        const cadets = await this.school42Service.getExamGrades(exam);
+        // Only settle once the exam session is locked (over). Before that a
+        // cadet's 0 can still be a pending re-sit rather than a final fail.
+        if (Date.now() < new Date(exam.endAt).getTime()) continue;
+
+        // Even after lock, require `finished` with a real grade — a lingering
+        // `in_progress` (re-sitting elsewhere) reports a default 0 that isn't
+        // this session's outcome.
+        const roster = await this.school42Service.getExamRoster(exam);
         const gradedByLogin = new Map(
-          cadets.filter((c) => c.finalMark != null).map((c) => [c.login, c.finalMark!]),
+          roster
+            .filter((c) => c.status === 'finished' && c.finalMark != null)
+            .map((c) => [c.login, c.finalMark!]),
         );
 
         const marketsForExam = pending.filter((m) => m.examId === examId);
