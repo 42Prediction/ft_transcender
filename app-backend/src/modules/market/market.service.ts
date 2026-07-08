@@ -13,6 +13,7 @@ import { Bettor } from '../bettor/entities/bettor.entity';
 import { User } from '../user/entities/user.entity';
 import { ADMIN_TREASURY_BALANCE, WalletService } from '../wallet/wallet.service';
 import { TransactionType } from '../wallet/entities/transaction.entity';
+import { Role } from '../../shared/enums/roles.enum';
 import { CreateMarketDto } from './dto/create-market.dto';
 import { PlaceBetDto } from './dto/place-bet.dto';
 import { MarketGateway } from './market.gateway';
@@ -370,26 +371,43 @@ export class MarketService {
   }
 
   async getStats() {
-    const [liveCount, totalBettors] = await Promise.all([
-      this.marketRepo.count({
-        where: [
-          { status: MarketStatus.LIVE },
-          { status: MarketStatus.CLOSING },
-          { status: MarketStatus.NEW },
-        ],
-      }),
-      this.bettorRepo.count(),
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const [liveMarkets, activeRow, volumeRow] = await Promise.all([
+      // Live = still open for betting: not settled and not past its close time.
+      this.marketRepo
+        .createQueryBuilder('m')
+        .where('m.status NOT IN (:...inactive)', {
+          inactive: [MarketStatus.RESOLVED, MarketStatus.CANCELLED],
+        })
+        .andWhere('m.closes_at > :now', { now })
+        .getCount(),
+      // Active traders = distinct accounts that have actually placed a bet,
+      // excluding the admin/house (which seeds markets, it doesn't trade).
+      this.positionRepo
+        .createQueryBuilder('pos')
+        .innerJoin('pos.bettor', 'b')
+        .innerJoin('b.user', 'u')
+        .where('u.role != :admin', { admin: Role.ADMIN })
+        .select('COUNT(DISTINCT pos.bettor_id)', 'n')
+        .getRawOne(),
+      // Volume = ₳ actually wagered in the last 30 days (real bets only — the
+      // seed isn't a position — and excluding the admin).
+      this.positionRepo
+        .createQueryBuilder('pos')
+        .innerJoin('pos.bettor', 'b')
+        .innerJoin('b.user', 'u')
+        .where('u.role != :admin', { admin: Role.ADMIN })
+        .andWhere('pos.created_at >= :since', { since: thirtyDaysAgo })
+        .select('COALESCE(SUM(pos.amount), 0)', 'v')
+        .getRawOne(),
     ]);
 
-    const volumeResult = await this.marketRepo
-      .createQueryBuilder('m')
-      .select('SUM(m.yes_pool + m.no_pool - 200)', 'totalVolume')
-      .getRawOne();
-
     return {
-      liveMarkets: liveCount,
-      activeBettors: totalBettors,
-      volume30d: Math.max(0, Number(volumeResult?.totalVolume) || 0),
+      liveMarkets,
+      activeBettors: Number(activeRow?.n) || 0,
+      volume30d: Number(volumeRow?.v) || 0,
     };
   }
 

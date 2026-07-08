@@ -12,9 +12,6 @@ import {
   YAxis,
 } from "recharts";
 import {
-  Bookmark,
-  Share2,
-  MoreHorizontal,
   ShieldCheck,
   Clock,
   Users,
@@ -207,11 +204,6 @@ function MarketHeader() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <IconButton><Share2 className="h-4 w-4" /></IconButton>
-          <IconButton><Bookmark className="h-4 w-4" /></IconButton>
-          <IconButton><MoreHorizontal className="h-4 w-4" /></IconButton>
-        </div>
       </div>
 
       {/* outcome quick row */}
