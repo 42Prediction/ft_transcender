@@ -12,7 +12,9 @@ export enum TransactionType{
     // Initial liquidity the admin funds from their wallet when creating a market.
     MARKET_SEED = 'MARKET_SEED',
     // ₳ granted for real 42 progress (level), at signup and on level-ups.
-    SCHOOL42_REWARD = 'SCHOOL42_REWARD'
+    SCHOOL42_REWARD = 'SCHOOL42_REWARD',
+    // ₳ granted for platform engagement (daily streak, quests).
+    ENGAGEMENT_REWARD = 'ENGAGEMENT_REWARD'
 }
 
 export enum TransactionStatus{
