@@ -120,7 +120,7 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
             className="flex flex-col items-start gap-1 rounded-2xl border border-success/30 bg-success/10 p-4 text-left transition hover:bg-success/15 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span className="font-mono text-[10px] uppercase tracking-wider text-success/80">YES</span>
-            <span className="font-display text-2xl font-bold text-success">{yesPct}¢</span>
+            <span className="font-display text-2xl font-bold text-success">{yesPct}%</span>
           </button>
           <button
             onClick={() => canBet && openBet('NO')}
@@ -128,7 +128,7 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
             className="flex flex-col items-start gap-1 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-left transition hover:bg-destructive/15 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span className="font-mono text-[10px] uppercase tracking-wider text-destructive/80">NO</span>
-            <span className="font-display text-2xl font-bold text-destructive">{noPct}¢</span>
+            <span className="font-display text-2xl font-bold text-destructive">{noPct}%</span>
           </button>
         </div>
 

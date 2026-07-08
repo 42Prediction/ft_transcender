@@ -352,7 +352,7 @@ function StatsRow({ market }: { market: MarketDto }) {
   const liquidity = (market.volumeRaw + 200).toLocaleString('pt-PT', { minimumFractionDigits: 2 });
   const stats = [
     { label: 'Volume', value: market.volume, suffix: '', icon: BarChart3 },
-    { label: 'Liquidity', value: liquidity, suffix: '₳', icon: Droplets },
+    { label: 'Liquidity', value: liquidity, suffix: 'xp', icon: Droplets },
     { label: 'Category', value: market.category, suffix: '', icon: Users },
     { label: 'Closes', value: formatDate(market.closes), suffix: '', icon: Clock },
   ];
@@ -415,12 +415,12 @@ function OutcomesTable({ market }: { market: MarketDto }) {
                 </td>
                 <td className="px-5 py-4">
                   <span className="rounded-md border border-success/30 bg-success/10 px-2.5 py-1 font-mono text-xs text-success">
-                    {Math.round(market.yesPrice * 100)}¢
+                    {Math.round(market.yesPrice * 100)}%
                   </span>
                 </td>
                 <td className="px-5 py-4">
                   <span className="rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1 font-mono text-xs text-destructive">
-                    {Math.round(market.noPrice * 100)}¢
+                    {Math.round(market.noPrice * 100)}%
                   </span>
                 </td>
               </tr>
@@ -555,7 +555,7 @@ function TradePanel({
         <h3 className="font-display text-lg font-semibold">Trade</h3>
         {isLoggedIn && (
           <span className="font-mono text-[10px] text-muted-foreground">
-            Balance: <span className="text-foreground">₳ {balance.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}</span>
+            Balance: <span className="text-foreground">xp {balance.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}</span>
           </span>
         )}
       </div>
@@ -574,7 +574,7 @@ function TradePanel({
           )}
         >
           <div className="font-mono text-[10px] uppercase tracking-wider text-success/80">Yes</div>
-          <div className="font-display text-xl font-bold text-success">{Math.round(market.yesPrice * 100)}¢</div>
+          <div className="font-display text-xl font-bold text-success">{Math.round(market.yesPrice * 100)}%</div>
         </button>
         <button
           onClick={() => setBetSide('NO')}
@@ -588,15 +588,15 @@ function TradePanel({
           )}
         >
           <div className="font-mono text-[10px] uppercase tracking-wider text-destructive/80">No</div>
-          <div className="font-display text-xl font-bold text-destructive">{Math.round(market.noPrice * 100)}¢</div>
+          <div className="font-display text-xl font-bold text-destructive">{Math.round(market.noPrice * 100)}%</div>
         </button>
       </div>
 
       {/* amount */}
       <div className="mt-5">
         <div className="flex items-baseline justify-between">
-          <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Amount (₳)</label>
-          <span className="font-display text-2xl font-bold tabular-nums">₳{amount > 0 ? amount.toFixed(0) : '0'}</span>
+          <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Amount (xp)</label>
+          <span className="font-display text-2xl font-bold tabular-nums">xp {amount > 0 ? amount.toFixed(0) : '0'}</span>
         </div>
         <input
           type="number"
@@ -630,12 +630,12 @@ function TradePanel({
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">Amount</span>
-          <span className="font-mono tabular-nums">₳ {amount > 0 ? amount.toFixed(2) : '0.00'}</span>
+          <span className="font-mono tabular-nums">xp {amount > 0 ? amount.toFixed(2) : '0.00'}</span>
         </div>
         <div className="flex justify-between border-t border-border/40 pt-2">
           <span className="text-muted-foreground">Est. max payout</span>
           <span className={cn('font-mono font-semibold tabular-nums', betSide === 'YES' ? 'text-success' : 'text-destructive')}>
-            ₳ {payout}
+            xp {payout}
           </span>
         </div>
       </div>
@@ -682,7 +682,7 @@ function TradePanel({
           )}
         >
           {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {submitting ? 'Placing bet…' : `Bet ${betSide} · ₳ ${amount > 0 ? amount.toFixed(0) : '0'}`}
+          {submitting ? 'Placing bet…' : `Bet ${betSide} · xp ${amount > 0 ? amount.toFixed(0) : '0'}`}
         </button>
       )}
 

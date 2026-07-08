@@ -105,7 +105,7 @@ export function BetModal({ market, initialSide, open, onOpenChange, onBetPlaced 
             <p className="mt-0.5 text-xs text-muted-foreground">
               Balance:{' '}
               <span className="font-mono text-foreground">
-                ₳ {balance.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}
+                xp {balance.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}
               </span>
             </p>
           </div>
@@ -127,7 +127,7 @@ export function BetModal({ market, initialSide, open, onOpenChange, onBetPlaced 
                 <TrendingUp className="h-5 w-5" />
                 <span className="font-mono text-[10px] uppercase tracking-wider">YES</span>
                 <span className="font-display text-2xl font-bold">
-                  {Math.round(market.yesPrice * 100)}¢
+                  {Math.round(market.yesPrice * 100)}%
                 </span>
               </button>
               <button
@@ -143,17 +143,17 @@ export function BetModal({ market, initialSide, open, onOpenChange, onBetPlaced 
                 <TrendingDown className="h-5 w-5" />
                 <span className="font-mono text-[10px] uppercase tracking-wider">NO</span>
                 <span className="font-display text-2xl font-bold">
-                  {Math.round(market.noPrice * 100)}¢
+                  {Math.round(market.noPrice * 100)}%
                 </span>
               </button>
             </div>
 
             {/* Amount input */}
             <div>
-              <label className="mb-1.5 block text-sm font-medium">Amount (₳)</label>
+              <label className="mb-1.5 block text-sm font-medium">Amount (xp)</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 font-mono text-sm text-muted-foreground">
-                  ₳
+                  xp
                 </span>
                 <input
                   type="number"
@@ -174,7 +174,7 @@ export function BetModal({ market, initialSide, open, onOpenChange, onBetPlaced 
                     onClick={() => setAmount(String(Math.min(v, Math.floor(balance))))}
                     className="rounded-lg border border-border/60 bg-surface px-2.5 py-1 font-mono text-xs text-muted-foreground transition hover:border-primary/40 hover:text-primary"
                   >
-                    ₳{v}
+                    xp {v}
                   </button>
                 ))}
                 <button
@@ -192,7 +192,7 @@ export function BetModal({ market, initialSide, open, onOpenChange, onBetPlaced 
               <div className="rounded-xl border border-border/40 bg-surface p-4 space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Entry price</span>
-                  <span className="font-mono">{sidePct}¢</span>
+                  <span className="font-mono">{sidePct}%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shares</span>
@@ -206,7 +206,7 @@ export function BetModal({ market, initialSide, open, onOpenChange, onBetPlaced 
                       side === 'YES' ? 'text-success' : 'text-destructive',
                     )}
                   >
-                    ₳ {estimatedPayout.toFixed(2)}
+                    xp {estimatedPayout.toFixed(2)}
                   </span>
                 </div>
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
@@ -238,7 +238,7 @@ export function BetModal({ market, initialSide, open, onOpenChange, onBetPlaced 
               {submitting ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                `Bet ${side} · ₳ ${amountNum > 0 ? amountNum.toFixed(0) : '0'}`
+                `Bet ${side} · xp ${amountNum > 0 ? amountNum.toFixed(0) : '0'}`
               )}
             </button>
           </form>

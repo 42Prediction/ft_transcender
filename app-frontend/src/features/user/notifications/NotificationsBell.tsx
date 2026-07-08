@@ -27,7 +27,7 @@ function describe(n: AppNotification): { icon: typeof Bell; tint: string; title:
       title: won ? 'You won a bet' : 'You lost a bet',
       body:
         `${project} resolved` +
-        (pnl != null ? ` · ${pnl >= 0 ? '+' : ''}₳ ${Math.abs(pnl).toFixed(2)}` : ''),
+        (pnl != null ? ` · ${pnl >= 0 ? '+' : ''}xp ${Math.abs(pnl).toFixed(2)}` : ''),
     };
   }
   if (n.type === 'bet_cancelled') {
@@ -36,7 +36,7 @@ function describe(n: AppNotification): { icon: typeof Bell; tint: string; title:
       icon: XCircle,
       tint: 'text-muted-foreground',
       title: 'Bet refunded',
-      body: `${project} was cancelled` + (amount != null ? ` · ₳ ${amount.toFixed(2)} back` : ''),
+      body: `${project} was cancelled` + (amount != null ? ` · xp ${amount.toFixed(2)} back` : ''),
     };
   }
   // chat_mention

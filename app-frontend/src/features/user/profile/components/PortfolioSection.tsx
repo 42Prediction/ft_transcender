@@ -18,13 +18,13 @@ export function PortfolioSection({ portfolio }: { portfolio: Portfolio }) {
           {
             icon: Wallet,
             label: 'Balance',
-            value: `₳ ${portfolio.balance.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}`,
+            value: `xp ${portfolio.balance.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}`,
             color: 'text-foreground',
           },
           {
             icon: isPos ? TrendingUp : TrendingDown,
             label: 'Total P&L',
-            value: `${isPos ? '+' : ''}₳ ${Math.abs(pnlNum).toLocaleString('pt-PT', { minimumFractionDigits: 2 })}`,
+            value: `${isPos ? '+' : ''}xp ${Math.abs(pnlNum).toLocaleString('pt-PT', { minimumFractionDigits: 2 })}`,
             color: isPos ? 'text-success' : 'text-destructive',
           },
           {
@@ -97,20 +97,20 @@ export function PortfolioSection({ portfolio }: { portfolio: Portfolio }) {
                         </span>
                       </td>
                       <td className="px-4 py-4 text-right font-mono text-muted-foreground">
-                        {Math.round(pos.entry * 100)}¢
+                        {Math.round(pos.entry * 100)}%
                       </td>
                       <td className="px-4 py-4 text-right font-mono">
-                        {Math.round(pos.current * 100)}¢
+                        {Math.round(pos.current * 100)}%
                       </td>
                       <td className="px-4 py-4 text-right font-mono">
-                        ₳ {pos.size.toFixed(2)}
+                        xp {pos.size.toFixed(2)}
                       </td>
                       <td
                         className={`px-6 py-4 text-right font-mono font-semibold ${
                           posIsPos ? 'text-success' : 'text-destructive'
                         }`}
                       >
-                        {posIsPos ? '+' : ''}₳ {Math.abs(posPnl).toFixed(2)}
+                        {posIsPos ? '+' : ''}xp {Math.abs(posPnl).toFixed(2)}
                       </td>
                     </tr>
                   );

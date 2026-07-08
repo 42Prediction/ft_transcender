@@ -392,7 +392,7 @@ export class MarketService {
         .where('u.role != :admin', { admin: Role.ADMIN })
         .select('COUNT(DISTINCT pos.bettor_id)', 'n')
         .getRawOne(),
-      // Volume = ₳ actually wagered in the last 30 days (real bets only — the
+      // Volume = xp actually wagered in the last 30 days (real bets only — the
       // seed isn't a position — and excluding the admin).
       this.positionRepo
         .createQueryBuilder('pos')
@@ -459,8 +459,8 @@ export class MarketService {
       avatar: pos.bettor?.avatar,
       action: pos.payout != null ? 'resolved' : `bought ${pos.side}`,
       amount: pos.payout != null
-        ? `+₳ ${Number(pos.payout).toFixed(2)}`
-        : `₳ ${Number(pos.amount).toFixed(2)}`,
+        ? `+xp ${Number(pos.payout).toFixed(2)}`
+        : `xp ${Number(pos.amount).toFixed(2)}`,
       market: pos.market?.project ?? '',
       time: pos.createdAt,
     }));
@@ -763,7 +763,7 @@ export class MarketService {
       category: market.category,
       project: market.project,
       probability: Math.round(yesPrice * 100),
-      volume: `₳ ${(total - 200).toFixed(0)}`,
+      volume: `xp ${(total - 200).toFixed(0)}`,
       volumeRaw: total - 200,
       closes: market.closesAt,
       status: market.status,

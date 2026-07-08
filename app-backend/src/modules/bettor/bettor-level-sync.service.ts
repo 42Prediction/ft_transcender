@@ -9,7 +9,7 @@ import { TransactionType } from '../wallet/entities/transaction.entity';
 import { School42Service } from '../school42/school42.service';
 
 /**
- * Phase 2 of the "42 level → ₳" economy: a daily job that re-reads each cadet's
+ * Phase 2 of the "42 level → xp" economy: a daily job that re-reads each cadet's
  * current 42 level and credits the gain since we last saw it (`Δlevel × rate`).
  * Level is monotonic, so we only ever pay increases — no anti-farming guard and
  * no need to handle decreases. The credit and the snapshot update commit in one
