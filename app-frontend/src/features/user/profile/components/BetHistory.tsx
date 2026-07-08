@@ -95,9 +95,9 @@ export function BetHistory({ positions }: { positions: BettorPosition[] }) {
                         {pos.side}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-right font-mono">₳ {pos.amount.toFixed(2)}</td>
+                    <td className="px-4 py-4 text-right font-mono">xp {pos.amount.toFixed(2)}</td>
                     <td className="px-4 py-4 text-right font-mono text-muted-foreground hidden sm:table-cell">
-                      {Math.round(pos.entry * 100)}¢
+                      {Math.round(pos.entry * 100)}%
                     </td>
                     <td
                       className={`px-4 py-4 text-right font-mono font-semibold ${
@@ -108,7 +108,7 @@ export function BetHistory({ positions }: { positions: BettorPosition[] }) {
                             : 'text-destructive'
                       }`}
                     >
-                      {pnlNum == null ? '—' : `${pnlNum >= 0 ? '+' : ''}₳ ${Math.abs(pnlNum).toFixed(2)}`}
+                      {pnlNum == null ? '—' : `${pnlNum >= 0 ? '+' : ''}xp ${Math.abs(pnlNum).toFixed(2)}`}
                     </td>
                     <td className="px-4 py-4 text-center">
                       <span className={`rounded-md px-2 py-0.5 text-xs ${STATUS_STYLE[pos.status]}`}>

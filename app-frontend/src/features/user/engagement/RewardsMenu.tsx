@@ -60,7 +60,7 @@ export function RewardsMenu() {
               <div className="flex items-center justify-center gap-2 rounded-xl bg-success/10 py-3 text-success">
                 <Check className="h-5 w-5" />
                 <span className="font-display font-semibold">
-                  +₳ {daily.justClaimed.reward.toLocaleString('pt-PT')} · day {daily.justClaimed.streak}
+                  +xp {daily.justClaimed.reward.toLocaleString('pt-PT')} · day {daily.justClaimed.streak}
                 </span>
               </div>
             ) : canClaimDaily ? (
@@ -72,7 +72,7 @@ export function RewardsMenu() {
                 {daily.claiming ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <>Claim ₳ {(daily.status?.nextReward ?? 0).toLocaleString('pt-PT')} · day {daily.status?.nextStreak}</>
+                  <>Claim xp {(daily.status?.nextReward ?? 0).toLocaleString('pt-PT')} · day {daily.status?.nextStreak}</>
                 )}
               </button>
             ) : (
@@ -89,7 +89,7 @@ export function RewardsMenu() {
             <h3 className="font-display text-sm font-semibold">Quests</h3>
             {claimableQuests > 0 && (
               <span className="rounded-lg bg-primary/15 px-2 py-1 font-mono text-[11px] font-semibold text-primary">
-                ₳ {claimableQuests.toLocaleString('pt-PT')} ready
+                xp {claimableQuests.toLocaleString('pt-PT')} ready
               </span>
             )}
           </div>
@@ -117,7 +117,7 @@ export function RewardsMenu() {
                         <span className={`truncate text-sm font-medium ${q.claimed ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
                           {q.title}
                         </span>
-                        <span className="shrink-0 font-mono text-[11px] text-muted-foreground">₳ {q.reward}</span>
+                        <span className="shrink-0 font-mono text-[11px] text-muted-foreground">xp {q.reward}</span>
                       </div>
                       <p className="truncate text-xs text-muted-foreground">{q.description}</p>
                     </div>
@@ -136,7 +136,7 @@ export function RewardsMenu() {
               {quests.claiming ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <>Claim ₳ {claimableQuests.toLocaleString('pt-PT')}</>
+                <>Claim xp {claimableQuests.toLocaleString('pt-PT')}</>
               )}
             </button>
           )}

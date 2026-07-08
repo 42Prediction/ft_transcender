@@ -17,7 +17,7 @@ import { TransactionType } from '../wallet/entities/transaction.entity';
 import { Profile42Dto } from './dto/profile-42.dto';
 import { Role } from '../../shared/enums/roles.enum';
 
-// ₳ granted per 42 cursus level — the welcome bonus for cadets (base + level),
+// xp granted per 42 cursus level — the welcome bonus for cadets (base + level),
 // and (Phase 2) the rate for crediting future level-ups. See economy design.
 export const LEVEL_TO_ANDA_RATE = 500;
 
@@ -69,7 +69,7 @@ export class BettorService {
       );
     } else {
       // Everyone gets the flat base bonus; 42 cadets get an extra bonus scaled
-      // by their current level (real 42 progress → ₳). Level only ever rises,
+      // by their current level (real 42 progress → xp). Level only ever rises,
       // so this is monotonic and needs no anti-farming guard.
       await this.walletService.createWallet(bettorSaved.id);
       if (level && level > 0) {

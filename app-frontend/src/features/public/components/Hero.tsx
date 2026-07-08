@@ -4,9 +4,9 @@ import { useRouteLoaderData } from 'react-router-dom';
 import type { MarketDto, PlatformStats } from '@/api/market/market.api';
 
 function formatVolume(v: number): string {
-  if (v >= 1_000_000) return `₳ ${(v / 1_000_000).toFixed(2)}M`;
-  if (v >= 1_000) return `₳ ${(v / 1_000).toFixed(1)}K`;
-  return `₳ ${v.toFixed(0)}`;
+  if (v >= 1_000_000) return `xp ${(v / 1_000_000).toFixed(2)}M`;
+  if (v >= 1_000) return `xp ${(v / 1_000).toFixed(1)}K`;
+  return `xp ${v.toFixed(0)}`;
 }
 
 export function Hero() {
@@ -36,15 +36,7 @@ export function Hero() {
             performance data from the 42 ecosystem.
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <button className="group inline-flex items-center gap-2 rounded-xl bg-brand px-6 py-3.5 text-sm font-semibold text-primary-foreground transition hover:opacity-80">
-              Start predicting
-              <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-            </button>
-            <button className="inline-flex items-center gap-2 rounded-xl border border-border/80 bg-surface px-6 py-3.5 text-sm font-semibold text-foreground transition hover:bg-surface-elevated">
-              Explore markets
-            </button>
-          </div>
+          
 
           <dl className="mt-12 grid grid-cols-3 gap-3 border-t border-border/50 pt-8 sm:gap-6">
             {[

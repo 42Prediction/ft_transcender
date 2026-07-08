@@ -46,7 +46,7 @@ export class ExamMarketSyncService implements OnModuleInit {
   private systemBettorId: string | null = null;
 
   /**
-   * ₳ the admin (house) funds per auto-generated exam market — the full 100/100
+   * xp the admin (house) funds per auto-generated exam market — the full 100/100
    * pool, matching what manual markets debit, so no currency is minted.
    */
   private static readonly AUTO_MARKET_SEED = 200;

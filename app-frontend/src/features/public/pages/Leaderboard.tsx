@@ -95,7 +95,7 @@ export function Leaderboard() {
                     </div>
                   </div>
                   <p className={`text-right font-mono text-sm font-semibold ${isPos ? 'text-success' : 'text-destructive'}`}>
-                    {isPos ? '+' : ''}₳ {Math.abs(pnlNum).toLocaleString('pt-PT', { minimumFractionDigits: 2 })}
+                    {isPos ? '+' : ''}xp {Math.abs(pnlNum).toLocaleString('pt-PT', { minimumFractionDigits: 2 })}
                   </p>
                   <p className="hidden text-right font-mono text-sm text-muted-foreground sm:block">{entry.winRate}</p>
                   <p className="hidden text-right font-mono text-sm text-muted-foreground sm:block">{entry.totalBets}</p>

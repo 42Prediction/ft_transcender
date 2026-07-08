@@ -3,7 +3,7 @@ import api from '../api';
 export interface DailyBonusStatus {
   canClaim: boolean;
   streak: number;
-  /** ₳ the next claim would grant; null once already claimed today. */
+  /** xp the next claim would grant; null once already claimed today. */
   nextReward: number | null;
   nextStreak: number;
 }

@@ -17,7 +17,7 @@ export function ProfileHeader({ bettor, isOwn, stats }: Props) {
   const quickMetrics = [
     {
       label: "Net P&L",
-      value: `${pnlUp ? "+" : "-"}₳ ${Math.abs(pnlNum).toLocaleString("pt-PT", { minimumFractionDigits: 2 })}`,
+      value: `${pnlUp ? "+" : "-"}xp ${Math.abs(pnlNum).toLocaleString("pt-PT", { minimumFractionDigits: 2 })}`,
       className: pnlUp ? "text-[color:var(--yes)]" : "text-[color:var(--no)]",
     },
     { label: "Win rate", value: `${stats?.winRate ?? 0}%`, className: "" },

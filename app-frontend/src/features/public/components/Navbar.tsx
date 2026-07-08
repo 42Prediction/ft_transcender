@@ -110,7 +110,7 @@ export function Navbar() {
             {profile ? (
               <div className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-primary md:hidden">
                 <Wallet className="h-4 w-4" />
-                ₳ {profile?.wallet?.balance?.toLocaleString("pt-PT", { minimumFractionDigits: 2 }) || "0.00"}
+                xp {profile?.wallet?.balance?.toLocaleString("pt-PT", { minimumFractionDigits: 2 }) || "0.00"}
               </div>
             ) : (
               <Link
@@ -169,7 +169,7 @@ function UserInfo(
       </div>
       <button className="hidden h-10 items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 text-sm font-medium text-primary transition hover:bg-primary/20 md:flex">
       <Wallet className="h-4 w-4" />
-      ₳ {profile?.wallet?.balance?.toLocaleString("pt-PT", { minimumFractionDigits: 2 }) || "4,820.50"}
+      xp {profile?.wallet?.balance?.toLocaleString("pt-PT", { minimumFractionDigits: 2 }) || "4,820.50"}
     </button>
 
       <div className="relative" ref={dropdownRef}>
