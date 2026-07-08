@@ -13,8 +13,13 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AvatarService } from './avatar.service';
 import { ADMIN_TREASURY_BALANCE, WalletService } from '../wallet/wallet.service';
+import { TransactionType } from '../wallet/entities/transaction.entity';
 import { Profile42Dto } from './dto/profile-42.dto';
 import { Role } from '../../shared/enums/roles.enum';
+
+// ₳ granted per 42 cursus level — the welcome bonus for cadets (base + level),
+// and (Phase 2) the rate for crediting future level-ups. See economy design.
+export const LEVEL_TO_ANDA_RATE = 500;
 
 @Injectable()
 export class BettorService {
@@ -43,13 +48,17 @@ export class BettorService {
     if (dto) {
       campus = dto.campus ?? undefined;
     }
+    const level = dto?.level;
     const bettor: Bettor = this.bettorRepository.create({
       nick: temporaryNick,
       avatar: avatarUri,
       user: user,
       campus: campus,
+      school42Login: dto?.school42Login,
+      school42Level: level,
     });
     const bettorSaved =  await this.bettorRepository.save(bettor);
+
     // The admin is the house — it seeds every market and needs a treasury, not
     // the regular new-user bonus.
     if (user.role === Role.ADMIN) {
@@ -59,7 +68,18 @@ export class BettorService {
         'Admin treasury',
       );
     } else {
+      // Everyone gets the flat base bonus; 42 cadets get an extra bonus scaled
+      // by their current level (real 42 progress → ₳). Level only ever rises,
+      // so this is monotonic and needs no anti-farming guard.
       await this.walletService.createWallet(bettorSaved.id);
+      if (level && level > 0) {
+        const levelBonus = Number((level * LEVEL_TO_ANDA_RATE).toFixed(2));
+        await this.walletService.credit(bettorSaved.id, {
+          amount: levelBonus,
+          type: TransactionType.SCHOOL42_REWARD,
+          description: `42 level ${level} welcome bonus`,
+        });
+      }
     }
     return bettorSaved;
   }
