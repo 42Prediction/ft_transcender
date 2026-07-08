@@ -20,14 +20,11 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   BarChart3,
-  Bookmark,
   Check,
   CheckCircle2,
   Clock,
   Droplets,
   Loader2,
-  MoreHorizontal,
-  Share2,
   Shield,
   ShieldCheck,
   Sparkles,
@@ -221,11 +218,7 @@ function MarketHeader({ market }: { market: MarketDto }) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <IconBtn><Share2 className="h-4 w-4" /></IconBtn>
-          <IconBtn><Bookmark className="h-4 w-4" /></IconBtn>
-          <IconBtn><MoreHorizontal className="h-4 w-4" /></IconBtn>
-        </div>
+      
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3">
