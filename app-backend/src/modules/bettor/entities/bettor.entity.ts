@@ -28,11 +28,20 @@ export class Bettor {
     })
     isNickSetted!: boolean;
 
-    @Column({ 
+    @Column({
         type: 'text',
-        nullable: true 
+        nullable: true
     })
     campus?: string;
+
+    // 42 intra login of the cadet behind this account (null for non-42 users).
+    @Column({ name: 'school42_login', type: 'varchar', nullable: true })
+    school42Login?: string;
+
+    // Snapshot of the cadet's 42 cursus level. Set at signup; the source of the
+    // level welcome bonus and (Phase 2) the baseline for crediting level-ups.
+    @Column({ name: 'school42_level', type: 'decimal', precision: 6, scale: 2, nullable: true })
+    school42Level?: number;
 
     @OneToOne(()=> User, {onDelete: 'CASCADE'})
     @JoinColumn({ name: 'user_id' })
