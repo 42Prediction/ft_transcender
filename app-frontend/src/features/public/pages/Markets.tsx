@@ -25,7 +25,10 @@ export async function marketsLoader(): Promise<MarketsLoaderData> {
 }
 
 export function Markets() {
-  const { markets: initial, categories: initialCategories } = useLoaderData() as MarketsLoaderData;
+  // Falls back to empty data when rendered as the frozen background behind the
+  // auth modal (route inactive → loader data purged), instead of crashing.
+  const { markets: initial, categories: initialCategories } =
+    (useLoaderData() as MarketsLoaderData | undefined) ?? { markets: [], categories: [] };
   const root = useRouteLoaderData('root') as any;
   // authMiddleware backs this with GET /bettor/me — the response nests the
   // account under `.user`, so the role lives at data.user.role, not data.role.

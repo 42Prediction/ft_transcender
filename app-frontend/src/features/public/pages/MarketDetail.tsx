@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Link,
   useLoaderData,
+  useLocation,
   useRevalidator,
   useRouteLoaderData,
   useSearchParams,
@@ -91,7 +92,17 @@ function formatDate(iso: string) {
 /* ─── page ───────────────────────────────────────────── */
 
 export function MarketDetail() {
-  const { market: loaderMarket, activity } = useLoaderData() as MarketDetailLoaderData;
+  // This page is also rendered as the frozen background behind the auth modal
+  // (Sign in / Sign up). At that point its route is no longer active, so its
+  // loader data is gone — bail out gracefully instead of destructuring
+  // `undefined` and crashing the whole app.
+  const loaderData = useLoaderData() as MarketDetailLoaderData | undefined;
+  if (!loaderData?.market) return null;
+  return <MarketDetailView loaderData={loaderData} />;
+}
+
+function MarketDetailView({ loaderData }: { loaderData: MarketDetailLoaderData }) {
+  const { market: loaderMarket, activity } = loaderData;
   const [searchParams] = useSearchParams();
   const initialSide = (searchParams.get('side') === 'NO' ? 'NO' : 'YES') as 'YES' | 'NO';
 
@@ -521,6 +532,7 @@ function TradePanel({
   const balance: number = root?.data?.wallet?.balance ?? 0;
   const isLoggedIn = !!root?.data;
   const revalidator = useRevalidator();
+  const location = useLocation();
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -667,6 +679,7 @@ function TradePanel({
       ) : !isLoggedIn ? (
         <Link
           to="/signin"
+          state={{ backgroundLocation: location }}
           className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition hover:opacity-90"
         >
           Sign in to place a bet
