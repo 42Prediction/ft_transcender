@@ -60,6 +60,14 @@ export class School42Service {
   /** Campus membership shifts on the scale of weeks (piscines/kickoffs), so a long TTL is safe. */
   private primaryCampusLoginsCache: { data: Set<string>; expiresAt: number } | null = null;
   private static readonly PRIMARY_CAMPUS_CACHE_TTL_MS = 20 * 60 * 1000;
+  /**
+   * Page cap for the primary-campus roster. `get42AllPages` stops early at
+   * `X-Total`, so this only ever bites as a runaway safety net — but it MUST
+   * exceed the real campus size or the list silently truncates and legitimate
+   * cadets past the cutoff get no exam market. Sized well above 42 Luanda's
+   * headcount (60 × 100 = 6000) so the fetch is complete, not capped.
+   */
+  private static readonly PRIMARY_CAMPUS_MAX_PAGES = 60;
 
   /**
    * 42's secondary "spam" limit is far tighter than its hourly quota — bursts
@@ -326,7 +334,7 @@ export class School42Service {
     try {
       const users = await this.get42AllPages<any>(
         `/users?filter[primary_campus_id]=${this.campusId}`,
-        20,
+        School42Service.PRIMARY_CAMPUS_MAX_PAGES,
       );
       const logins = new Set(users.map((u) => u?.login as string).filter(Boolean));
 
