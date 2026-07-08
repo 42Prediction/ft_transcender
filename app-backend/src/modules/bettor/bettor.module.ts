@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { BettorService } from './bettor.service';
 import { BettorController } from './bettor.controller';
 import { Bettor } from './entities/bettor.entity';
+import { BettorQuest } from './entities/bettor-quest.entity';
 import { User } from '../user/entities/user.entity';
 import { BettorFriendRequest } from './entities/friend.entity';
 import { FriendService } from './friend.service';
@@ -14,7 +15,7 @@ import { EngagementService } from './engagement.service';
 import { EngagementController } from './engagement.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Bettor, User, BettorFriendRequest]), WalletModule, School42Module],
+  imports: [TypeOrmModule.forFeature([Bettor, User, BettorFriendRequest, BettorQuest]), WalletModule, School42Module],
   controllers: [BettorController, EngagementController],
   providers: [BettorService, FriendService, AvatarService, BettorLevelSyncService, EngagementService],
   exports: [BettorService, FriendService],

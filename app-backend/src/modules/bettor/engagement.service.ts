@@ -2,8 +2,16 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { Bettor } from './entities/bettor.entity';
+import { BettorQuest } from './entities/bettor-quest.entity';
 import { WalletService } from '../wallet/wallet.service';
 import { TransactionType } from '../wallet/entities/transaction.entity';
+
+/** One-time onboarding quests. Rewards are bounded (each pays once, ever). */
+const QUESTS: { key: string; title: string; description: string; reward: number }[] = [
+  { key: 'first_bet', title: 'Place your first bet', description: 'Back a prediction on any market.', reward: 100 },
+  { key: 'add_friend', title: 'Make your first friend', description: 'Get a friend request accepted.', reward: 50 },
+  { key: 'first_win', title: 'Win your first bet', description: 'Have a bet resolve in your favour.', reward: 150 },
+];
 
 /**
  * Phase 3 of the economy: universal engagement faucet. Currently the daily
@@ -21,6 +29,8 @@ export class EngagementService {
   constructor(
     @InjectRepository(Bettor)
     private readonly bettorRepo: Repository<Bettor>,
+    @InjectRepository(BettorQuest)
+    private readonly questRepo: Repository<BettorQuest>,
     private readonly walletService: WalletService,
     private readonly dataSource: DataSource,
   ) {}
@@ -91,5 +101,80 @@ export class EngagementService {
     });
 
     return { claimed: true, reward, streak };
+  }
+
+  /** Evaluates a quest against the bettor's current state (results, not clicks). */
+  private async isMet(key: string, bettorId: string): Promise<boolean> {
+    let sql: string;
+    switch (key) {
+      case 'first_bet':
+        sql = `SELECT EXISTS(SELECT 1 FROM market_positions WHERE bettor_id=$1) AS e`;
+        break;
+      case 'add_friend':
+        sql = `SELECT EXISTS(SELECT 1 FROM bettor_friends WHERE bettor_id=$1) AS e`;
+        break;
+      case 'first_win':
+        // A real, profitable win: refunds set payout=amount, losers=0, open=null.
+        sql = `SELECT EXISTS(SELECT 1 FROM market_positions WHERE bettor_id=$1 AND payout IS NOT NULL AND payout > amount) AS e`;
+        break;
+      default:
+        return false;
+    }
+    const rows = await this.dataSource.query(sql, [bettorId]);
+    return rows[0]?.e === true;
+  }
+
+  async listQuests(userId: string) {
+    const bettor = await this.getBettor(userId);
+    const done = await this.questRepo.find({ where: { bettorId: bettor.id } });
+    const claimedKeys = new Set(done.map((q) => q.questKey));
+
+    const quests = await Promise.all(
+      QUESTS.map(async (q) => {
+        const claimed = claimedKeys.has(q.key);
+        const met = claimed ? true : await this.isMet(q.key, bettor.id);
+        return { key: q.key, title: q.title, description: q.description, reward: q.reward, met, claimed };
+      }),
+    );
+    const claimableTotal = quests
+      .filter((q) => q.met && !q.claimed)
+      .reduce((s, q) => s + q.reward, 0);
+    return { quests, claimableTotal };
+  }
+
+  async claimQuests(userId: string) {
+    const bettor = await this.getBettor(userId);
+    const done = await this.questRepo.find({ where: { bettorId: bettor.id } });
+    const claimedKeys = new Set(done.map((q) => q.questKey));
+
+    const newlyClaimed: { key: string; title: string; reward: number }[] = [];
+    for (const q of QUESTS) {
+      if (claimedKeys.has(q.key)) continue;
+      if (!(await this.isMet(q.key, bettor.id))) continue;
+      try {
+        await this.dataSource.transaction(async (manager) => {
+          // Insert the completion row first: the unique (bettor, quest) index makes
+          // a concurrent double-claim fail here, before any second credit.
+          await manager.insert(BettorQuest, {
+            bettorId: bettor.id,
+            questKey: q.key,
+            reward: q.reward,
+          });
+          await this.walletService.credit(
+            bettor.id,
+            {
+              amount: q.reward,
+              type: TransactionType.ENGAGEMENT_REWARD,
+              description: `Quest: ${q.title}`,
+            },
+            manager,
+          );
+        });
+        newlyClaimed.push({ key: q.key, title: q.title, reward: q.reward });
+      } catch {
+        // Unique violation → claimed concurrently; skip without double-paying.
+      }
+    }
+    return { claimed: newlyClaimed, total: newlyClaimed.reduce((s, q) => s + q.reward, 0) };
   }
 }

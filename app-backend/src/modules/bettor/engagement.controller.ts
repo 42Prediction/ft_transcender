@@ -29,4 +29,26 @@ export class EngagementController {
       return errorResponse(error);
     }
   }
+
+  @Get('quests')
+  @HttpCode(HttpStatus.OK)
+  async listQuests(@Req() req: any) {
+    try {
+      const result = await this.engagementService.listQuests(req.user.id);
+      return successResponse(HttpStatus.OK, result);
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+
+  @Post('quests/claim')
+  @HttpCode(HttpStatus.OK)
+  async claimQuests(@Req() req: any) {
+    try {
+      const result = await this.engagementService.claimQuests(req.user.id);
+      return successResponse(HttpStatus.OK, result);
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
 }
