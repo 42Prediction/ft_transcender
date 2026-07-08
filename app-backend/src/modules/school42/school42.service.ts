@@ -57,17 +57,15 @@ export class School42Service {
   private readonly projectUsersCache = new Map<number, { data: ExamRosterEntry42[]; expiresAt: number }>();
   private static readonly PROJECT_USERS_CACHE_TTL_MS = 2 * 60 * 1000;
 
-  /** Campus membership shifts on the scale of weeks (piscines/kickoffs), so a long TTL is safe. */
-  private primaryCampusLoginsCache: { data: Set<string>; expiresAt: number } | null = null;
-  private static readonly PRIMARY_CAMPUS_CACHE_TTL_MS = 20 * 60 * 1000;
   /**
-   * Page cap for the primary-campus roster. `get42AllPages` stops early at
-   * `X-Total`, so this only ever bites as a runaway safety net — but it MUST
-   * exceed the real campus size or the list silently truncates and legitimate
-   * cadets past the cutoff get no exam market. Sized well above 42 Luanda's
-   * headcount (60 × 100 = 6000) so the fetch is complete, not capped.
+   * Per-login primary-campus cache for the targeted verification
+   * (`filterToPrimaryCampus`). Membership shifts on the scale of weeks, so a
+   * multi-hour TTL means repeat exam candidates across cycles cost no calls.
    */
-  private static readonly PRIMARY_CAMPUS_MAX_PAGES = 60;
+  private campusMembershipCache = new Map<string, { isMember: boolean; expiresAt: number }>();
+  private static readonly CAMPUS_MEMBERSHIP_TTL_MS = 6 * 60 * 60 * 1000;
+  /** 42 `filter[login]` takes a comma-separated OR list; keep batches small so the URL stays sane. */
+  private static readonly LOGIN_FILTER_BATCH = 40;
 
   /**
    * 42's secondary "spam" limit is far tighter than its hourly quota — bursts
@@ -306,55 +304,50 @@ export class School42Service {
   }
 
   /**
-   * `projects_users?filter[campus]=X` matches wherever the *attempt* took
-   * place, not the cadet's home campus — network-wide staff/QA test accounts
-   * (which hold a `campus_users` record at nearly every campus) slip through
-   * that filter. This is the campus-primary membership list used to keep
-   * markets covering only real 42 Luanda cadets.
+   * Given candidate logins, returns the subset whose PRIMARY campus is this
+   * campus. Replaces paging the whole campus roster: we only ever look up the
+   * exam's ~100 candidates, batching `filter[login]` (an OR-list) together with
+   * `filter[primary_campus_id]` (ANDed) so the API returns exactly the primary
+   * members of the batch. Per-login results cache for hours.
    *
-   * Fetched in bulk (`filter[primary_campus_id]`, a handful of paginated
-   * requests for the whole campus) instead of one `/users/:login` call per
-   * candidate — the per-candidate variant was the main source of 42's spam
-   * rate limit kicking in, since it scaled linearly with exam registrations.
-   *
-   * `null` means "couldn't verify at all" (fresh fetch failed and nothing
-   * cached) — callers must treat that as "do nothing" rather than as a
-   * confirmed non-match; conflating "unverifiable" with "not a Luanda cadet"
-   * would wrongly cancel real students' markets on a transient hiccup. On a
-   * failed refresh with a previous list still in memory, the stale list is
-   * returned instead: campus membership changes on the scale of weeks, so an
-   * outdated list beats skipping the whole cycle.
+   * Throws if a batch request fails, so a transient API error surfaces to the
+   * caller as "unverifiable this cycle" rather than a false "not a member".
    */
-  async getPrimaryCampusLogins(): Promise<Set<string> | null> {
-    const cached = this.primaryCampusLoginsCache;
-    if (cached && cached.expiresAt > Date.now()) {
-      return cached.data;
-    }
+  async filterToPrimaryCampus(logins: string[]): Promise<Set<string>> {
+    const result = new Set<string>();
+    const now = Date.now();
+    const unique = [...new Set(logins.filter(Boolean))];
+    const toLookup: string[] = [];
 
-    try {
-      const users = await this.get42AllPages<any>(
-        `/users?filter[primary_campus_id]=${this.campusId}`,
-        School42Service.PRIMARY_CAMPUS_MAX_PAGES,
-      );
-      const logins = new Set(users.map((u) => u?.login as string).filter(Boolean));
-
-      // A campus always has students — an empty result means the filter
-      // misbehaved, not that nobody studies here. Treating it as valid would
-      // classify every candidate as "not a Luanda cadet" and cancel real
-      // markets, so fall through to the stale/null path instead.
-      if (logins.size === 0) {
-        throw new Error('empty primary-campus list');
+    for (const login of unique) {
+      const cached = this.campusMembershipCache.get(login);
+      if (cached && cached.expiresAt > now) {
+        if (cached.isMember) result.add(login);
+      } else {
+        toLookup.push(login);
       }
-
-      this.primaryCampusLoginsCache = {
-        data: logins,
-        expiresAt: Date.now() + School42Service.PRIMARY_CAMPUS_CACHE_TTL_MS,
-      };
-      return logins;
-    } catch (err) {
-      this.logger.warn(`getPrimaryCampusLogins failed: ${err}`);
-      return cached ? cached.data : null;
     }
+
+    for (let i = 0; i < toLookup.length; i += School42Service.LOGIN_FILTER_BATCH) {
+      const batch = toLookup.slice(i, i + School42Service.LOGIN_FILTER_BATCH);
+      const params = new URLSearchParams({
+        'filter[login]': batch.join(','),
+        'filter[primary_campus_id]': String(this.campusId),
+        'page[size]': '100',
+      });
+      // Both filters ANDed → the response is exactly the batch members whose
+      // primary campus matches; anyone missing is not a primary member.
+      const users = await this.get42<any[]>(`/users?${params.toString()}`);
+      const matched = new Set(Array.isArray(users) ? users.map((u) => u.login) : []);
+      const expiresAt = now + School42Service.CAMPUS_MEMBERSHIP_TTL_MS;
+      for (const login of batch) {
+        const isMember = matched.has(login);
+        this.campusMembershipCache.set(login, { isMember, expiresAt });
+        if (isMember) result.add(login);
+      }
+    }
+
+    return result;
   }
 
   private mapExam(e: any): Exam42 {

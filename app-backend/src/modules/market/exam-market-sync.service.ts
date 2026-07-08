@@ -67,6 +67,9 @@ export class ExamMarketSyncService implements OnModuleInit {
    * first — this hook can otherwise fire before the DB driver is ready.
    */
   onModuleInit() {
+    // The seed script boots AppModule just to reach a couple of services; skip
+    // the startup sync there — it would run against a DB that seeds tears down.
+    if (process.env.SEED_MODE === 'true') return;
     setTimeout(() => {
       void this.syncExamMarkets().catch((err) =>
         this.logger.error(`initial syncExamMarkets on startup failed: ${err}`),
@@ -87,16 +90,6 @@ export class ExamMarketSyncService implements OnModuleInit {
     const exams = await this.school42Service.getUpcomingExams(14);
     if (exams.length === 0) return;
 
-    // One bulk (cached) fetch for the whole cycle instead of a `/users/:login`
-    // call per candidate — the per-candidate calls were what kept tripping
-    // 42's spam rate limit. `null` = couldn't verify anyone this cycle: skip
-    // creation and campus-based cancellation, retry next run (deregistration
-    // cleanup below only needs the roster, so it still proceeds).
-    const primaryCampusLogins = await this.school42Service.getPrimaryCampusLogins();
-    if (!primaryCampusLogins) {
-      this.logger.warn('syncExamMarkets: primary-campus list unavailable, candidates unverifiable this cycle');
-    }
-
     for (const exam of exams) {
       try {
         const category = mapExamNameToCategory(exam.name);
@@ -114,11 +107,34 @@ export class ExamMarketSyncService implements OnModuleInit {
         // that filter. Verify each in_progress candidate against the actual
         // primary-campus membership list before it's allowed to get a market.
         const candidates = roster.filter((c) => c.status === 'in_progress' && c.finalMark !== 100);
+
+        // Verify only these candidates' primary campus (targeted, batched)
+        // instead of paging the whole campus. `null` = unverifiable this cycle
+        // → skip creation and campus-based cancellation (deregistration cleanup
+        // below still runs; it only needs the roster).
+        let validCampus: Set<string> | null = null;
+        try {
+          validCampus = await this.school42Service.filterToPrimaryCampus(
+            candidates.map((c) => c.login),
+          );
+          // A non-empty candidate set matching nobody is suspicious (bad API
+          // shape or a transient blip) — refuse to act rather than let
+          // cancelDeregisteredMarkets void every real market as "not a cadet".
+          if (validCampus.size === 0 && candidates.length > 0) {
+            this.logger.warn(
+              `syncExamMarkets: campus verify matched 0 of ${candidates.length} candidates for exam ${exam.id}, skipping this cycle`,
+            );
+            validCampus = null;
+          }
+        } catch (err) {
+          this.logger.warn(`syncExamMarkets: campus verify failed for exam ${exam.id}: ${err}`);
+        }
+
         const invalidCampusLogins = new Set<string>();
         const eligible: typeof candidates = [];
-        if (primaryCampusLogins) {
+        if (validCampus) {
           for (const cadet of candidates) {
-            if (primaryCampusLogins.has(cadet.login)) {
+            if (validCampus.has(cadet.login)) {
               eligible.push(cadet);
             } else {
               invalidCampusLogins.add(cadet.login);
