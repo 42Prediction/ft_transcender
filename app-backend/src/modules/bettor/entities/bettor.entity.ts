@@ -43,6 +43,13 @@ export class Bettor {
     @Column({ name: 'school42_level', type: 'decimal', precision: 6, scale: 2, nullable: true })
     school42Level?: number;
 
+    // Daily-bonus engagement: consecutive-day counter and the last claim time.
+    @Column({ name: 'daily_streak', type: 'int', default: 0 })
+    dailyStreak!: number;
+
+    @Column({ name: 'last_daily_claim_at', type: 'timestamptz', nullable: true })
+    lastDailyClaimAt?: Date;
+
     @OneToOne(()=> User, {onDelete: 'CASCADE'})
     @JoinColumn({ name: 'user_id' })
     user!: User;
