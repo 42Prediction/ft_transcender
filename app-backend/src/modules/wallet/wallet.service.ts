@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Wallet } from "./entities/wallet.entity";
-import { Repository, DataSource } from "typeorm";
+import { Repository, DataSource, EntityManager } from "typeorm";
 import { Transaction, TransactionStatus, TransactionType } from "./entities/transaction.entity";
 import { WalletResponseDto } from "./dto/wallet-response.dto";
 import { TransactionResponseDto } from "./dto/transaction-response.dto";
@@ -76,10 +76,19 @@ export class WalletService {
         return transactions.map(this.toTransactionDto);
     }
 
-    async credit(idBettor: string, dto: CreditWalletDto): Promise<TransactionResponseDto> {
+    /**
+     * Credits a wallet. Pass `externalManager` to run inside a caller-owned
+     * transaction (so the credit and the caller's own writes commit atomically);
+     * omit it to run in its own transaction.
+     */
+    async credit(
+        idBettor: string,
+        dto: CreditWalletDto,
+        externalManager?: EntityManager,
+    ): Promise<TransactionResponseDto> {
         if (dto.amount <= 0)
             throw new BadRequestException('The credit amount must be positive');
-        return this.dataSource.transaction(async (manager) => {
+        const run = async (manager: EntityManager) => {
             const wallet = await manager
                 .createQueryBuilder(Wallet, 'wallet')
                 .setLock('pessimistic_write')
@@ -106,7 +115,8 @@ export class WalletService {
             const saved = await manager.save(Transaction, transaction);
             this.logger.log(`Credit of ${dto.amount} applied to user ${idBettor}. New balance: ${balanceAfter}`);
             return this.toTransactionDto(saved);
-        });
+        };
+        return externalManager ? run(externalManager) : this.dataSource.transaction(run);
     }
 
     async debit(idBettor: string, dto: DebitWalletDto): Promise<TransactionResponseDto> {
