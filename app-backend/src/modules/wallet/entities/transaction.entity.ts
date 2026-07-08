@@ -6,7 +6,11 @@ export enum TransactionType{
     DEPOSIT = 'DEPOSIT',
     WITHDRAW = 'WITHDRAW',
     BET = 'BET',
-    PAYOUT = 'PAYOUT'
+    PAYOUT = 'PAYOUT',
+    // House rake collected by the market creator (admin) on each resolution.
+    COMMISSION = 'COMMISSION',
+    // Initial liquidity the admin funds from their wallet when creating a market.
+    MARKET_SEED = 'MARKET_SEED'
 }
 
 export enum TransactionStatus{
