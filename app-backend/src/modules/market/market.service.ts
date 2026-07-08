@@ -411,6 +411,45 @@ export class MarketService {
     };
   }
 
+  /**
+   * Real YES/NO price history, reconstructed by replaying every bet in order
+   * over the market's seed pool — the actual probability the market carried at
+   * each trade, not a synthetic curve. Starts at the 50/50 seed (market
+   * creation) and ends at the current price.
+   */
+  async getPriceHistory(id: string) {
+    const market = await this.marketRepo.findOne({ where: { id } });
+    if (!market) throw new NotFoundException('Market not found');
+
+    const positions = await this.positionRepo.find({
+      where: { marketId: id },
+      order: { createdAt: 'ASC' },
+    });
+
+    const seed = MarketService.MARKET_SEED_PER_SIDE;
+    let yes = seed;
+    let no = seed;
+    const point = (t: Date) => {
+      const total = yes + no;
+      const yesPct = Math.round((yes / total) * 100);
+      return { t: t.toISOString(), yes: yesPct, no: 100 - yesPct };
+    };
+
+    const history = [point(market.createdAt)];
+    for (const pos of positions) {
+      if (pos.side === BetSide.YES) yes += Number(pos.amount);
+      else no += Number(pos.amount);
+      history.push(point(pos.createdAt));
+    }
+    // Trailing point at "now" so the line runs flat up to the present when the
+    // last trade was a while ago (skip if the last bet is already the latest).
+    const now = new Date();
+    const last = history[history.length - 1];
+    if (last.t !== now.toISOString()) history.push(point(now));
+
+    return history;
+  }
+
   async getLeaderboard(limit = 6) {
     const rows = await this.positionRepo
       .createQueryBuilder('pos')

@@ -55,7 +55,9 @@
       "Bash(timeout 150 npx ts-node verify_tmp.ts)",
       "Bash(timeout 320 npx ts-node verify_tmp.ts)",
       "Bash(timeout 300 npx ts-node verify_tmp.ts)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)",
+      "Bash(curl -s \"http://localhost:3000/market/3f6ffead-3564-477f-a91d-e458a722601e/history\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5173/)"
     ]
   }
 }

@@ -177,6 +177,17 @@ export class MarketController {
     }
   }
 
+  @Get(':id/history')
+  @HttpCode(HttpStatus.OK)
+  async history(@Param('id') id: string) {
+    try {
+      const data = await this.marketService.getPriceHistory(id);
+      return successResponse(HttpStatus.OK, data);
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+
   // Markets are normally sourced automatically from the 42 API (see
   // ExamMarketSyncService); this stays admin-only as a manual override.
   @Post()

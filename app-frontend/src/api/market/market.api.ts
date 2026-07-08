@@ -117,6 +117,13 @@ export interface BettorPosition {
   createdAt: string;
 }
 
+/** One point of a market's real YES/NO price history (0-100), at ISO time `t`. */
+export interface PricePoint {
+  t: string;
+  yes: number;
+  no: number;
+}
+
 function unwrap<T>(res: any): T {
   return res.data?.data as T;
 }
@@ -150,6 +157,11 @@ export const marketApi = {
   getActivity: async (limit = 10): Promise<ActivityEntry[]> => {
     const res = await api.get('/market/activity', { params: { limit } });
     return unwrap<ActivityEntry[]>(res);
+  },
+
+  getHistory: async (id: string): Promise<PricePoint[]> => {
+    const res = await api.get(`/market/${id}/history`);
+    return unwrap<PricePoint[]>(res) ?? [];
   },
 
   getCategories: async (): Promise<CategoryStat[]> => {

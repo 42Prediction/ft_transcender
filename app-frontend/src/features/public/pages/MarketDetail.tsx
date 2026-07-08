@@ -32,7 +32,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { marketApi, type ActivityEntry, type MarketDto } from '@/api/market/market.api';
+import { marketApi, type ActivityEntry, type MarketDto, type PricePoint } from '@/api/market/market.api';
 import { cn } from '@/lib/utils';
 import { useMarketUpdates } from '@/features/market/hooks/useMarketUpdates';
 import { MarketChat } from '@/features/market/components/MarketChat';
@@ -45,38 +45,49 @@ type Range = (typeof RANGES)[number];
 export interface MarketDetailLoaderData {
   market: MarketDto;
   activity: ActivityEntry[];
+  history: PricePoint[];
 }
 
 /* ─── loader ─────────────────────────────────────────── */
 
 export async function marketDetailLoader({ params }: LoaderFunctionArgs): Promise<MarketDetailLoaderData> {
-  const [market, activity] = await Promise.all([
+  const [market, activity, history] = await Promise.all([
     marketApi.getOne(params.id!),
     marketApi.getActivity(20),
+    marketApi.getHistory(params.id!),
   ]);
-  return { market, activity };
+  return { market, activity, history };
 }
 
 /* ─── chart helpers ──────────────────────────────────── */
 
-function genSeries(seed: number, points: number, base: number, vol: number) {
-  let s = seed;
-  const rand = () => {
-    s = (s * 9301 + 49297) % 233280;
-    return s / 233280;
-  };
-  const months = ['Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May'];
-  return Array.from({ length: points }, (_, i) => {
-    base += (rand() - 0.5) * vol;
-    base = Math.max(5, Math.min(95, base));
-    const yes = Math.round(base);
-    return {
-      t: months[Math.floor((i / points) * months.length)] + ' ' + (i + 1),
-      label: months[Math.floor((i / points) * months.length)],
-      yes,
-      no: 100 - yes,
-    };
-  });
+type ChartPoint = { t: string; label: string; yes: number; no: number };
+
+const RANGE_MS: Record<Range, number> = {
+  '1H': 3600e3,
+  '6H': 6 * 3600e3,
+  '1D': 24 * 3600e3,
+  '1W': 7 * 24 * 3600e3,
+  '1M': 30 * 24 * 3600e3,
+  ALL: Infinity,
+};
+
+function chartLabel(iso: string, range: Range): string {
+  const d = new Date(iso);
+  // Short windows read better as a time of day; longer ones as a date.
+  return range === '1H' || range === '6H' || range === '1D'
+    ? d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+/** Real price history filtered to the selected window; falls back to the full
+ *  series when the window holds fewer than two points, so the chart is never
+ *  empty for a young market. */
+function buildSeries(history: PricePoint[], range: Range): ChartPoint[] {
+  const cutoff = Date.now() - RANGE_MS[range];
+  let pts = history.filter((p) => new Date(p.t).getTime() >= cutoff);
+  if (pts.length < 2) pts = history;
+  return pts.map((p) => ({ ...p, label: chartLabel(p.t, range) }));
 }
 
 /* ─── small helpers ──────────────────────────────────── */
@@ -102,7 +113,7 @@ export function MarketDetail() {
 }
 
 function MarketDetailView({ loaderData }: { loaderData: MarketDetailLoaderData }) {
-  const { market: loaderMarket, activity } = loaderData;
+  const { market: loaderMarket, activity, history } = loaderData;
   const [searchParams] = useSearchParams();
   const initialSide = (searchParams.get('side') === 'NO' ? 'NO' : 'YES') as 'YES' | 'NO';
 
@@ -125,10 +136,7 @@ function MarketDetailView({ loaderData }: { loaderData: MarketDetailLoaderData }
 
   useMarketUpdates(handleMarketUpdate, handleMarketRemove);
 
-  const data = useMemo(() => {
-    const pts = { '1H': 60, '6H': 72, '1D': 96, '1W': 84, '1M': 90, ALL: 140 }[range];
-    return genSeries(market.id.charCodeAt(0) * 7 + range.length, pts, market.yesPrice * 100, 5);
-  }, [range, market.id, market.yesPrice]);
+  const data = useMemo(() => buildSeries(history, range), [history, range]);
 
   const sidePrice = betSide === 'YES' ? market.yesPrice : market.noPrice;
   const shares = amount > 0 ? (amount / sidePrice).toFixed(2) : '0.00';
@@ -262,7 +270,7 @@ function ChartCard({
   setRange,
   market,
 }: {
-  data: ReturnType<typeof genSeries>;
+  data: ChartPoint[];
   range: Range;
   setRange: (r: Range) => void;
   market: MarketDto;
