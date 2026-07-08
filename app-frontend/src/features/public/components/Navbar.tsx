@@ -7,6 +7,7 @@ import { CreateMarketModal } from "@/features/market/components/CreateMarketModa
 import { SearchBox } from "./SearchBox";
 import { FriendsMenu } from "@/features/user/friends/FriendsMenu";
 import { NotificationsBell } from "@/features/user/notifications/NotificationsBell";
+import { RewardsMenu } from "@/features/user/engagement/RewardsMenu";
 
 
 export function Navbar() {
@@ -160,6 +161,7 @@ function UserInfo(
 ) {
   return (
     <>
+    <RewardsMenu />
     <FriendsMenu />
     <NotificationsBell />
 
