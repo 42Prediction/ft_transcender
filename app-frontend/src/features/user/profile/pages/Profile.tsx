@@ -3,6 +3,7 @@ import { ProfileHeader } from "../components/ProfileHeader";
 import { WinLossChart } from "../components/WinLossChart";
 import { PortfolioSection } from "../components/PortfolioSection";
 import { BetHistory } from "../components/BetHistory";
+import { ActivityInsights } from "../components/ActivityInsights";
 import type { ProfileLoaderData } from "../route";
 
 
@@ -28,11 +29,14 @@ export default function ProfilePage() {
 
           <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:items-start">
             <BetHistory positions={positions} />
-            <WinLossChart
-              wins={stats?.wins ?? 0}
-              losses={stats?.losses ?? 0}
-              pending={pending}
-            />
+            <div className="space-y-6">
+              <WinLossChart
+                wins={stats?.wins ?? 0}
+                losses={stats?.losses ?? 0}
+                pending={pending}
+              />
+              {isOwn && <ActivityInsights />}
+            </div>
           </div>
 
         </main>

@@ -4,6 +4,11 @@ import { TermsPage } from './pages/Terms';
 import { Markets, marketsLoader } from './pages/Markets';
 import { Leaderboard, leaderboardLoader } from './pages/Leaderboard';
 import { MarketDetail, marketDetailLoader } from './pages/MarketDetail';
+import { DesignSystemPage } from './pages/DesignSystem';
+import { HowItWorksPage } from './pages/HowItWorks';
+import { TradingGuidePage } from './pages/TradingGuide';
+import { FaqPage } from './pages/Faq';
+import { AboutPage } from './pages/About';
 import { marketApi } from '@/api/market/market.api';
 
 async function homeLoader() {
@@ -47,5 +52,25 @@ export const publicRouter = [
   {
     path: '/terms',
     Component: TermsPage,
+  },
+  {
+    path: '/design-system',
+    Component: DesignSystemPage,
+  },
+  {
+    path: '/how-it-works',
+    Component: HowItWorksPage,
+  },
+  {
+    path: '/trading-guide',
+    Component: TradingGuidePage,
+  },
+  {
+    path: '/faq',
+    Component: FaqPage,
+  },
+  {
+    path: '/about',
+    Component: AboutPage,
   },
 ];

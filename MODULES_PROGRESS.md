@@ -21,9 +21,18 @@ nenhum jogo implementado.
 | ❌ Não feito | Sem evidência no código |
 | 🚫 N/A | Bloqueado por dependência (ex: precisa de um jogo) |
 
-**Pontos aproximados já cobertos (✅ completos): ~16 pts** — acima da meta de 14, depois de
-fechar os 4 módulos que estavam 🟡 (pesquisa+paginação, notificações completas, permissões
-avançadas com role `moderator`, dashboard de analytics com export+filtros de data).
+**Pontos aproximados já cobertos (✅ completos): ~19 pts** (16 core + 3 bónus) — acima da
+meta de 14, e no teto de bónus de 5 (Cap. VII), depois de fechar os 4 módulos que estavam
+🟡 (pesquisa+paginação, notificações completas, permissões avançadas com role `moderator`,
+dashboard de analytics com export+filtros de data) e implementar 3 módulos bónus (GDPR data
+export, insights de atividade pessoal, design system documentado).
+
+> ✅ **`README.md` criado** na raiz do repositório, com todas as secções obrigatórias do
+> Cap. VI (incluindo a justificação de cada módulo, exigida pelo Cap. VII para o bónus
+> contar). **Faltam preencher alguns `[team to confirm]`** — o canal de comunicação e a
+> cadência de reuniões (secção "Project Management") e a repartição exata de quem
+> implementou cada feature (secção "Features List" e "Individual Contributions") — a
+> equipa só tinha dado logins+papéis, não esse detalhe. Preencher antes da entrega.
 
 ---
 
@@ -141,6 +150,35 @@ Nenhum módulo custom justificado no README ainda.
 
 ---
 
+## Bonus (Chapter VII)
+
+Regras do subject:
+- Só conta se os **14 pontos mandatórios já estiverem validados** (✅ já estamos aí).
+- Cada módulo extra vale o mesmo que no core: **Major = 2 pts, Minor = 1 pt**.
+- **Máximo de 5 pontos de bónus**, façam-se quantos módulos extra forem.
+- Cada módulo bónus tem de ser **totalmente funcional**, cumprir os requisitos descritos,
+  **acrescentar valor real**, e ter **justificação própria no README** — sem isto último,
+  não conta (ver aviso no topo do documento).
+
+**Situação: teto de bónus atingido — 5/5 pontos.** 2 pontos vinham dos módulos Major extra
+já acima do mínimo (16 − 14). Os 3 que faltavam foram implementados e validados:
+
+| # | Módulo | Peso | Onde está | Estado |
+|---|---|---|---|---|
+| 1 | **GDPR compliance features** (IV.8, Minor) | 1 | `GET /bettor/me/export` (`bettor.controller.ts`/`bettor.service.ts`) + botão em Settings → Account (`AccountPanel.tsx`) | ✅ testado (dados corretos, `401` sem sessão) |
+| 2 | **Insights de atividade pessoal** (IV.3, Minor) | 1 | `GET /market/portfolio/activity` (`market.service.ts#getMyActivity`) + card "My Activity" no perfil (`ActivityInsights.tsx`) | ✅ testado com dados reais |
+| 3 | **Design system documentado** (IV.1, Minor) | 1 | Página pública `/design-system` (`DesignSystem.tsx`) — paleta lida ao vivo das CSS vars, tipografia, ícones, variantes do Button, catálogo de 12 componentes | ✅ reachable, `tsc` limpo |
+
+**Total: 14 mandatórios + 5 bónus = 19 pontos**, com justificação de cada módulo (core e
+bónus) escrita no `README.md` (secção "Modules"), conforme exigido pelo Cap. VII. Ir além
+disto não traz benefício adicional — o subject limita o bónus a 5 pontos.
+
+Candidatos descartados por serem mais esforço para o mesmo 1 ponto (não implementados):
+export/import de dados em bulk, testes cross-browser, PWA, 2FA — ver histórico da conversa
+se algum destes vier a fazer sentido no futuro.
+
+---
+
 ## Conclusão
 
 **Módulos claramente ✅ completos e defensáveis hoje:**
@@ -156,11 +194,17 @@ Nenhum módulo custom justificado no README ainda.
 10. Dashboard de analytics com export + filtros de data (Major, 2pt)
 11. Gamificação (Minor, 1pt)
 
-**Total sólido: 16 pontos** — acima da meta de 14.
+**Módulos bónus ✅ (Cap. VII, teto de 5 pontos atingido):**
+12. GDPR — export dos meus dados (Minor, 1pt)
+13. Insights de atividade pessoal (Minor, 1pt)
+14. Design system documentado (Minor, 1pt)
 
-**Ainda 🟡 (não trabalhado nesta ronda):**
-- Upload/gestão de ficheiros genérico (Minor, 1pt) — só existe upload de avatar (imagem única)
-- Design system documentado (Minor, 1pt) — componentes existem, falta documentar paleta/tipografia formalmente
+**Total: 19 pontos** (14 mandatórios + 5 bónus, o máximo possível) — ver secção "Bonus"
+acima. `README.md` criado com todas as secções obrigatórias e a justificação de cada um
+destes 14 módulos (core + bónus).
+
+**Ainda 🟡:**
+- Upload/gestão de ficheiros genérico (Minor, 1pt) — só existe upload de avatar (imagem única); não conta para o bónus, já está no teto de 5
 
 **Nada foi feito ainda em:** Acessibilidade/i18n, Inteligência Artificial, Cybersecurity
 (WAF/Vault), Devops (ELK/Prometheus/microserviços), Blockchain, e toda a categoria Gaming
@@ -170,3 +214,7 @@ para cumprir o requisito mandatório de "deploy com um único comando".
 **Migrações novas nesta ronda:** `AddFriendNotificationTypes` (notificações de amizade),
 `AddModeratorRole` (novo valor no enum `users_role_enum`) — correr `make migrate-run` (ou
 `npm run migration:run` em `app-backend`) antes de testar em qualquer outro ambiente.
+
+**Antes de entregar:** preencher os `[team to confirm]` no `README.md` (canal de
+comunicação/reuniões, e quem implementou cada feature nas secções "Features List" e
+"Individual Contributions") — essa informação não estava disponível ao gerar o documento.

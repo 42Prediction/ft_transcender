@@ -127,6 +127,20 @@ export class MarketController {
     }
   }
 
+  // Personal analytics ("My Activity") — always the caller's own data, no
+  // admin/moderator role required (unlike GET /market/analytics above).
+  @Get('portfolio/activity')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async myActivity(@Req() req: any, @Query('from') from?: string, @Query('to') to?: string) {
+    try {
+      const data = await this.marketService.getMyActivity(req.user.id, from, to);
+      return successResponse(HttpStatus.OK, data);
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+
   @Get('students/search')
   @HttpCode(HttpStatus.OK)
   async searchStudents(@Query('q') q: string, @Query('limit') limit?: string) {

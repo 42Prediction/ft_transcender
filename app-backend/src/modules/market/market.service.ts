@@ -561,6 +561,70 @@ export class MarketService {
   }
 
   /**
+   * Personal day-bucketed activity for the logged-in bettor — same shape as
+   * getAnalytics() but scoped to one account, for their own "My Activity"
+   * view on the profile page (no admin/moderator role required, since it's
+   * always the caller's own data).
+   */
+  async getMyActivity(userId: string, from?: string, to?: string) {
+    const bettor = await this.bettorRepo.findOne({ where: { user: { id: userId } } });
+    if (!bettor) throw new NotFoundException('Bettor not found');
+
+    const toDate = to ? new Date(to) : new Date();
+    const fromDate = from
+      ? new Date(from)
+      : new Date(toDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const seriesRows = await this.positionRepo
+      .createQueryBuilder('pos')
+      .where('pos.bettor_id = :bettorId', { bettorId: bettor.id })
+      .andWhere('pos.created_at >= :from', { from: fromDate })
+      .andWhere('pos.created_at <= :to', { to: toDate })
+      .select("date_trunc('day', pos.created_at)", 'day')
+      .addSelect('SUM(pos.amount)', 'wagered')
+      .addSelect('SUM(COALESCE(pos.payout, 0))', 'payout')
+      .addSelect('COUNT(*)', 'bets')
+      .groupBy('day')
+      .orderBy('day', 'ASC')
+      .getRawMany();
+
+    const categoryRows = await this.positionRepo
+      .createQueryBuilder('pos')
+      .innerJoin('pos.market', 'm')
+      .where('pos.bettor_id = :bettorId', { bettorId: bettor.id })
+      .andWhere('pos.created_at >= :from', { from: fromDate })
+      .andWhere('pos.created_at <= :to', { to: toDate })
+      .select('m.category', 'category')
+      .addSelect('SUM(pos.amount)', 'wagered')
+      .addSelect('COUNT(*)', 'bets')
+      .groupBy('m.category')
+      .orderBy('wagered', 'DESC')
+      .getRawMany();
+
+    const series = seriesRows.map((r) => ({
+      date: new Date(r.day).toISOString().slice(0, 10),
+      wagered: Number(r.wagered) || 0,
+      payout: Number(r.payout) || 0,
+      bets: Number(r.bets) || 0,
+    }));
+    const categories = categoryRows.map((r) => ({
+      category: r.category,
+      wagered: Number(r.wagered) || 0,
+      bets: Number(r.bets) || 0,
+    }));
+    const totals = series.reduce(
+      (acc, p) => ({
+        wagered: acc.wagered + p.wagered,
+        payout: acc.payout + p.payout,
+        bets: acc.bets + p.bets,
+      }),
+      { wagered: 0, payout: 0, bets: 0 },
+    );
+
+    return { from: fromDate.toISOString(), to: toDate.toISOString(), series, categories, totals };
+  }
+
+  /**
    * Public betting stats for any bettor by nick — aggregates only, never
    * balance or the open-position details (those stay behind the
    * JWT-guarded /market/portfolio "me" endpoint).

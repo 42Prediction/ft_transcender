@@ -146,6 +146,22 @@ export interface AnalyticsData {
   totals: { volume: number; bets: number };
 }
 
+/** One day of the logged-in bettor's own activity ("My Activity" — personal analytics). */
+export interface MyActivitySeriesPoint {
+  date: string;
+  wagered: number;
+  payout: number;
+  bets: number;
+}
+
+export interface MyActivityData {
+  from: string;
+  to: string;
+  series: MyActivitySeriesPoint[];
+  categories: { category: string; wagered: number; bets: number }[];
+  totals: { wagered: number; payout: number; bets: number };
+}
+
 function unwrap<T>(res: any): T {
   return res.data?.data as T;
 }
@@ -194,6 +210,11 @@ export const marketApi = {
   getAnalytics: async (from?: string, to?: string): Promise<AnalyticsData> => {
     const res = await api.get('/market/analytics', { params: { from, to } });
     return unwrap<AnalyticsData>(res);
+  },
+
+  getMyActivity: async (from?: string, to?: string): Promise<MyActivityData> => {
+    const res = await api.get('/market/portfolio/activity', { params: { from, to } });
+    return unwrap<MyActivityData>(res);
   },
 
   getPortfolio: async (): Promise<Portfolio> => {
