@@ -43,7 +43,7 @@ export function ActivityInsights() {
       <p className="text-xs text-muted-foreground">Last 30 days</p>
 
       <div className="mt-3 h-28">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 300, height: 112 }}>
           <AreaChart data={data.series}>
             <defs>
               <linearGradient id="myActivityFill" x1="0" y1="0" x2="0" y2="1">

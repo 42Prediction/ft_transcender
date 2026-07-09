@@ -29,7 +29,7 @@ export default function ProfilePage() {
 
           <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:items-start">
             <BetHistory positions={positions} />
-            <div className="space-y-6">
+            <div className="min-w-0 space-y-6">
               <WinLossChart
                 wins={stats?.wins ?? 0}
                 losses={stats?.losses ?? 0}

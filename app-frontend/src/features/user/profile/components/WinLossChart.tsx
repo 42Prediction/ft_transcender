@@ -25,7 +25,7 @@ export function WinLossChart({ wins, losses, pending }: Props) {
         </div>
       ) : (
         <div className="relative mt-2 h-48">
-          <ResponsiveContainer>
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 300, height: 192 }}>
             <PieChart>
               <Pie data={data} dataKey="value" innerRadius={55} outerRadius={80}
                 stroke="oklch(0.16 0.04 270)" strokeWidth={3} paddingAngle={2}>
