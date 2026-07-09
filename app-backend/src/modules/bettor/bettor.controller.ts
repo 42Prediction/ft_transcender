@@ -32,6 +32,21 @@ export class BettorController {
     }
   }
 
+  // GDPR: everything the platform holds about the caller's own account, as a
+  // single downloadable JSON payload — identity, profile, wallet ledger, bets.
+  @Get('me/export')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async exportMyData(@Req() req: any) {
+    if (!req.user?.id) return unauthorizedResponse();
+    try {
+      const data = await this.bettorService.exportMyData(req.user.id);
+      return successResponse(HttpStatus.OK, data);
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+
   @Patch('me')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)

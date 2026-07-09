@@ -1,6 +1,6 @@
 import { auth } from "@/api/auth/auth.api";
 import Logo from "@/components/Logo";
-import { ChevronDown, LogOut, Menu, Plus, Settings, Wallet, X } from "lucide-react";
+import { ChevronDown, LogOut, Menu, Plus, Settings, UserStar, Wallet, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useRevalidator, useRouteLoaderData } from "react-router-dom";
 import { CreateMarketModal } from "@/features/market/components/CreateMarketModal";
@@ -18,6 +18,7 @@ export function Navbar() {
   // GET /bettor/me nests the account under `.user` — role lives at
   // profile.user.role, not profile.role.
   const isAdmin = profile?.user?.role === 'admin';
+  const isModerator = profile?.user?.role === 'moderator';
   const location = useLocation();
   const from = location;
 
@@ -65,29 +66,29 @@ export function Navbar() {
         </nav>
 
         <div className="ml-auto flex flex-1 items-center gap-3 lg:flex-initial">
-        {
-          profile && 
-          <SearchBox />
-        }
+          {
+            profile &&
+            <SearchBox />
+          }
         </div>
         {isAdmin && (
+          <button
+            onClick={() => setCreateMarketOpen(true)}
+            className="hidden h-10 items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 text-sm font-medium text-primary transition hover:bg-primary/20 md:flex"
+          >
+            <Plus className="h-4 w-4" />
+            New Market
+          </button>
+        )}
+        {profile ? UserInfo(profile, dropdownRef, setOpen, open, auth.signout, revalidator, navigate) : SignButtons(from)}
         <button
-          onClick={() => setCreateMarketOpen(true)}
-          className="hidden h-10 items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 text-sm font-medium text-primary transition hover:bg-primary/20 md:flex"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label="Menu"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border/60 bg-surface text-muted-foreground transition hover:text-foreground lg:hidden"
         >
-          <Plus className="h-4 w-4" />
-          New Market
+          {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </button>
-      )}
-      {profile ? UserInfo(profile, dropdownRef, setOpen, open, auth.signout, revalidator, navigate) : SignButtons(from)}
-      <button
-        onClick={() => setMobileOpen(!mobileOpen)}
-        aria-label="Menu"
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border/60 bg-surface text-muted-foreground transition hover:text-foreground lg:hidden"
-      >
-        {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-      </button>
-      <CreateMarketModal open={createMarketOpen} onOpenChange={setCreateMarketOpen} />
+        <CreateMarketModal open={createMarketOpen} onOpenChange={setCreateMarketOpen} />
       </div>
 
       {mobileOpen && (
@@ -161,16 +162,16 @@ function UserInfo(
 ) {
   return (
     <>
-    <RewardsMenu />
-    <FriendsMenu />
-    <NotificationsBell />
+      <RewardsMenu />
+      <FriendsMenu />
+      <NotificationsBell />
 
-    <div className="relative" ref={dropdownRef}>
+      <div className="relative" ref={dropdownRef}>
       </div>
       <button className="hidden h-10 items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 text-sm font-medium text-primary transition hover:bg-primary/20 md:flex">
-      <Wallet className="h-4 w-4" />
-      xp {profile?.wallet?.balance?.toLocaleString("pt-PT", { minimumFractionDigits: 2 }) || "4,820.50"}
-    </button>
+        <Wallet className="h-4 w-4" />
+        xp {profile?.wallet?.balance?.toLocaleString("pt-PT", { minimumFractionDigits: 2 }) || "4,820.50"}
+      </button>
 
       <div className="relative" ref={dropdownRef}>
         <button
@@ -197,6 +198,24 @@ function UserInfo(
                 <Settings className="h-4 w-4" />
               </Link>
             </div>
+
+            {(profile?.user?.role === 'admin' || profile?.user?.role === 'moderator') &&
+              <div className="flex items-center gap-1">
+                <Link
+                  to="admin/users"
+                  onClick={() => setOpen(false)}
+                  className=" flex-1 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-surface hover:text-foreground"
+                >
+                  <span>Management</span>
+                </Link>
+                <Link to="admin/users"
+                  className="rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-surface hover:text-foreground"
+                >
+                  <UserStar className="h-4 w-4" />
+                </Link>
+              </div>
+            }
+
             <div className="my-1 border-t border-border/40" />
 
             <button

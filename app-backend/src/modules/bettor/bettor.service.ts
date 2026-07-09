@@ -1,5 +1,7 @@
 import {
   ConflictException,
+  forwardRef,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -16,6 +18,7 @@ import { ADMIN_TREASURY_BALANCE, WalletService } from '../wallet/wallet.service'
 import { TransactionType } from '../wallet/entities/transaction.entity';
 import { Profile42Dto } from './dto/profile-42.dto';
 import { Role } from '../../shared/enums/roles.enum';
+import { MarketService } from '../market/market.service';
 
 // xp granted per 42 cursus level — the welcome bonus for cadets (base + level),
 // and (Phase 2) the rate for crediting future level-ups. See economy design.
@@ -27,7 +30,9 @@ export class BettorService {
     @InjectRepository(Bettor)
     private readonly bettorRepository: Repository<Bettor>,
     private readonly avatarService: AvatarService,
-    private readonly walletService: WalletService
+    private readonly walletService: WalletService,
+    @Inject(forwardRef(() => MarketService))
+    private readonly marketService: MarketService,
   ) {}
 
   async create(user: User, dto?: Profile42Dto): Promise<Bettor> {
@@ -150,5 +155,47 @@ export class BettorService {
     }
     if (updateBettorDto) Object.assign(bettor, updateBettorDto);
     return await this.bettorRepository.save(bettor);
+  }
+
+  /**
+   * GDPR data export — everything the platform holds about this account, in
+   * one machine-readable payload: identity, profile, wallet balance +
+   * transaction ledger, and full bet history. No admin-only or other-user
+   * data is ever reachable from here.
+   */
+  async exportMyData(userId: string) {
+    const bettor = await this.bettorRepository.findOne({
+      where: { user: { id: userId } },
+      relations: ['user', 'wallet'],
+    });
+    if (!bettor) throw new NotFoundException('Bettor not found');
+
+    const [transactions, positions] = await Promise.all([
+      this.walletService.getMyTransactions(bettor.id),
+      this.marketService.getBettorPositions(bettor.nick, 10000),
+    ]);
+
+    return {
+      exportedAt: new Date().toISOString(),
+      account: {
+        id: bettor.user.id,
+        email: bettor.user.email,
+        role: bettor.user.role,
+        createdAt: bettor.user.createdAt,
+      },
+      profile: {
+        nick: bettor.nick,
+        bio: bettor.bio,
+        campus: bettor.campus ?? null,
+        school42Login: bettor.school42Login ?? null,
+        dailyStreak: bettor.dailyStreak,
+        createdAt: bettor.createdAt,
+      },
+      wallet: {
+        balance: Number(bettor.wallet?.balance ?? 0),
+        transactions,
+      },
+      bets: positions,
+    };
   }
 }

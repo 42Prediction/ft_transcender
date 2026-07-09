@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BettorService } from './bettor.service';
 import { AvatarService } from './avatar.service';
 import { WalletService } from '../wallet/wallet.service';
+import { MarketService } from '../market/market.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Bettor } from './entities/bettor.entity';
 import { User } from '../user/entities/user.entity';
@@ -62,6 +63,11 @@ describe('BettorService', () => {
 
   const mockWalletService = {
     createWallet: jest.fn().mockResolvedValue(undefined),
+    getMyTransactions: jest.fn().mockResolvedValue([]),
+  };
+
+  const mockMarketService = {
+    getBettorPositions: jest.fn().mockResolvedValue([]),
   };
 
   beforeEach(async () => {
@@ -79,6 +85,10 @@ describe('BettorService', () => {
         {
           provide: WalletService,
           useValue: mockWalletService,
+        },
+        {
+          provide: MarketService,
+          useValue: mockMarketService,
         },
       ],
     }).compile();
