@@ -44,7 +44,8 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
   const isSettled = m.status === 'resolved' || m.status === 'cancelled';
   const canBet = !isSettled && new Date(m.closes).getTime() > Date.now();
   const isAdmin = role === 'admin';
-  const canResolve = isAdmin && !isSettled;
+  const isModerator = role == 'moderator';
+  const canResolve = isAdmin && !isSettled || isModerator && !isSettled;
 
   function openBet(side: 'YES' | 'NO') {
     navigate(`/market/${m.id}?side=${side}`);
