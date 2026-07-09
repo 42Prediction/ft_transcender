@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, CheckCheck, Loader2, MessageSquare, TrendingDown, TrendingUp, XCircle } from 'lucide-react';
+import { Bell, CheckCheck, Loader2, MessageSquare, TrendingDown, TrendingUp, UserCheck, UserPlus, XCircle } from 'lucide-react';
 import { useNotifications } from './useNotifications';
 import type { AppNotification } from '@/api/notification/notification.api';
 
@@ -39,6 +39,22 @@ function describe(n: AppNotification): { icon: typeof Bell; tint: string; title:
       body: `${project} was cancelled` + (amount != null ? ` · xp ${amount.toFixed(2)} back` : ''),
     };
   }
+  if (n.type === 'friend_request_received') {
+    return {
+      icon: UserPlus,
+      tint: 'text-primary',
+      title: 'New friend request',
+      body: `@${d.fromNick ?? 'someone'} wants to be your friend`,
+    };
+  }
+  if (n.type === 'friend_request_accepted') {
+    return {
+      icon: UserCheck,
+      tint: 'text-success',
+      title: 'Friend request accepted',
+      body: `@${d.fromNick ?? 'someone'} accepted your friend request`,
+    };
+  }
   // chat_mention
   return {
     icon: MessageSquare,
@@ -67,7 +83,14 @@ export function NotificationsBell() {
   const onItemClick = (n: AppNotification) => {
     if (!n.isRead) void markRead(n.id);
     setOpen(false);
-    if (n.marketId) navigate(`/market/${n.marketId}`);
+    if (n.marketId) {
+      navigate(`/market/${n.marketId}`);
+    } else if (
+      (n.type === 'friend_request_received' || n.type === 'friend_request_accepted') &&
+      n.data?.fromNick
+    ) {
+      navigate(`/user/${n.data.fromNick}`);
+    }
   };
 
   return (

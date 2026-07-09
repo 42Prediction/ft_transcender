@@ -99,6 +99,22 @@ export class MarketController {
     }
   }
 
+  // Admin/moderator-only aggregate volume+bets series and category breakdown
+  // for the analytics dashboard. Kept ahead of the `:id` route below so
+  // "analytics" isn't swallowed as a market id.
+  @Get('analytics')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MODERATOR)
+  @HttpCode(HttpStatus.OK)
+  async analytics(@Query('from') from?: string, @Query('to') to?: string) {
+    try {
+      const data = await this.marketService.getAnalytics(from, to);
+      return successResponse(HttpStatus.OK, data);
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+
   @Get('portfolio')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
@@ -217,7 +233,7 @@ export class MarketController {
 
   @Patch(':id/resolve')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.MODERATOR)
   @HttpCode(HttpStatus.OK)
   async resolve(
     @Param('id') id: string,
@@ -235,7 +251,7 @@ export class MarketController {
   // job would otherwise have cancelled on its own next run.
   @Patch(':id/cancel')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.MODERATOR)
   @HttpCode(HttpStatus.OK)
   async cancel(@Param('id') id: string, @Body('reason') reason?: string) {
     try {

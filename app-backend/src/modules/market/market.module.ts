@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { JwtModule } from '@nestjs/jwt';
@@ -26,10 +26,10 @@ import { BettorModule } from '../bettor/bettor.module';
     JwtModule.register({}),
     WalletModule,
     School42Module,
-    BettorModule,
+    forwardRef(() => BettorModule),
   ],
   controllers: [MarketController, NotificationController],
   providers: [MarketService, MarketGateway, ExamMarketSyncService, NotificationService],
-  exports: [MarketService],
+  exports: [MarketService, NotificationService],
 })
 export class MarketModule {}

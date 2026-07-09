@@ -124,6 +124,28 @@ export interface PricePoint {
   no: number;
 }
 
+/** One day of the platform-wide volume/bets series (admin analytics). */
+export interface AnalyticsSeriesPoint {
+  date: string;
+  volume: number;
+  bets: number;
+}
+
+/** Volume/bets share of one category within the analytics date range. */
+export interface AnalyticsCategoryBreakdown {
+  category: string;
+  volume: number;
+  bets: number;
+}
+
+export interface AnalyticsData {
+  from: string;
+  to: string;
+  series: AnalyticsSeriesPoint[];
+  categories: AnalyticsCategoryBreakdown[];
+  totals: { volume: number; bets: number };
+}
+
 function unwrap<T>(res: any): T {
   return res.data?.data as T;
 }
@@ -167,6 +189,11 @@ export const marketApi = {
   getCategories: async (): Promise<CategoryStat[]> => {
     const res = await api.get('/market/categories');
     return unwrap<CategoryStat[]>(res);
+  },
+
+  getAnalytics: async (from?: string, to?: string): Promise<AnalyticsData> => {
+    const res = await api.get('/market/analytics', { params: { from, to } });
+    return unwrap<AnalyticsData>(res);
   },
 
   getPortfolio: async (): Promise<Portfolio> => {
