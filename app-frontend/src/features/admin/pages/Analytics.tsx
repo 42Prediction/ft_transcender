@@ -219,9 +219,9 @@ export default function AnalyticsPage() {
 
                     <div className="grid gap-4 lg:grid-cols-3">
                         {/* volume trend — line/area chart */}
-                        <div className="rounded-2xl border border-border/60 bg-gradient-card p-4 shadow-card lg:col-span-2">
+                        <div className="min-w-0 rounded-2xl border border-border/60 bg-gradient-card p-4 shadow-card lg:col-span-2">
                             <h3 className="mb-3 text-sm font-medium text-foreground">Volume over time</h3>
-                            <ResponsiveContainer width="100%" height={220}>
+                            <ResponsiveContainer width="100%" height={220} minWidth={0} initialDimension={{ width: 500, height: 220 }}>
                                 <AreaChart data={data.series}>
                                     <defs>
                                         <linearGradient id="volumeFill" x1="0" y1="0" x2="0" y2="1">
@@ -260,7 +260,7 @@ export default function AnalyticsPage() {
                         {/* category breakdown — pie chart */}
                         <div className="rounded-2xl border border-border/60 bg-gradient-card p-4 shadow-card">
                             <h3 className="mb-3 text-sm font-medium text-foreground">Volume by category</h3>
-                            <ResponsiveContainer width="100%" height={160}>
+                            <ResponsiveContainer width="100%" height={160} minWidth={0} initialDimension={{ width: 300, height: 160 }}>
                                 <PieChart>
                                     <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={40} outerRadius={70}>
                                         {pieData.map((entry) => (
@@ -293,7 +293,7 @@ export default function AnalyticsPage() {
                     {/* bets per day — bar chart */}
                     <div className="rounded-2xl border border-border/60 bg-gradient-card p-4 shadow-card">
                         <h3 className="mb-3 text-sm font-medium text-foreground">Bets per day</h3>
-                        <ResponsiveContainer width="100%" height={180}>
+                        <ResponsiveContainer width="100%" height={180} minWidth={0} initialDimension={{ width: 500, height: 180 }}>
                             <BarChart data={data.series}>
                                 <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
                                 <XAxis

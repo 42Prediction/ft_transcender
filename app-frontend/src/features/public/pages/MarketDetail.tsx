@@ -159,7 +159,7 @@ function MarketDetailView({ loaderData }: { loaderData: MarketDetailLoaderData }
         <MarketHeader market={market} />
 
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <ChartCard data={data} range={range} setRange={setRange} market={market} />
             <StatsRow market={market} />
             <OutcomesTable market={market} />
@@ -295,7 +295,7 @@ function ChartCard({
       </div>
 
       <div className="h-[340px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 500, height: 340 }}>
           <AreaChart data={data} margin={{ top: 10, right: 8, left: -10, bottom: 0 }}>
             <defs>
               <linearGradient id="yesFill" x1="0" y1="0" x2="0" y2="1">
