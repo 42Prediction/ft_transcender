@@ -223,7 +223,49 @@ export class MarketService {
     return { position: position.id, entryPrice, shares };
   }
 
-  async resolveMarket(id: string, resolution: MarketResolution) {
+  /**
+   * Entry point for a human (admin/moderator) resolving a market via the API.
+   *
+   * Exam-sourced markets (`examId` set) are normally owned end-to-end by
+   * ExamMarketSyncService#autoResolveExamMarkets, which only settles once 42
+   * publishes a real, final grade — letting a human resolve one by guess
+   * while the exam is still active could pre-empt the authoritative outcome,
+   * with no way to correct it afterwards (the auto-resolver skips anything
+   * already RESOLVED). Once the exam session has genuinely locked
+   * (`examEndsAt` passed) but 42 still hasn't published the grade, a human
+   * can step in — but must supply the real `finalGrade` themselves rather
+   * than pick YES/NO blind, so the resolution is always backed by an actual
+   * number and bettors can see it (same `>= 100` rule as the automatic path).
+   *
+   * Manually-created markets (no `examId`) have no automatic path at all, so
+   * they resolve the original way: a plain YES/NO from the caller.
+   */
+  async resolveMarketManually(id: string, resolution?: MarketResolution, finalGrade?: number) {
+    const market = await this.marketRepo.findOne({ where: { id } });
+    if (!market) throw new NotFoundException('Market not found');
+
+    if (market.examId != null) {
+      if (!market.examEndsAt || new Date() < market.examEndsAt) {
+        throw new BadRequestException(
+          'This market is sourced from a 42 exam and resolves automatically once the grade is published — it cannot be resolved manually until the exam session ends.',
+        );
+      }
+      if (finalGrade == null) {
+        throw new BadRequestException(
+          'Enter the final grade from 42 to resolve this exam market manually.',
+        );
+      }
+      const derivedResolution = finalGrade >= 100 ? MarketResolution.YES : MarketResolution.NO;
+      return this.resolveMarket(id, derivedResolution, finalGrade);
+    }
+
+    if (!resolution) {
+      throw new BadRequestException('Resolution (YES/NO) is required.');
+    }
+    return this.resolveMarket(id, resolution);
+  }
+
+  async resolveMarket(id: string, resolution: MarketResolution, finalGrade?: number) {
     const market = await this.marketRepo.findOne({ where: { id } });
     if (!market) throw new NotFoundException('Market not found');
     if (market.status === MarketStatus.RESOLVED)
@@ -232,6 +274,7 @@ export class MarketService {
     market.resolution = resolution;
     market.status = MarketStatus.RESOLVED;
     market.resolvedAt = new Date();
+    if (finalGrade != null) market.finalGrade = finalGrade;
     await this.marketRepo.save(market);
     this.marketGateway.emitMarketUpdate(this.toDto(market));
     this.marketGateway.emitMarketRemoved(market.id);
@@ -933,6 +976,15 @@ export class MarketService {
       noPrice,
       resolution: market.resolution ?? null,
       creatorNick: market.creator?.nick ?? null,
+      // Sourced from a 42 exam — settles itself via ExamMarketSyncService once
+      // the grade is published; the frontend uses this to hide manual resolve.
+      isAutoManaged: market.examId != null,
+      // When the exam session locks — once passed, a human can step in with
+      // resolveMarketManually() if 42 still hasn't published the grade.
+      examEndsAt: market.examEndsAt ?? null,
+      // Real 42 grade behind the resolution (auto or manually entered); null
+      // for manually-created markets or markets resolved before this existed.
+      finalGrade: market.finalGrade != null ? Number(market.finalGrade) : null,
     };
   }
 }

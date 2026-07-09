@@ -156,6 +156,23 @@ export class ExamMarketSyncService implements OnModuleInit {
           : [];
         const existingByLogin = new Map(existingMarkets.map((m) => [m.subjectLogin, m]));
 
+        // Active existing markets skip the create/revive branch below (it
+        // would wrongly reset their live pools), but still need `examEndsAt`
+        // backfilled — either they predate this field, or 42 rescheduled the
+        // exam. A targeted UPDATE, no pool/status side effects.
+        const examEndsAt = new Date(exam.endAt);
+        const staleEndsAt = existingMarkets.filter(
+          (m) =>
+            m.status !== MarketStatus.CANCELLED &&
+            m.examEndsAt?.getTime() !== examEndsAt.getTime(),
+        );
+        if (staleEndsAt.length > 0) {
+          await this.marketRepo.update(
+            { id: In(staleEndsAt.map((m) => m.id)) },
+            { examEndsAt },
+          );
+        }
+
         for (const cadet of eligible) {
           const existing = existingByLogin.get(cadet.login);
 
@@ -191,8 +208,10 @@ export class ExamMarketSyncService implements OnModuleInit {
             existing.yesPool = 100;
             existing.noPool = 100;
             existing.closesAt = closesAt;
+            existing.examEndsAt = examEndsAt;
             existing.resolvedAt = undefined;
             existing.resolution = undefined;
+            existing.finalGrade = undefined;
             existing.subjectName = cadet.name;
             existing.subjectAvatar = cadet.avatar ?? undefined;
             existing.status = status;
@@ -207,6 +226,7 @@ export class ExamMarketSyncService implements OnModuleInit {
               project: exam.name,
               category,
               closesAt,
+              examEndsAt,
               creatorId,
               status,
             });
@@ -311,7 +331,7 @@ export class ExamMarketSyncService implements OnModuleInit {
           if (finalMark == null) continue;
 
           const resolution = finalMark >= 100 ? MarketResolution.YES : MarketResolution.NO;
-          await this.marketService.resolveMarket(market.id, resolution);
+          await this.marketService.resolveMarket(market.id, resolution, finalMark);
         }
       } catch (err) {
         this.logger.warn(`autoResolveExamMarkets failed for exam ${examId}: ${err}`);

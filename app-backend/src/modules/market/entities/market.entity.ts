@@ -78,11 +78,23 @@ export class Market {
   @Column({ name: 'closes_at' })
   closesAt!: Date;
 
+  // Exam session end time (42's `endAt`) — only set for auto-generated exam
+  // markets. Lets a human resolve manually once the session has genuinely
+  // locked, without needing a live 42 call at resolve time.
+  @Column({ name: 'exam_ends_at', type: 'timestamp', nullable: true })
+  examEndsAt?: Date | null;
+
   @Column({ name: 'resolved_at', nullable: true })
   resolvedAt?: Date;
 
   @Column({ type: 'enum', enum: MarketResolution, nullable: true })
   resolution?: MarketResolution;
+
+  // Real 42 grade (0-125+) behind the resolution, when known — from the
+  // published grade on auto-resolve, or entered by hand on a manual
+  // post-exam-end resolve. Null for manually-created (non-exam) markets.
+  @Column({ name: 'final_grade', type: 'decimal', precision: 6, scale: 2, nullable: true })
+  finalGrade?: number | null;
 
   @Column({ name: 'creator_id' })
   creatorId!: string;
