@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { user as userApi, type UserMe } from "@/api/user/user.api";
 import { auth } from "@/api/auth/auth.api";
 import { BarChart3, ChevronLeft, Loader2, LogOut, Search, ShieldCheck, ShieldOff, Trash2 } from "lucide-react";
-import { Link, useRevalidator, useRouteLoaderData } from "react-router-dom";
+import { Link, useRouteLoaderData } from "react-router-dom";
 
 export default function UsersPage() {
     const [users, setUsers] = useState<UserMe[]>([]);

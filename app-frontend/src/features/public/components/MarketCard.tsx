@@ -31,7 +31,6 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
   // GET /bettor/me nests the account under `.user` — role lives at
   // data.user.role, not data.role.
   const role: string | undefined = root?.data?.user?.role;
-  const isLoggedIn = !!root?.data;
   const revalidator = useRevalidator();
   const navigate = useNavigate();
 
