@@ -2,7 +2,8 @@
 
 > Baseado no `en.subject.pdf` (Chapter IV — Modules) e numa inspeção do código atual em
 > `app-backend/src` e `app-frontend/src` a 2026-07-09 (atualizado após fechar os 4 módulos
-> parciais mais próximos nesse mesmo dia).
+> parciais mais próximos nesse mesmo dia; e numa 2ª ronda no mesmo dia que endureceu a
+> economia da casa e o ciclo automático dos markets de exame — ver nota abaixo).
 > Objetivo do subject: **14 pontos** (Major = 2 pts, Minor = 1 pt).
 
 O projeto escolhido é um **prediction market** (não um jogo), pelo que toda a categoria
@@ -113,7 +114,7 @@ market) não tem nenhum jogo. **Toda a categoria está N/A** enquanto isso não 
 | Chat avançado (Minor) | 1 | 🟡* | *a base de chat existe (`MarketChat.tsx`), mas os extras (bloquear users, convidar para jogo, histórico persistente) não — e formalmente este módulo também depende da categoria gaming |
 | Torneios (Minor) | 1 | 🚫 |
 | Customização de jogo (Minor) | 1 | 🚫 |
-| Gamificação — achievements/badges/leaderboard/XP (Minor) | 1 | ✅ | `RewardsMenu.tsx`, `useQuests.ts`, `useDailyBonus.ts`, leaderboard de bettors — **não depende de jogo**, é válido no conceito atual |
+| Gamificação — achievements/badges/leaderboard/XP (Minor) | 1 | ✅ | Reforçado nesta ronda: economia XP real e ledgerizada — depósito no signup por **level da 42** (`bettor.service.ts`, base 1000 + level×500 `SCHOOL42_REWARD`) e cron diário de level-ups (`bettor-level-sync.service.ts`); **streak diário** com recompensa escalonada + **quests** (`engagement.service.ts`, catálogo first_bet/add_friend/first_win) expostos em `RewardsMenu.tsx`/`useQuests.ts`/`useDailyBonus.ts`; leaderboard de bettors. **Não depende de jogo**, é válido no conceito atual |
 | Spectator mode (Minor) | 1 | 🚫 |
 
 ## IV.7 Devops
@@ -214,6 +215,31 @@ para cumprir o requisito mandatório de "deploy com um único comando".
 **Migrações novas nesta ronda:** `AddFriendNotificationTypes` (notificações de amizade),
 `AddModeratorRole` (novo valor no enum `users_role_enum`) — correr `make migrate-run` (ou
 `npm run migration:run` em `app-backend`) antes de testar em qualquer outro ambiente.
+
+---
+
+## Nota — 2ª ronda (mesmo dia): robustez da economia e do motor de markets
+
+Trabalho de **correção/fidedignidade** (não acrescenta pontos de módulo — o bónus já está no
+teto de 5 —, mas torna as features existentes defensáveis numa demo):
+
+- **Economia da casa fechada (zero-sum).** Removido o "minting fantasma": o admin (casa)
+  **financia** a semente de cada market (200 xp, `MARKET_SEED`) da sua carteira (inicial
+  1 000 000 xp) e **cobra 5% de rake** sobre o stake dos perdedores na resolução
+  (`market.service.ts#resolveMarket`). Markets auto-gerados também debitam o admin.
+- **Markets de exame 100% automáticos e verificados contra a API da 42.** Sync a cada
+  15 min cria/cancela+reembolsa consoante inscrições/desinscrições; **fecham** por tempo no
+  início do exame (`placeBet` bloqueia após `closesAt`); **auto-resolvem** só quando o exame
+  está trancado (`endAt` passou) **e** o cadete está `finished` com nota publicada, derivando
+  YES (≥100) / NO da nota real (`exam-market-sync.service.ts`). Testado em dry-run contra o
+  Exam Rank 06 real: exame trancado detetado, cadetes avaliados → YES por nota 100, e cadetes
+  ainda `in_progress` (mesmo com `finalMark=0`) corretamente **não** resolvidos.
+- **Stats e gráfico fidedignos.** Homepage (Active traders / Live markets / Volume) passou a
+  refletir dados reais e a **excluir o admin** das contagens de traders/volume
+  (`market.service.ts#getStats`); o gráfico do market usa histórico de preços reconstruído das
+  posições reais (`getPriceHistory` + `GET /market/:id/history`), substituindo a série falsa.
+- **Nomenclatura de moeda.** Moeda da plataforma = **pontos (xp)**; `%` para percentagem
+  (substituídos os antigos `₳`/`¢` no frontend).
 
 **Antes de entregar:** preencher os `[team to confirm]` no `README.md` (canal de
 comunicação/reuniões, e quem implementou cada feature nas secções "Features List" e
