@@ -18,6 +18,12 @@ export interface MarketDto {
   noPrice: number;
   resolution: 'YES' | 'NO' | null;
   creatorNick: string | null;
+  /** Sourced from a 42 exam — resolves itself once the grade is published, can't be resolved by hand. */
+  isAutoManaged: boolean;
+  /** When the exam session locks — once passed, a moderator/admin can step in with a manual grade. */
+  examEndsAt: string | null;
+  /** Real 42 grade behind the resolution (auto or manually entered). Null if unknown/not applicable. */
+  finalGrade: number | null;
 }
 
 export interface LeaderboardEntry {
@@ -256,8 +262,8 @@ export const marketApi = {
     return unwrap(res);
   },
 
-  resolveMarket: async (marketId: string, resolution: 'YES' | 'NO') => {
-    const res = await api.patch(`/market/${marketId}/resolve`, { resolution });
+  resolveMarket: async (marketId: string, resolution?: 'YES' | 'NO', finalGrade?: number) => {
+    const res = await api.patch(`/market/${marketId}/resolve`, { resolution, finalGrade });
     return unwrap(res);
   },
 };

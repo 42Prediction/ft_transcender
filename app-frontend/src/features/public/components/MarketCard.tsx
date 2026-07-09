@@ -36,6 +36,8 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
 
   const [resolveConfirm, setResolveConfirm] = useState(false);
   const [resolving, setResolving] = useState(false);
+  const [resolveError, setResolveError] = useState<string | null>(null);
+  const [gradeInput, setGradeInput] = useState('');
 
   const yesPct = Math.round(m.yesPrice * 100);
   const noPct = Math.round(m.noPrice * 100);
@@ -44,7 +46,9 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
   const canBet = !isSettled && new Date(m.closes).getTime() > Date.now();
   const isAdmin = role === 'admin';
   const isModerator = role == 'moderator';
-  const canResolve = isAdmin && !isSettled || isModerator && !isSettled;
+  const examEnded = m.examEndsAt != null && new Date(m.examEndsAt).getTime() <= Date.now();
+  const canResolve = (isAdmin || isModerator) && !isSettled && !m.isAutoManaged;
+  const canResolveWithGrade = (isAdmin || isModerator) && !isSettled && m.isAutoManaged && examEnded;
 
   function openBet(side: 'YES' | 'NO') {
     navigate(`/market/${m.id}?side=${side}`);
@@ -52,13 +56,35 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
 
   async function handleResolve(resolution: 'YES' | 'NO') {
     setResolving(true);
+    setResolveError(null);
     try {
       await marketApi.resolveMarket(m.id, resolution);
       revalidator.revalidate();
       onRefresh?.();
       setResolveConfirm(false);
-    } catch {
-      // silent — server error is non-critical for UX here
+    } catch (err: any) {
+      setResolveError(err?.response?.data?.error?.response?.message ?? 'Could not resolve this market.');
+    } finally {
+      setResolving(false);
+    }
+  }
+
+  async function handleResolveWithGrade() {
+    const grade = Number(gradeInput);
+    if (gradeInput.trim() === '' || Number.isNaN(grade)) {
+      setResolveError('Enter a valid grade.');
+      return;
+    }
+    setResolving(true);
+    setResolveError(null);
+    try {
+      await marketApi.resolveMarket(m.id, undefined, grade);
+      revalidator.revalidate();
+      onRefresh?.();
+      setResolveConfirm(false);
+      setGradeInput('');
+    } catch (err: any) {
+      setResolveError(err?.response?.data?.error?.response?.message ?? 'Could not resolve this market.');
     } finally {
       setResolving(false);
     }
@@ -158,13 +184,19 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
                     NO
                   </button>
                   <button
-                    onClick={() => setResolveConfirm(false)}
+                    onClick={() => {
+                      setResolveConfirm(false);
+                      setResolveError(null);
+                    }}
                     disabled={resolving}
                     className="rounded-lg border border-border/60 bg-surface px-3 py-2 text-xs text-muted-foreground transition hover:text-foreground disabled:opacity-50"
                   >
                     Cancel
                   </button>
                 </div>
+                {resolveError && (
+                  <p className="text-center text-[11px] text-destructive">{resolveError}</p>
+                )}
               </div>
             ) : (
               <button
@@ -178,9 +210,68 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
           </div>
         )}
 
+        {canResolveWithGrade && (
+          <div className="rounded-xl border border-warning/30 bg-warning/5 p-3">
+            {resolveConfirm ? (
+              <div className="space-y-2">
+                <p className="text-center text-xs text-muted-foreground">
+                  Exam ended, 42 hasn't published the grade yet. Enter it to resolve:
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={gradeInput}
+                    onChange={(e) => setGradeInput(e.target.value)}
+                    placeholder="Grade (0-125)"
+                    disabled={resolving}
+                    className="h-9 flex-1 rounded-lg border border-border/60 bg-surface px-2.5 font-mono text-xs text-foreground focus:outline-none focus:border-primary/50"
+                  />
+                  <button
+                    onClick={handleResolveWithGrade}
+                    disabled={resolving}
+                    className="rounded-lg bg-primary/15 border border-primary/30 px-3 py-2 text-xs font-semibold text-primary transition hover:bg-primary/25 disabled:opacity-50"
+                  >
+                    Resolve
+                  </button>
+                  <button
+                    onClick={() => {
+                      setResolveConfirm(false);
+                      setResolveError(null);
+                      setGradeInput('');
+                    }}
+                    disabled={resolving}
+                    className="rounded-lg border border-border/60 bg-surface px-3 py-2 text-xs text-muted-foreground transition hover:text-foreground disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {resolveError && (
+                  <p className="text-center text-[11px] text-destructive">{resolveError}</p>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => setResolveConfirm(true)}
+                className="flex w-full items-center justify-center gap-2 py-1.5 text-xs font-medium text-warning transition hover:text-warning/80"
+              >
+                <Shield className="h-3.5 w-3.5" />
+                Resolve manually (exam ended)
+              </button>
+            )}
+          </div>
+        )}
+
+        {(isAdmin || isModerator) && !isSettled && m.isAutoManaged && !examEnded && (
+          <div className="flex items-center justify-center gap-1.5 rounded-xl border border-border/60 bg-surface p-2.5 text-[11px] text-muted-foreground">
+            <Shield className="h-3.5 w-3.5" />
+            Auto-resolves once 42 publishes the grade
+          </div>
+        )}
+
         {m.status === 'resolved' && m.resolution && (
           <div className={`rounded-xl border p-3 text-center text-sm font-semibold ${m.resolution === 'YES' ? 'border-success/30 bg-success/10 text-success' : 'border-destructive/30 bg-destructive/10 text-destructive'}`}>
             Resolved: {m.resolution}
+            {m.finalGrade != null && <span className="ml-1 font-mono">({m.finalGrade})</span>}
           </div>
         )}
 

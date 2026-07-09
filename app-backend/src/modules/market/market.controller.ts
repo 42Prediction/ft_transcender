@@ -251,10 +251,11 @@ export class MarketController {
   @HttpCode(HttpStatus.OK)
   async resolve(
     @Param('id') id: string,
-    @Body('resolution') resolution: MarketResolution,
+    @Body('resolution') resolution: MarketResolution | undefined,
+    @Body('finalGrade') finalGrade: number | undefined,
   ) {
     try {
-      const data = await this.marketService.resolveMarket(id, resolution);
+      const data = await this.marketService.resolveMarketManually(id, resolution, finalGrade);
       return successResponse(HttpStatus.OK, data);
     } catch (error) {
       return errorResponse(error);
