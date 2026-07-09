@@ -1,7 +1,8 @@
 # Progresso dos Módulos — ft_transcendence (`feat/marteket`)
 
 > Baseado no `en.subject.pdf` (Chapter IV — Modules) e numa inspeção do código atual em
-> `app-backend/src` e `app-frontend/src` a 2026-07-09.
+> `app-backend/src` e `app-frontend/src` a 2026-07-09 (atualizado após fechar os 4 módulos
+> parciais mais próximos nesse mesmo dia).
 > Objetivo do subject: **14 pontos** (Major = 2 pts, Minor = 1 pt).
 
 O projeto escolhido é um **prediction market** (não um jogo), pelo que toda a categoria
@@ -20,9 +21,9 @@ nenhum jogo implementado.
 | ❌ Não feito | Sem evidência no código |
 | 🚫 N/A | Bloqueado por dependência (ex: precisa de um jogo) |
 
-**Pontos aproximados já cobertos (✅ completos): ~13–15 pts**, mas atenção — vários itens
-"parciais" abaixo ainda não cumprem 100% dos critérios do subject e podem não passar em
-avaliação como estão.
+**Pontos aproximados já cobertos (✅ completos): ~16 pts** — acima da meta de 14, depois de
+fechar os 4 módulos que estavam 🟡 (pesquisa+paginação, notificações completas, permissões
+avançadas com role `moderator`, dashboard de analytics com export+filtros de data).
 
 ---
 
@@ -37,13 +38,13 @@ avaliação como estão.
 | Interação entre users — chat/perfil/amigos (Major) | 2 | ✅ | `MarketChat.tsx` (chat via WS), perfis de bettor, `friend.api.ts` / `FRIENDLIST_RELATIONS.md` (add/remove amigos) |
 | API pública documentada com API key + rate limit (Major) | 2 | ❌ | Endpoints REST existem (`market.controller.ts` tem >5 rotas GET/POST/PATCH), mas **não há API key**, **rate limiting** nem documentação formal (Swagger/OpenAPI) |
 | ORM (Minor) | 1 | ✅ | TypeORM em todo o backend |
-| Sistema de notificações completo (Minor) | 1 | 🟡 | `notification.service.ts`/`notification.controller.ts`/`entities/notification.entity.ts` existem, ligados ao gateway — confirmar se cobre create/update/delete de todas as entidades ou só markets/bets |
+| Sistema de notificações completo (Minor) | 1 | ✅ | `NotificationService.createMany` cobre bet resolved/cancelled, chat mentions, e agora também **pedidos de amizade** (`FRIEND_REQUEST_RECEIVED`/`FRIEND_REQUEST_ACCEPTED`, ligados via `friend.service.ts`) — push em tempo real via `MarketGateway` + inbox persistente |
 | Real-time collaborative features (Minor) | 1 | ❌ | Sem evidência |
 | SSR (Minor) | 1 | ❌ | Vite SPA puro, sem SSR |
 | PWA (Minor) | 1 | ❌ | Sem `manifest.json` nem service worker |
 | Design system próprio, ≥10 componentes reutilizáveis (Minor) | 1 | 🟡 | shadcn/radix + Tailwind em `components/ui/` — provavelmente já passa das 10 componentes, mas falta confirmar paleta/tipografia documentadas |
-| Pesquisa avançada com filtros/sort/paginação (Minor) | 1 | 🟡 | `/market?category=&status=&search=` e `/market/search`, `/market/students/search` existem — mas **sem paginação** visível no controller |
-| Upload/gestão de ficheiros (Minor) | 1 | 🟡 | `avatar.service.ts` (upload de avatar com `multer`/`sharp`) — cobre imagens, mas não é um sistema genérico multi-tipo |
+| Pesquisa avançada com filtros/sort/paginação (Minor) | 1 | ✅ | `/markets` já filtra por categoria/estado/pesquisa; `Markets.tsx` agora também ordena (Volume/Closing soon/Probability) e pagina (12/página, Prev/Next) sobre o resultado filtrado, sem quebrar o modelo de atualização em tempo real via WebSocket |
+| Upload/gestão de ficheiros (Minor) | 1 | 🟡 | `avatar.service.ts` (upload de avatar com `multer`/`sharp`) — cobre imagens, mas não é um sistema genérico multi-tipo (não trabalhado nesta ronda) |
 
 ## IV.2 Accessibility and Internationalization
 
@@ -61,7 +62,7 @@ avaliação como estão.
 | User management standard (Major) | 2 | ✅ | Update perfil, upload avatar, friends + online status, página de perfil (`bettor` module + `features/user/profile`) |
 | Game stats / match history (Minor) | 1 | 🚫 | Requer um jogo — N/A no conceito atual |
 | OAuth 2.0 remoto (Minor) | 1 | ✅ | `google.strategy.ts` + `school42.service.ts` (login 42) |
-| Permissões avançadas / CRUD + roles (Major) | 2 | 🟡 | `RolesGuard` + `@Roles('admin')` em `user.controller.ts` (GET/PATCH/DELETE `:id`, list), mas só 2 roles (`admin`, `user`) — falta "guest/moderator" e views diferenciadas mais ricas para cumprir por completo |
+| Permissões avançadas / CRUD + roles (Major) | 2 | ✅ | 3 roles agora (`admin`, `moderator`, `user`, migração `AddModeratorRole`). Moderator pode ver `/users` (read-only) e resolver/cancelar markets, mas não CRUD de users (admin-only). Frontend admin (`Users.tsx`) esconde o botão de apagar e mostra badge "Moderator" quando o viewer não é admin; guards de login/rota (`singnin.tsx`, `guards.ts`) aceitam ambas as roles |
 | Sistema de organizações (Major) | 2 | ❌ | Sem entidade/módulo de "organization" |
 | 2FA completo (Minor) | 1 | ❌ | Sem `speakeasy`/otplib nem rotas 2FA |
 | Analytics/insights de atividade do user (Minor) | 1 | 🟡 | `WinLossChart.tsx`, portfólio com P&L — é analítica de apostas, não "atividade" genérica |
@@ -123,7 +124,7 @@ market) não tem nenhum jogo. **Toda a categoria está N/A** enquanto isso não 
 
 | Módulo | Peso | Estado | Evidência |
 |---|---|---|---|
-| Dashboard de analytics com visualização (Major) | 2 | 🟡 | `recharts` usado em `WinLossChart.tsx` e `MarketDetail.tsx` — falta export (PDF/CSV) e filtros de datas customizáveis para contar como completo |
+| Dashboard de analytics com visualização (Major) | 2 | ✅ | Nova página `/admin/analytics` (`Analytics.tsx`): gráficos interativos de linha (volume/dia), barras (bets/dia) e pizza (volume por categoria), presets 7D/30D/90D + inputs de data customizáveis, export CSV (client-side, sem dependência nova), atualização em tempo real via `useMarketUpdates` (debounced refetch). Backend: `GET /market/analytics?from=&to=` (admin/moderator) em `market.service.ts#getAnalytics` |
 | Export/import de dados (Minor) | 1 | ❌ | Sem evidência |
 | GDPR compliance (Minor) | 1 | ❌ | Sem evidência |
 
@@ -147,21 +148,25 @@ Nenhum módulo custom justificado no README ainda.
 2. Real-time WebSockets (Major, 2pt)
 3. Interação entre users — chat/perfil/amigos (Major, 2pt)
 4. ORM/TypeORM (Minor, 1pt)
-5. OAuth remoto (42 + Google) (Minor, 1pt)
-6. User management standard (Major, 2pt)
-7. Gamificação (Minor, 1pt)
+5. Sistema de notificações completo (Minor, 1pt)
+6. Pesquisa avançada + ordenação + paginação (Minor, 1pt)
+7. OAuth remoto (42 + Google) (Minor, 1pt)
+8. User management standard (Major, 2pt)
+9. Permissões avançadas com role `moderator` (Major, 2pt)
+10. Dashboard de analytics com export + filtros de data (Major, 2pt)
+11. Gamificação (Minor, 1pt)
 
-**Total sólido: 11 pontos**, ainda abaixo dos 14 exigidos.
+**Total sólido: 16 pontos** — acima da meta de 14.
 
-**Mais perto de completar (🟡), com trabalho adicional relativamente pequeno:**
-- Pesquisa avançada + paginação (Minor, 1pt) — falta só paginação
-- Sistema de notificações completo (Minor, 1pt) — confirmar cobertura CRUD total
-- Dashboard analytics (Major, 2pt) — falta export + filtros de data
-- Permissões avançadas (Major, 2pt) — falta roles extra + CRUD mais explícito
-
-Fechando os 4 itens 🟡 mais próximos dariam **+5 pontos → 16 pontos**, acima da meta.
+**Ainda 🟡 (não trabalhado nesta ronda):**
+- Upload/gestão de ficheiros genérico (Minor, 1pt) — só existe upload de avatar (imagem única)
+- Design system documentado (Minor, 1pt) — componentes existem, falta documentar paleta/tipografia formalmente
 
 **Nada foi feito ainda em:** Acessibilidade/i18n, Inteligência Artificial, Cybersecurity
 (WAF/Vault), Devops (ELK/Prometheus/microserviços), Blockchain, e toda a categoria Gaming
 (por não existir jogo). Também falta containerizar backend+frontend no `docker-compose`
 para cumprir o requisito mandatório de "deploy com um único comando".
+
+**Migrações novas nesta ronda:** `AddFriendNotificationTypes` (notificações de amizade),
+`AddModeratorRole` (novo valor no enum `users_role_enum`) — correr `make migrate-run` (ou
+`npm run migration:run` em `app-backend`) antes de testar em qualquer outro ambiente.

@@ -1,11 +1,34 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLoaderData, useRouteLoaderData } from 'react-router-dom';
-import { Plus, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react';
 import { MarketCard } from '../components/MarketCard';
 import type { CategoryStat, MarketDto } from '@/api/market/market.api';
 import { marketApi } from '@/api/market/market.api';
 import { CreateMarketModal } from '@/features/market/components/CreateMarketModal';
 import { useMarketUpdates } from '@/features/market/hooks/useMarketUpdates';
+
+type SortKey = 'volume' | 'closing' | 'probability';
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'volume', label: 'Volume' },
+  { value: 'closing', label: 'Closing soon' },
+  { value: 'probability', label: 'Highest probability' },
+];
+
+const PAGE_SIZE = 12;
+
+function sortMarkets(list: MarketDto[], sortBy: SortKey): MarketDto[] {
+  const copy = [...list];
+  switch (sortBy) {
+    case 'closing':
+      return copy.sort((a, b) => new Date(a.closes).getTime() - new Date(b.closes).getTime());
+    case 'probability':
+      return copy.sort((a, b) => b.probability - a.probability);
+    case 'volume':
+    default:
+      return copy.sort((a, b) => b.volumeRaw - a.volumeRaw);
+  }
+}
 
 export interface MarketsLoaderData {
   markets: MarketDto[];
@@ -40,6 +63,8 @@ export function Markets() {
   const [categories, setCategories] = useState<CategoryStat[]>(initialCategories);
   const [loading, setLoading] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<SortKey>('volume');
+  const [page, setPage] = useState(1);
 
   // Category badge counts are a server-side aggregate independent of the
   // current search/category filter, so a market appearing/disappearing (via
@@ -65,17 +90,25 @@ export function Markets() {
 
   function handleCategory(cat: string) {
     setActiveCategory(cat);
+    setPage(1);
     applyFilters(cat, search, showClosed);
   }
 
   function handleSearch(q: string) {
     setSearch(q);
+    setPage(1);
     applyFilters(activeCategory, q, showClosed);
   }
 
   function handleShowClosed(closed: boolean) {
     setShowClosed(closed);
+    setPage(1);
     applyFilters(activeCategory, search, closed);
+  }
+
+  function handleSort(next: SortKey) {
+    setSortBy(next);
+    setPage(1);
   }
 
   async function refreshMarkets() {
@@ -137,6 +170,14 @@ export function Markets() {
 
   useMarketUpdates(handleMarketUpdate, handleMarketRemove);
 
+  const sortedMarkets = useMemo(() => sortMarkets(markets, sortBy), [markets, sortBy]);
+  const totalPages = Math.max(1, Math.ceil(sortedMarkets.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedMarkets = sortedMarkets.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+
   return (
     <div className="mx-auto max-w-[1400px] px-6 py-12">
       <div className="mb-8 flex items-end justify-between gap-4">
@@ -189,6 +230,17 @@ export function Markets() {
             </button>
           ))}
         </div>
+        <select
+          value={sortBy}
+          onChange={(e) => handleSort(e.target.value as SortKey)}
+          className="h-10 rounded-xl border border-border/60 bg-surface px-3 text-sm text-foreground focus:border-primary/50 focus:outline-none"
+        >
+          {SORT_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              Sort: {opt.label}
+            </option>
+          ))}
+        </select>
         <div className="ml-auto flex gap-1 rounded-xl border border-border/60 bg-surface p-1">
           <button
             onClick={() => handleShowClosed(false)}
@@ -217,16 +269,42 @@ export function Markets() {
         <div className="flex h-64 items-center justify-center text-muted-foreground">
           Loading…
         </div>
-      ) : markets.length === 0 ? (
+      ) : sortedMarkets.length === 0 ? (
         <div className="flex h-64 items-center justify-center rounded-2xl border border-border/40 bg-surface text-muted-foreground">
           No markets found.
         </div>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {markets.map((m) => (
-            <MarketCard key={m.id} m={m} onRefresh={refreshMarkets} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {pagedMarkets.map((m) => (
+              <MarketCard key={m.id} m={m} onRefresh={refreshMarkets} />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-center gap-4">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="inline-flex items-center gap-1 rounded-xl border border-border/60 bg-surface px-3 py-1.5 text-sm font-medium text-foreground transition hover:text-primary disabled:opacity-40 disabled:hover:text-foreground"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Prev
+              </button>
+              <span className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="inline-flex items-center gap-1 rounded-xl border border-border/60 bg-surface px-3 py-1.5 text-sm font-medium text-foreground transition hover:text-primary disabled:opacity-40 disabled:hover:text-foreground"
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -16,6 +16,10 @@ export enum NotificationType {
   BET_CANCELLED = 'bet_cancelled',
   // The bettor was @mentioned in a market chat.
   CHAT_MENTION = 'chat_mention',
+  // Someone sent the bettor a friend request.
+  FRIEND_REQUEST_RECEIVED = 'friend_request_received',
+  // The bettor's friend request was accepted.
+  FRIEND_REQUEST_ACCEPTED = 'friend_request_accepted',
 }
 
 @Entity('notifications')

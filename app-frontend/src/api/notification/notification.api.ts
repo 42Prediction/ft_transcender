@@ -1,6 +1,11 @@
 import api from '../api';
 
-export type NotificationType = 'bet_resolved' | 'bet_cancelled' | 'chat_mention';
+export type NotificationType =
+  | 'bet_resolved'
+  | 'bet_cancelled'
+  | 'chat_mention'
+  | 'friend_request_received'
+  | 'friend_request_accepted';
 
 export interface AppNotification {
   id: string;

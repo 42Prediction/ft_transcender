@@ -710,6 +710,65 @@ export class MarketService {
     }));
   }
 
+  /**
+   * Day-bucketed volume/bets series plus a category volume breakdown, for the
+   * admin analytics dashboard. Same "real trader" exclusions as `getStats()`
+   * (admin/house wagers don't count) so the numbers stay consistent across
+   * both endpoints. Defaults to the trailing 30 days when no range is given.
+   */
+  async getAnalytics(from?: string, to?: string) {
+    const toDate = to ? new Date(to) : new Date();
+    const fromDate = from
+      ? new Date(from)
+      : new Date(toDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const seriesRows = await this.positionRepo
+      .createQueryBuilder('pos')
+      .innerJoin('pos.bettor', 'b')
+      .innerJoin('b.user', 'u')
+      .where('u.role != :admin', { admin: Role.ADMIN })
+      .andWhere('pos.created_at >= :from', { from: fromDate })
+      .andWhere('pos.created_at <= :to', { to: toDate })
+      .select("date_trunc('day', pos.created_at)", 'day')
+      .addSelect('SUM(pos.amount)', 'volume')
+      .addSelect('COUNT(*)', 'bets')
+      .groupBy('day')
+      .orderBy('day', 'ASC')
+      .getRawMany();
+
+    const categoryRows = await this.positionRepo
+      .createQueryBuilder('pos')
+      .innerJoin('pos.market', 'm')
+      .innerJoin('pos.bettor', 'b')
+      .innerJoin('b.user', 'u')
+      .where('u.role != :admin', { admin: Role.ADMIN })
+      .andWhere('pos.created_at >= :from', { from: fromDate })
+      .andWhere('pos.created_at <= :to', { to: toDate })
+      .select('m.category', 'category')
+      .addSelect('SUM(pos.amount)', 'volume')
+      .addSelect('COUNT(*)', 'bets')
+      .groupBy('m.category')
+      .orderBy('volume', 'DESC')
+      .getRawMany();
+
+    const series = seriesRows.map((r) => ({
+      date: new Date(r.day).toISOString().slice(0, 10),
+      volume: Number(r.volume) || 0,
+      bets: Number(r.bets) || 0,
+    }));
+    const categories = categoryRows.map((r) => ({
+      category: r.category,
+      volume: Number(r.volume) || 0,
+      bets: Number(r.bets) || 0,
+    }));
+    const totals = series.reduce(
+      (acc, p) => ({ volume: acc.volume + p.volume, bets: acc.bets + p.bets }),
+      { volume: 0, bets: 0 },
+    );
+
+    return { from: fromDate.toISOString(), to: toDate.toISOString(), series, categories, totals };
+  }
+
   async getCategoryStats() {
     const rows = await this.marketRepo
       .createQueryBuilder('m')
