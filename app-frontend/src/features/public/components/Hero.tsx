@@ -1,4 +1,4 @@
-import { ArrowRight, TrendingUp, Users, Zap } from 'lucide-react';
+import { TrendingUp, Users, Zap } from 'lucide-react';
 import { MarketCard } from './MarketCard';
 import { useRouteLoaderData } from 'react-router-dom';
 import type { MarketDto, PlatformStats } from '@/api/market/market.api';

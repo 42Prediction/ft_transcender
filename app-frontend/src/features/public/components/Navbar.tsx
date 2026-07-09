@@ -18,7 +18,6 @@ export function Navbar() {
   // GET /bettor/me nests the account under `.user` — role lives at
   // profile.user.role, not profile.role.
   const isAdmin = profile?.user?.role === 'admin';
-  const isModerator = profile?.user?.role === 'moderator';
   const location = useLocation();
   const from = location;
 

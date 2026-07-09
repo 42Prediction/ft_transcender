@@ -254,14 +254,6 @@ function MarketHeader({ market }: { market: MarketDto }) {
   );
 }
 
-function IconBtn({ children }: { children: React.ReactNode }) {
-  return (
-    <button className="grid h-10 w-10 place-items-center rounded-xl border border-border/60 bg-surface text-muted-foreground transition hover:border-primary/40 hover:text-foreground">
-      {children}
-    </button>
-  );
-}
-
 /* ─── ChartCard ──────────────────────────────────────── */
 
 function ChartCard({

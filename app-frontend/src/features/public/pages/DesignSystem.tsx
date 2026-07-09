@@ -36,13 +36,11 @@ const COMPONENT_CATALOG: { name: string; path: string; description: string }[] =
   { name: "ActivityInsights", path: "features/user/profile/components/ActivityInsights.tsx", description: "Personal analytics card (area chart + stat row) on the profile page." },
   { name: "NotificationsBell", path: "features/user/notifications/NotificationsBell.tsx", description: "Bell icon with unread badge, dropdown inbox, real-time push via WebSocket." },
   { name: "CreateMarketModal", path: "features/market/components/CreateMarketModal.tsx", description: "Dialog-based form for admin market creation." },
-  { name: "BetModal", path: "features/market/components/BetModal.tsx", description: "YES/NO amount entry dialog, shared by every market surface." },
   { name: "MarketChat", path: "features/market/components/MarketChat.tsx", description: "Per-market real-time chat panel over the shared WebSocket." },
   { name: "RewardsMenu", path: "features/user/engagement/RewardsMenu.tsx", description: "Daily bonus + quests popover, reused in the navbar." },
   { name: "Navbar / Footer", path: "features/public/components/{Navbar,Footer}.tsx", description: "Global chrome, present on every public route." },
   { name: "Dialog", path: "components/ui/dialog.tsx", description: "Radix-based modal primitive underlying every modal in the app." },
   { name: "Button", path: "components/ui/button.tsx", description: "cva-driven variants (default/outline/secondary/ghost/destructive/link) × 8 sizes." },
-  { name: "ProfileCard", path: "components/ProfileCard.tsx", description: "Compact bettor identity card (avatar + nick + campus)." },
 ];
 
 function useCssVar(name: string): string {
@@ -82,7 +80,7 @@ export function DesignSystemPage() {
       <h1 className="font-display text-3xl font-bold">Design System</h1>
       <p className="mt-2 max-w-2xl text-muted-foreground">
         Living reference for the tokens and reusable components behind every screen —
-        color palette, typography, icon set, and a catalog of the {COMPONENT_CATALOG.length + 2}+
+        color palette, typography, icon set, and a catalog of {COMPONENT_CATALOG.length}
         components built once and reused everywhere.
       </p>
 
