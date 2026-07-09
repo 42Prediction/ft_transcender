@@ -336,7 +336,7 @@ function ChartCard({
                 fontSize: 12,
               }}
               labelStyle={{ color: 'oklch(0.68 0.03 265)' }}
-              formatter={(v: number, n: string) => [`${v}%`, n.toUpperCase()]}
+              formatter={(v: any, n: any) => [`${v}%`, String(n).toUpperCase()]}
             />
             <Area type="monotone" dataKey="yes" stroke="oklch(0.78 0.20 150)" strokeWidth={2} fill="url(#yesFill)" />
             <Area type="monotone" dataKey="no" stroke="oklch(0.68 0.22 18)" strokeWidth={2} fill="url(#noFill)" />
