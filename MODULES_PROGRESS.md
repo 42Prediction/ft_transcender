@@ -52,7 +52,7 @@ export, insights de atividade pessoal, design system documentado).
 | Real-time collaborative features (Minor) | 1 | ❌ | Sem evidência |
 | SSR (Minor) | 1 | ❌ | Vite SPA puro, sem SSR |
 | PWA (Minor) | 1 | ❌ | Sem `manifest.json` nem service worker |
-| Design system próprio, ≥10 componentes reutilizáveis (Minor) | 1 | 🟡 | shadcn/radix + Tailwind em `components/ui/` — provavelmente já passa das 10 componentes, mas falta confirmar paleta/tipografia documentadas |
+| Design system próprio, ≥10 componentes reutilizáveis (Minor) | 1 | ✅ | Ver secção "Bonus" abaixo — página `/design-system` documenta paleta/tipografia/ícones e um catálogo de 14 componentes, incluindo 6 primitivos reais em `components/ui/` (Button, Dialog, Card, Badge, Input, Avatar), agora **adotados de facto** (não só listados) em 8 ficheiros de features (login admin, users, contas, perfil, auth modal, criação de market, resolução de market) |
 | Pesquisa avançada com filtros/sort/paginação (Minor) | 1 | ✅ | `/markets` já filtra por categoria/estado/pesquisa; `Markets.tsx` agora também ordena (Volume/Closing soon/Probability) e pagina (12/página, Prev/Next) sobre o resultado filtrado, sem quebrar o modelo de atualização em tempo real via WebSocket |
 | Upload/gestão de ficheiros (Minor) | 1 | 🟡 | `avatar.service.ts` (upload de avatar com `multer`/`sharp`) — cobre imagens, mas não é um sistema genérico multi-tipo (não trabalhado nesta ronda) |
 
@@ -168,7 +168,7 @@ já acima do mínimo (16 − 14). Os 3 que faltavam foram implementados e valida
 |---|---|---|---|---|
 | 1 | **GDPR compliance features** (IV.8, Minor) | 1 | `GET /bettor/me/export` (`bettor.controller.ts`/`bettor.service.ts`) + botão em Settings → Account (`AccountPanel.tsx`) | ✅ testado (dados corretos, `401` sem sessão) |
 | 2 | **Insights de atividade pessoal** (IV.3, Minor) | 1 | `GET /market/portfolio/activity` (`market.service.ts#getMyActivity`) + card "My Activity" no perfil (`ActivityInsights.tsx`) | ✅ testado com dados reais |
-| 3 | **Design system documentado** (IV.1, Minor) | 1 | Página pública `/design-system` (`DesignSystem.tsx`) — paleta lida ao vivo das CSS vars, tipografia, ícones, variantes do Button, catálogo de 12 componentes | ✅ reachable, `tsc` limpo |
+| 3 | **Design system documentado, ≥10 componentes reutilizáveis** (IV.1, Minor) | 1 | Página pública `/design-system` (`DesignSystem.tsx`) — paleta lida ao vivo das CSS vars, tipografia, ícones, variantes de Button/Badge, showcase de Input/Card/Avatar, catálogo de 14 componentes. `components/ui/` tem agora 6 primitivos reais (Button, Dialog, Card, Badge, Input, Avatar) — **adotados** em 8 ficheiros reais (não só exibidos na própria página) | ✅ reachable, `tsc`/lint limpos, sem regressões |
 
 **Total: 14 mandatórios + 5 bónus = 19 pontos**, com justificação de cada módulo (core e
 bónus) escrita no `README.md` (secção "Modules"), conforme exigido pelo Cap. VII. Ir além

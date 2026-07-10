@@ -3,6 +3,10 @@ import { ArrowRight, Check, Shield, X } from 'lucide-react';
 import { Link, useNavigate, useRevalidator, useRouteLoaderData } from 'react-router-dom';
 import type { MarketDto } from '@/api/market/market.api';
 import { marketApi } from '@/api/market/market.api';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Avatar } from '@/components/ui/avatar';
 
 const statusLabel: Record<MarketDto['status'], string> = {
   live: 'Featured · Live',
@@ -22,10 +26,6 @@ function timeUntil(closes: string): string {
   return rem > 0 ? `${d}d ${rem}h` : `${d}d`;
 }
 
-function avatarFallback(name: string): string {
-  return `https://api.dicebear.com/9.x/glass/svg?seed=${encodeURIComponent(name)}&backgroundType=gradientLinear`;
-}
-
 export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => void }) {
   const root = useRouteLoaderData('root') as any;
   // GET /bettor/me nests the account under `.user` — role lives at
@@ -41,7 +41,6 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
 
   const yesPct = Math.round(m.yesPrice * 100);
   const noPct = Math.round(m.noPrice * 100);
-  const avatarSrc = m.avatar ?? avatarFallback(m.handle);
   const isSettled = m.status === 'resolved' || m.status === 'cancelled';
   const canBet = !isSettled && new Date(m.closes).getTime() > Date.now();
   const isAdmin = role === 'admin';
@@ -94,24 +93,17 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
     <>
       <article className="group relative flex flex-col gap-5 rounded-3xl border border-border/60 bg-gradient-card p-6 shadow-card transition hover:border-primary/40 hover:shadow-glow">
         <header className="flex items-center justify-between text-xs">
-          <span className="inline-flex items-center gap-2 rounded-full border border-success/30 bg-success/10 px-2.5 py-1 font-mono uppercase tracking-wider text-success">
+          <Badge className="gap-2 border-success/30 bg-success/10 text-xs text-success">
             <span className="h-1.5 w-1.5 animate-pulse-glow rounded-full bg-success" />
             {statusLabel[m.status]}
-          </span>
+          </Badge>
           <span className="font-mono uppercase tracking-wider text-muted-foreground">
             Closes in {timeUntil(m.closes)}
           </span>
         </header>
 
         <div className="flex items-start gap-3">
-          <img
-            src={avatarSrc}
-            alt={m.student}
-            className="h-11 w-11 shrink-0 rounded-xl bg-gradient-brand object-cover shadow-glow"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = avatarFallback(m.handle);
-            }}
-          />
+          <Avatar src={m.avatar ?? undefined} seed={m.handle} alt={m.student} />
           <div className="min-w-0 flex-1">
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               {m.category}
@@ -167,45 +159,49 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
                   Confirm resolution:
                 </p>
                 <div className="flex gap-2">
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={() => handleResolve('YES')}
                     disabled={resolving}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-success/15 border border-success/30 py-2 text-xs font-semibold text-success transition hover:bg-success/25 disabled:opacity-50"
+                    className="h-auto flex-1 gap-1.5 rounded-lg border border-success/30 bg-success/15 py-2 text-xs font-semibold text-success hover:bg-success/25"
                   >
                     <Check className="h-3.5 w-3.5" />
                     YES
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
                     onClick={() => handleResolve('NO')}
                     disabled={resolving}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-destructive/15 border border-destructive/30 py-2 text-xs font-semibold text-destructive transition hover:bg-destructive/25 disabled:opacity-50"
+                    className="h-auto flex-1 gap-1.5 rounded-lg border border-destructive/30 bg-destructive/15 py-2 text-xs font-semibold text-destructive hover:bg-destructive/25"
                   >
                     <X className="h-3.5 w-3.5" />
                     NO
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="outline"
                     onClick={() => {
                       setResolveConfirm(false);
                       setResolveError(null);
                     }}
                     disabled={resolving}
-                    className="rounded-lg border border-border/60 bg-surface px-3 py-2 text-xs text-muted-foreground transition hover:text-foreground disabled:opacity-50"
+                    className="h-auto rounded-lg px-3 py-2 text-xs text-muted-foreground"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
                 {resolveError && (
                   <p className="text-center text-[11px] text-destructive">{resolveError}</p>
                 )}
               </div>
             ) : (
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setResolveConfirm(true)}
-                className="flex w-full items-center justify-center gap-2 py-1.5 text-xs font-medium text-primary transition hover:text-primary/80"
+                className="h-auto w-full gap-2 py-1.5 text-xs font-medium text-primary hover:text-primary/80"
               >
                 <Shield className="h-3.5 w-3.5" />
                 Resolve Market
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -218,45 +214,48 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
                   Exam ended, 42 hasn't published the grade yet. Enter it to resolve:
                 </p>
                 <div className="flex gap-2">
-                  <input
+                  <Input
                     type="number"
                     value={gradeInput}
                     onChange={(e) => setGradeInput(e.target.value)}
                     placeholder="Grade (0-125)"
                     disabled={resolving}
-                    className="h-9 flex-1 rounded-lg border border-border/60 bg-surface px-2.5 font-mono text-xs text-foreground focus:outline-none focus:border-primary/50"
+                    className="flex-1 rounded-lg font-mono text-xs"
                   />
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={handleResolveWithGrade}
                     disabled={resolving}
-                    className="rounded-lg bg-primary/15 border border-primary/30 px-3 py-2 text-xs font-semibold text-primary transition hover:bg-primary/25 disabled:opacity-50"
+                    className="h-auto rounded-lg border border-primary/30 bg-primary/15 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/25"
                   >
                     Resolve
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="outline"
                     onClick={() => {
                       setResolveConfirm(false);
                       setResolveError(null);
                       setGradeInput('');
                     }}
                     disabled={resolving}
-                    className="rounded-lg border border-border/60 bg-surface px-3 py-2 text-xs text-muted-foreground transition hover:text-foreground disabled:opacity-50"
+                    className="h-auto rounded-lg px-3 py-2 text-xs text-muted-foreground"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
                 {resolveError && (
                   <p className="text-center text-[11px] text-destructive">{resolveError}</p>
                 )}
               </div>
             ) : (
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setResolveConfirm(true)}
-                className="flex w-full items-center justify-center gap-2 py-1.5 text-xs font-medium text-warning transition hover:text-warning/80"
+                className="h-auto w-full gap-2 py-1.5 text-xs font-medium text-warning hover:text-warning/80"
               >
                 <Shield className="h-3.5 w-3.5" />
                 Resolve manually (exam ended)
-              </button>
+              </Button>
             )}
           </div>
         )}

@@ -36,6 +36,8 @@ import { marketApi, type ActivityEntry, type MarketDto, type PricePoint } from '
 import { cn } from '@/lib/utils';
 import { useMarketUpdates } from '@/features/market/hooks/useMarketUpdates';
 import { MarketChat } from '@/features/market/components/MarketChat';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 /* ─── types ─────────────────────────────────────────── */
 
@@ -812,42 +814,46 @@ function MarketInfoCard({ market }: { market: MarketDto }) {
             <div className="space-y-2">
               <p className="text-center text-xs text-muted-foreground">Confirm resolution:</p>
               <div className="flex gap-2">
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => handleResolve('YES')}
                   disabled={resolving}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-success/30 bg-success/15 py-2 text-xs font-semibold text-success transition hover:bg-success/25 disabled:opacity-50"
+                  className="h-auto flex-1 gap-1.5 rounded-lg border border-success/30 bg-success/15 py-2 text-xs font-semibold text-success hover:bg-success/25"
                 >
                   <Check className="h-3.5 w-3.5" /> YES
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
                   onClick={() => handleResolve('NO')}
                   disabled={resolving}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/15 py-2 text-xs font-semibold text-destructive transition hover:bg-destructive/25 disabled:opacity-50"
+                  className="h-auto flex-1 gap-1.5 rounded-lg border border-destructive/30 bg-destructive/15 py-2 text-xs font-semibold text-destructive hover:bg-destructive/25"
                 >
                   <X className="h-3.5 w-3.5" /> NO
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setResolveConfirm(false);
                     setResolveError(null);
                   }}
                   disabled={resolving}
-                  className="rounded-lg border border-border/60 bg-surface px-3 py-2 text-xs text-muted-foreground transition hover:text-foreground"
+                  className="h-auto rounded-lg px-3 py-2 text-xs text-muted-foreground"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
               {resolveError && (
                 <p className="text-center text-[11px] text-destructive">{resolveError}</p>
               )}
             </div>
           ) : (
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setResolveConfirm(true)}
-              className="flex w-full items-center justify-center gap-2 py-1.5 text-xs font-medium text-primary transition hover:text-primary/80"
+              className="h-auto w-full gap-2 py-1.5 text-xs font-medium text-primary hover:text-primary/80"
             >
               <Shield className="h-3.5 w-3.5" /> Resolve Market
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -860,44 +866,47 @@ function MarketInfoCard({ market }: { market: MarketDto }) {
                 Exam ended, 42 hasn't published the grade yet. Enter it to resolve:
               </p>
               <div className="flex gap-2">
-                <input
+                <Input
                   type="number"
                   value={gradeInput}
                   onChange={(e) => setGradeInput(e.target.value)}
                   placeholder="Grade (0-125)"
                   disabled={resolving}
-                  className="h-9 flex-1 rounded-lg border border-border/60 bg-surface px-2.5 font-mono text-xs text-foreground focus:outline-none focus:border-primary/50"
+                  className="flex-1 rounded-lg font-mono text-xs"
                 />
-                <button
+                <Button
+                  variant="ghost"
                   onClick={handleResolveWithGrade}
                   disabled={resolving}
-                  className="rounded-lg border border-primary/30 bg-primary/15 px-3 py-2 text-xs font-semibold text-primary transition hover:bg-primary/25 disabled:opacity-50"
+                  className="h-auto rounded-lg border border-primary/30 bg-primary/15 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/25"
                 >
                   Resolve
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setResolveConfirm(false);
                     setResolveError(null);
                     setGradeInput('');
                   }}
                   disabled={resolving}
-                  className="rounded-lg border border-border/60 bg-surface px-3 py-2 text-xs text-muted-foreground transition hover:text-foreground"
+                  className="h-auto rounded-lg px-3 py-2 text-xs text-muted-foreground"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
               {resolveError && (
                 <p className="text-center text-[11px] text-destructive">{resolveError}</p>
               )}
             </div>
           ) : (
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setResolveConfirm(true)}
-              className="flex w-full items-center justify-center gap-2 py-1.5 text-xs font-medium text-warning transition hover:text-warning/80"
+              className="h-auto w-full gap-2 py-1.5 text-xs font-medium text-warning hover:text-warning/80"
             >
               <Shield className="h-3.5 w-3.5" /> Resolve manually (exam ended)
-            </button>
+            </Button>
           )}
         </div>
       )}
