@@ -7,3 +7,6 @@ app-backend/node_modules
 app-frontend/node_modules
 coverage
 uploads
+en.subject.pdf
+.claude
+CLAUDE.md

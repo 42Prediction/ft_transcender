@@ -1,4 +1,3 @@
-// import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   User,
@@ -6,15 +5,14 @@ import {
   TrendingUp,
   Bell,
   KeyRound,
-  Code2,
 } from "lucide-react";
 import { PerfilPanel } from "../components/PerfilPanel";
 import { PlaceholderPanel } from "../components/PlaceholderPanel";
-import { FriendList } from "../components/ListaAmigos";
+import { AccountPanel } from "../components/AccountPanel";
 import { useRouteLoaderData } from "react-router-dom";
 
 
-type TabKey = "profile" | "account" | "negotiation" | "notifications" | "api" | "Friends";
+type TabKey = "profile" | "account" | "negotiation" | "notifications" | "api";
 
 const TABS: { key: TabKey; label: string; icon: typeof User }[] = [
   { key: "profile", label: "Profile", icon: User },
@@ -22,7 +20,6 @@ const TABS: { key: TabKey; label: string; icon: typeof User }[] = [
   { key: "negotiation", label: "Negotiation", icon: TrendingUp },
   { key: "notifications", label: "Notifications", icon: Bell },
   { key: "api", label: "API Keys", icon: KeyRound },
-  { key: "Friends", label: "Friends", icon: Code2 },
 ];
 
 
@@ -59,11 +56,10 @@ export function SettingsPage() {
 
           <section>
             {active === "profile" && <PerfilPanel bettor={bettor} />}
-            {active === "account" && <PlaceholderPanel title="Account" />}
+            {active === "account" && <AccountPanel />}
             {active === "negotiation" && <PlaceholderPanel title="Negotiation" />}
             {active === "notifications" && <PlaceholderPanel title="Notifications" />}
             {active === "api" && <PlaceholderPanel title="API Keys" />}
-            {active === "Friends" && <FriendList bettor={bettor} />}
           </section>
         </div>
       </main>

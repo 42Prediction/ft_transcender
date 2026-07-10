@@ -1,17 +1,29 @@
-import { BadgeCheck, UserPlus, Share2, MapPin, Calendar, UserPen } from "lucide-react";
+import { MapPin, Calendar, UserPen } from "lucide-react";
+import { Link } from "react-router-dom";
 import type { Bettor } from "../route";
+import type { BettorStats } from "@/api/market/market.api";
 
 
-const quickMetrics = [
-  { label: "Accuracy", value: "73.4%", trend: "+2.1%", up: true },
-  { label: "Net P&L", value: "+₳ 12.5k", trend: "+6.2%", up: true },
-  { label: "Reputation", value: "8,420", trend: "+184", up: true },
-];
+interface Props {
+  bettor: Bettor;
+  isOwn: boolean;
+  stats: BettorStats | null;
+}
 
+export function ProfileHeader({ bettor, isOwn, stats }: Props) {
+  const pnlNum = stats ? parseFloat(stats.pnl) : 0;
+  const pnlUp = pnlNum >= 0;
 
-interface Props { bettor: Bettor; isOwn: boolean }
+  const quickMetrics = [
+    {
+      label: "Net P&L",
+      value: `${pnlUp ? "+" : "-"}xp ${Math.abs(pnlNum).toLocaleString("pt-PT", { minimumFractionDigits: 2 })}`,
+      className: pnlUp ? "text-[color:var(--yes)]" : "text-[color:var(--no)]",
+    },
+    { label: "Win rate", value: `${stats?.winRate ?? 0}%`, className: "" },
+    { label: "Predictions", value: String(stats?.totalBets ?? 0), className: "" },
+  ];
 
-export function ProfileHeader({ bettor, isOwn }: Props) {
   return (
     <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-card p-6 md:p-8">
       <div className="relative grid gap-6 md:grid-cols-[auto_1fr_auto] md:items-center">
@@ -31,12 +43,9 @@ export function ProfileHeader({ bettor, isOwn }: Props) {
         {/* Identity */}
         <div className="space-y-3">
           <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
-                {bettor?.nick ?? "—"}
-              </h1>
-              <BadgeCheck className="h-6 w-6 text-accent" />
-            </div>
+            <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
+              {bettor?.nick ?? "—"}
+            </h1>
             <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
               <span className="font-mono text-foreground/80">@{bettor?.nick ?? "—"}</span>
               <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {bettor?.campus ?? "—"}</span>
@@ -60,29 +69,23 @@ export function ProfileHeader({ bettor, isOwn }: Props) {
             {quickMetrics.map((m) => (
               <div key={m.label} className="rounded-xl border border-border/60 bg-surface/60 px-3 py-2">
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{m.label}</div>
-                <div className="mt-0.5 font-mono text-sm font-semibold">{m.value}</div>
-                <div className={`text-[10px] ${m.up ? "text-[color:var(--yes)]" : "text-[color:var(--no)]"}`}>{m.trend}</div>
+                <div className={`mt-0.5 font-mono text-sm font-semibold ${m.className}`}>{m.value}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex flex-col gap-2">
-          {!isOwn && (
-            <button className="flex items-center justify-center gap-2 rounded-xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90">
-              <UserPlus className="h-4 w-4" /> 
-            </button>
-          )}
-          {isOwn && (
-            <button className="flex items-center justify-center gap-2 rounded-xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90">
+        {isOwn && (
+          <div className="flex flex-col gap-2">
+            <Link
+              to="/user/settings"
+              className="flex items-center justify-center gap-2 rounded-xl bg-gradient-brand px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+            >
               <UserPen className="h-4 w-4" /> Edit
-            </button>
-          )}
-          <button className="flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-surface px-5 py-2.5 text-sm font-medium text-foreground transition hover:bg-surface-elevated">
-            <Share2 className="h-4 w-4" /> Share
-          </button>
-        </div>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
