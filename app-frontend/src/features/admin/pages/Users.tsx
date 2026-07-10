@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import { user as userApi, type UserMe } from "@/api/user/user.api";
 import { auth } from "@/api/auth/auth.api";
-import { BarChart3, ChevronLeft, Loader2, LogOut, Search, ShieldCheck, ShieldOff, Trash2 } from "lucide-react";
-import { Link, useRouteLoaderData } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Loader2, LogOut, Search, Trash2 } from "lucide-react";
+import { useRevalidator, useRouteLoaderData } from "react-router-dom";
 
 export default function UsersPage() {
     const [users, setUsers] = useState<UserMe[]>([]);
@@ -13,7 +11,6 @@ export default function UsersPage() {
     const [search, setSearch] = useState("");
     const data = useRouteLoaderData('admin-root') as any;
     const profile = data?.data;
-    const isAdmin = profile?.role === 'admin';
 
     useEffect(() => {
         userApi.getAll()
@@ -38,14 +35,6 @@ export default function UsersPage() {
         }
     };
 
-    const handleSetRole = async (id: string, role: "moderator" | "user") => {
-        try {
-            await userApi.updateById(id, { role });
-            setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
-        } catch (err) {
-        }
-    };
-
     const handleLogout = async () => {
         await auth.signout();
         window.location.href = '/admin/login';
@@ -62,56 +51,31 @@ export default function UsersPage() {
 
             {/* header */}
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                    <Link
-                        to="/"
-                        className="flex items-center gap-1 rounded-lg bg-secondary px-2.5 py-1.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/80 transition-colors"
-                    >
-                        <ChevronLeft className="h-3.5 w-3.5" />
-                        <span className="hidden sm:inline">Home</span>
-                    </Link>
-                    <Link
-                        to="/admin/analytics"
-                        className="flex items-center gap-1 rounded-lg border border-border/60 bg-surface px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                        <BarChart3 className="h-3.5 w-3.5" />
-                        <span className="hidden sm:inline">Analytics</span>
-                    </Link>
-                    <div>
-                        <h1 className="text-lg font-medium text-foreground">Users</h1>
-                        <p className="text-xs text-muted-foreground">
-                            {filtered.length} user{filtered.length !== 1 ? "s" : ""}
-                            {!isAdmin && " · read-only"}
-                        </p>
-                    </div>
+                <div>
+                    <h1 className="text-lg font-medium text-foreground">Users</h1>
+                    <p className="text-xs text-muted-foreground">{filtered.length} user{filtered.length !== 1 ? "s" : ""}</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="relative">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                        <Input
+                        <input
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search by email…"
-                            className="pl-8 h-8 w-48 md:w-56 rounded-lg"
+                            className="pl-8 h-8 w-48 md:w-56 rounded-lg border border-border/60 bg-surface text-sm focus:outline-none focus:border-primary/50"
                         />
                     </div>
                     <div className="flex items-center gap-2 border-l border-border/60 pl-2">
                         <span className="hidden sm:block text-xs text-muted-foreground">
                             {profile?.email?.split('@')[0]}
-                            {!isAdmin && (
-                                <span className="ml-1.5 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-500">
-                                    Moderator
-                                </span>
-                            )}
                         </span>
-                        <Button
-                            variant="ghost"
+                        <button
                             onClick={handleLogout}
-                            className="h-auto gap-1.5 rounded-lg bg-red-500/10 px-2.5 py-1.5 text-xs text-red-500 hover:bg-red-500/20"
+                            className="flex items-center gap-1.5 rounded-lg bg-red-500/10 px-2.5 py-1.5 text-xs text-red-500 hover:bg-red-500/20 transition-colors"
                         >
                             <LogOut className="h-3.5 w-3.5" />
                             <span className="hidden sm:inline">Logout</span>
-                        </Button>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -126,15 +90,13 @@ export default function UsersPage() {
                                 <th className="px-4 py-2.5 text-left font-medium text-muted-foreground hidden sm:table-cell">Role</th>
                                 <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">State</th>
                                 <th className="px-4 py-2.5 text-left font-medium text-muted-foreground hidden md:table-cell">Created at</th>
-                                {isAdmin && (
-                                    <th className="px-4 py-2.5 text-center font-medium text-muted-foreground">Action</th>
-                                )}
+                                <th className="px-4 py-2.5 text-center font-medium text-muted-foreground">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filtered.length === 0 ? (
                                 <tr>
-                                    <td colSpan={isAdmin ? 5 : 4} className="py-10 text-center text-muted-foreground">
+                                    <td colSpan={5} className="py-10 text-center text-muted-foreground">
                                         No users found.
                                     </td>
                                 </tr>
@@ -153,42 +115,16 @@ export default function UsersPage() {
                                         <td className="px-4 py-2.5 hidden md:table-cell text-muted-foreground">
                                             {new Date(u.createdAt).toLocaleDateString("pt-PT")}
                                         </td>
-                                        {isAdmin && (
-                                            <td className="px-4 py-2.5">
-                                                <div className="flex justify-center gap-1.5">
-                                                    {u.role === "moderator" ? (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon-sm"
-                                                            onClick={() => handleSetRole(u.id, "user")}
-                                                            title="Remove moderator"
-                                                            className="rounded-lg bg-amber-500/10 text-amber-500 hover:bg-amber-500/20"
-                                                        >
-                                                            <ShieldOff className="h-3.5 w-3.5" />
-                                                        </Button>
-                                                    ) : (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon-sm"
-                                                            onClick={() => handleSetRole(u.id, "moderator")}
-                                                            title="Promote to moderator"
-                                                            className="rounded-lg bg-primary/10 text-primary hover:bg-primary/20"
-                                                        >
-                                                            <ShieldCheck className="h-3.5 w-3.5" />
-                                                        </Button>
-                                                    )}
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon-sm"
-                                                        onClick={() => handleDelete(u.id)}
-                                                        title="Delete user"
-                                                        className="rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20"
-                                                    >
-                                                        <Trash2 className="h-3.5 w-3.5" />
-                                                    </Button>
-                                                </div>
-                                            </td>
-                                        )}
+                                        <td className="px-4 py-2.5">
+                                            <div className="flex justify-center">
+                                                <button
+                                                    onClick={() => handleDelete(u.id)}
+                                                    className="grid h-7 w-7 place-items-center rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </button>
+                                            </div>
+                                        </td>
                                     </tr>
                                 ))
                             )}

@@ -1,17 +1,8 @@
 // Ajusta o caminho de importação conforme necessário para chegar ao teu ficheiro api.ts principal
 import { api } from '../api';
 
-export interface BettorSearchResult {
-  id: string;
-  nick: string;
-  avatar: string | null;
-  campus: string | null;
-}
-
 export const friendApi = {
   getFriends: () => api.get('/bettor/me/friends'),
-  searchBettors: (q: string) =>
-    api.get<{ data: BettorSearchResult[] }>('/bettor/search', { params: { q } }),
   getReceivedRequests: () => api.get('/bettor/me/friend-requests/received'),
   getSentRequests: () => api.get('/bettor/me/friend-requests/sent'),
   checkNickExists: (nick: string) => api.get<{ exists: boolean }>(`/bettor/@${nick}/exists`),

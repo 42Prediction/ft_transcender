@@ -1,3 +1,5 @@
+import { Route } from "react-router-dom";
+
 export default function Notfound(){
     return (
        <div className="flex h-screen bg-background items-center justify-center text-[#00FF9D]">

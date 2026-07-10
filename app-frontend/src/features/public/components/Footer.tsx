@@ -39,7 +39,6 @@ export function Footer() {
             links: [
               { label: "Markets", to: "/markets" },
               { label: "Leaderboard", to: "/leaderboard" },
-              { label: "Design System", to: "/design-system" },
             ],
           },
           {

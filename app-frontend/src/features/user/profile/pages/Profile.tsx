@@ -1,43 +1,56 @@
 import { useLoaderData, useRouteLoaderData } from "react-router-dom";
 import { ProfileHeader } from "../components/ProfileHeader";
+import { StatsRow } from "../components/StatsRow";
+import { AccuracyChart } from "../components/AccuracyChart";
 import { WinLossChart } from "../components/WinLossChart";
-import { PortfolioSection } from "../components/PortfolioSection";
-import { BetHistory } from "../components/BetHistory";
-import { ActivityInsights } from "../components/ActivityInsights";
-import type { ProfileLoaderData } from "../route";
+import { ActivePredictions } from "../components/ActivePredictions";
+import { HistoryTable } from "../components/HistoryTable";
+import { ReputationCard } from "../components/ReputationCard";
+import { ActivityFeed } from "../components/ActivityFeed";
+import { TopPerformances } from "../components/Topperformances";
+import type { Bettor } from "../route";
+import { useMemo } from "react";
 
 
 export default function ProfilePage() {
-  const { bettor, stats, positions, portfolio } = useLoaderData() as ProfileLoaderData;
+
+  const loaderData = useLoaderData();
+  const data = useMemo(() => {
+    return loaderData; // Reference the value here
+  }, [loaderData]);
+
+  const bettor = data?.data as Bettor;
 
   const authUser = useRouteLoaderData('root') as any;
 
   const isAuthenticated = authUser?.success === true;
-  const isOwn = isAuthenticated && authUser?.data?.nick === bettor?.nick;
-
-  const pending = stats ? Math.max(stats.totalBets - stats.wins - stats.losses, 0) : 0;
-
+  const isOwn = isAuthenticated && authUser?.data.nick === bettor?.nick;
   return (
     <div className="dark min-h-screen bg-background text-foreground">
       <div className="pointer-events-none fixed inset-0 bg-gradient-hero opacity-60" />
       <div className="relative">
         <main className="mx-auto max-w-[1400px] px-6 py-8 space-y-8">
 
-          <ProfileHeader bettor={bettor} isOwn={isOwn} stats={stats} />
+          <ProfileHeader bettor={bettor} isOwn={isOwn} />
 
-          {isOwn && portfolio && <PortfolioSection portfolio={portfolio} />}
+          <StatsRow />
 
-          <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:items-start">
-            <BetHistory positions={positions} />
-            <div className="min-w-0 space-y-6">
-              <WinLossChart
-                wins={stats?.wins ?? 0}
-                losses={stats?.losses ?? 0}
-                pending={pending}
-              />
-              {isOwn && <ActivityInsights />}
-            </div>
+          <div className="grid gap-6 lg:grid-cols-3">
+            <AccuracyChart />
+            <WinLossChart />
           </div>
+
+          <ActivePredictions />
+
+          <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+            <HistoryTable />
+            <aside className="space-y-6">
+              <ReputationCard />
+              <ActivityFeed />
+            </aside>
+          </div>
+
+          <TopPerformances />
 
         </main>
       </div>

@@ -28,7 +28,7 @@ export class UserController {
   }
 
   @Get()
-  @Roles('admin', 'moderator')
+  @Roles('admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @HttpCode(HttpStatus.OK)
   async findAll() {
@@ -55,7 +55,7 @@ export class UserController {
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'moderator')
+  @Roles('admin')
   @HttpCode(HttpStatus.OK)
   async findOne(@Param('id') id: string) {
     try {

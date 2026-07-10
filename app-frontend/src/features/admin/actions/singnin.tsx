@@ -13,7 +13,7 @@ export async function adminSigninAction({ request }: { request: Request }) {
     try {
         const res = await auth.signin({ email, password });
         const role = res?.data?.user.role ?? res.data?.role;
-        if (role !== 'admin' && role !== 'moderator') {
+        if (role !== 'admin') {
             return { error: 'Access denied.' };
         }
 

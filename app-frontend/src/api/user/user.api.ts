@@ -3,10 +3,7 @@ import api from "../api";
 export interface UserMe {
     id: string;
     email: string;
-    role: string;
-    state: boolean;
-    createdAt: string;
-    updatedAt: string;
+    role: string
 }
 export const user = {
     getMe: async () => {

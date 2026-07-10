@@ -3,7 +3,6 @@ import Logo from "@/components/Logo";
 import { Dialog, DialogContent, DialogTitle} from "@/components/ui/dialog";
 import { Mail, Lock, Eye, EyeOff, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import OAuth from "./OAuth";
 import Field from "./Field";
 import Divider from "./Divider";
@@ -82,7 +81,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
       >
         <DialogTitle className="sr-only">{tab === "signin" ? "Sign in to 42 Prediction" : "Create your 42 Prediction account"}</DialogTitle>
 
-        <div className="relative rounded-2xl border border-border/60 bg-gradient-card p-5 shadow-elevated backdrop-blur-2xl sm:p-7">
+        <div className="relative rounded-2xl border border-border/60 bg-gradient-card p-7 shadow-elevated backdrop-blur-2xl">
           {/* Tabs */}
           <div className="relative mb-7 flex items-center border-b border-border/50">
             {(["signin", "signup"] as Tab[]).map((t) => (
@@ -151,21 +150,23 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
               )}
 
               <div className="flex justify-end">
-                <Button type="button" variant="link" className="h-auto p-0 text-xs font-medium">
+                <button type="button" className="text-xs font-medium text-primary hover:underline">
                   Forgot your password?
-                </Button>
+                </button>
               </div>
               {localError && (
                 <div className="text-center text-xs text-destructive/80">
                   {localError}
                 </div>
               )}
-              <Button
+              <button
                 type="submit"
-                className="relative h-12 w-full rounded-xl font-semibold"
+                className={cn(
+                  "relative flex h-12 w-full items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground transition-all hover:opacity-80",
+                )}
               >
                 {(loading) ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign In"}
-              </Button>
+              </button>
 
 
               <Divider>or continue with</Divider>
@@ -245,16 +246,18 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
                   {localError}
                 </div>
               )}
-              <Button
+              <button
                 type="submit"
                 disabled={!registerValid || loading}
                 className={cn(
-                  "h-12 w-full rounded-xl font-semibold",
-                  !registerValid || loading ? "cursor-not-allowed" : "",
+                  "flex h-12 w-full items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground transition-all",
+                  registerValid && !loading
+                    ? "hover:opacity-95"
+                    : "cursor-not-allowed opacity-50",
                 )}
               >
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign Up"}
-              </Button>
+              </button>
 
               <Divider>or signin with</Divider>
 
@@ -262,9 +265,9 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signin" }: AuthMod
 
               <p className="text-center text-sm text-muted-foreground">
                 Do you already have an account?{" "}
-                <Button type="button" variant="link" onClick={() => setTab("signin")} className="h-auto p-0 font-medium">
+                <button type="button" onClick={() => setTab("signin")} className="font-medium text-primary hover:underline">
                   Sign In
-                </Button>
+                </button>
               </p>
             </Form>
           )}

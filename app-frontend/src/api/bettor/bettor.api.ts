@@ -20,10 +20,5 @@ export const bettor = {
     getByNick: async (nick: string) => {
         const url = `/bettor/@${nick}`
         return api.get(url)
-    },
-
-    exportMyData: async (): Promise<any> => {
-        const res = await api.get('/bettor/me/export');
-        return res.data?.data;
-    },
+    }
 }

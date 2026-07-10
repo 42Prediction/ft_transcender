@@ -4,8 +4,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { BettorModule } from './modules/bettor/bettor.module';
-import { MarketModule } from './modules/market/market.module';
-import { School42Module } from './modules/school42/school42.module';
 
 @Module({
   imports: [
@@ -30,9 +28,8 @@ import { School42Module } from './modules/school42/school42.module';
     }),
     UserModule,
     AuthModule,
+    UserModule,
     BettorModule,
-    MarketModule,
-    School42Module,
   ],
 })
 export class AppModule {}

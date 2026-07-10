@@ -1,76 +1,18 @@
-import { Home } from './pages/Home';
-import { PrivacyPage } from './pages/Privacy';
-import { TermsPage } from './pages/Terms';
-import { Markets, marketsLoader } from './pages/Markets';
-import { Leaderboard, leaderboardLoader } from './pages/Leaderboard';
-import { MarketDetail, marketDetailLoader } from './pages/MarketDetail';
-import { DesignSystemPage } from './pages/DesignSystem';
-import { HowItWorksPage } from './pages/HowItWorks';
-import { TradingGuidePage } from './pages/TradingGuide';
-import { FaqPage } from './pages/Faq';
-import { AboutPage } from './pages/About';
-import { marketApi } from '@/api/market/market.api';
+import { Home } from "./pages/Home";
+import { PrivacyPage } from "./pages/Privacy";
+import { TermsPage } from "./pages/Terms";
 
-async function homeLoader() {
-  try {
-    const [trending, stats] = await Promise.all([
-      marketApi.getTrending(4),
-      marketApi.getStats(),
-    ]);
-    return { trending, stats };
-  } catch {
-    return { trending: [], stats: null };
-  }
-}
-
-export const publicRouter = [
+export const publicRouter = ([
   {
     index: true,
-    id: 'home',
     Component: Home,
-    loader: homeLoader,
-  },
-  {
-    path: '/markets',
-    Component: Markets,
-    loader: marketsLoader,
-  },
-  {
-    path: '/leaderboard',
-    Component: Leaderboard,
-    loader: leaderboardLoader,
-  },
-  {
-    path: '/market/:id',
-    Component: MarketDetail,
-    loader: marketDetailLoader,
   },
   {
     path: '/privacy',
-    Component: PrivacyPage,
+    Component: PrivacyPage
   },
   {
     path: '/terms',
-    Component: TermsPage,
-  },
-  {
-    path: '/design-system',
-    Component: DesignSystemPage,
-  },
-  {
-    path: '/how-it-works',
-    Component: HowItWorksPage,
-  },
-  {
-    path: '/trading-guide',
-    Component: TradingGuidePage,
-  },
-  {
-    path: '/faq',
-    Component: FaqPage,
-  },
-  {
-    path: '/about',
-    Component: AboutPage,
-  },
-];
+    Component: TermsPage
+  }
+])

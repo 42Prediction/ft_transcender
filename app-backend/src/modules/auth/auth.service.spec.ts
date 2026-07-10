@@ -270,9 +270,7 @@ describe('AuthService_2', () => {
           email: 'new@42luanda.com'
         });
         expect(mockBettorService.create).toHaveBeenCalledWith(newUser, {
-          campus: '42Luanda',
-          school42Login: 'newbie',
-          level: 0
+          campus: '42Luanda'
         });
         expect(result).toEqual({ access_token: 'signed-jwt-token' });
       });
@@ -315,7 +313,7 @@ describe('AuthService_2', () => {
 
         const profile = await (service as any).profileOauth42School('some-token');
 
-        expect(profile).toEqual({ name: 'jdoe', email: 'jdoe@42luanda.com', campus: '42Luanda', level: 0 });
+        expect(profile).toEqual({ name: 'jdoe', email: 'jdoe@42luanda.com', campus: '42Luanda' });
         expect(mockFetch).toHaveBeenCalledWith(
           'https://api.intra.42.fr/v2/me',
           expect.objectContaining({

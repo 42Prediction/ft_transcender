@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Wallet } from "./entities/wallet.entity";
-import { Repository, DataSource, EntityManager } from "typeorm";
+import { Repository, DataSource } from "typeorm";
 import { Transaction, TransactionStatus, TransactionType } from "./entities/transaction.entity";
 import { WalletResponseDto } from "./dto/wallet-response.dto";
 import { TransactionResponseDto } from "./dto/transaction-response.dto";
@@ -9,10 +9,6 @@ import { CreditWalletDto } from "./dto/credit.dto";
 import { DebitWalletDto } from "./dto/debit.dto";
 
 const INITIAL_BALANCE = 1000;
-// The single admin acts as the house: it funds every market's seed liquidity
-// and collects the rake. It therefore starts with a large treasury rather than
-// the regular new-user bonus.
-export const ADMIN_TREASURY_BALANCE = 1_000_000;
 
 @Injectable()
 export class WalletService {
@@ -24,35 +20,31 @@ export class WalletService {
         private readonly dataSource: DataSource
     ) { }
 
-    async createWallet(
-        idBettor: string,
-        initialBalance: number = INITIAL_BALANCE,
-        description = 'New user bonus',
-    ): Promise<WalletResponseDto> {
+    async createWallet(idBettor: string): Promise<WalletResponseDto> {
         const existing = await this.walletRepository.findOne({ where: { idBettor } });
         if (existing)
             throw new ConflictException(`Wallet already exists for user ${idBettor}`);
         return this.dataSource.transaction(async (manager) => {
             const wallet = manager.create(Wallet, {
                 idBettor,
-                balance: initialBalance,
+                balance: INITIAL_BALANCE,
             });
             const savedWallet = await manager.save(Wallet, wallet);
 
             const transaction = manager.create(Transaction, {
                 idWallet: savedWallet.id,
-                amount: initialBalance,
+                amount: INITIAL_BALANCE,
                 type: TransactionType.DEPOSIT,
                 status: TransactionStatus.COMPLETED,
                 balanceBefore: 0,
-                balanceAfter: initialBalance,
-                description,
+                balanceAfter: INITIAL_BALANCE,
+                description: 'New user bonus'
 
             });
 
             await manager.save(Transaction, transaction);
 
-            this.logger.log(`Wallet created for user ${idBettor} with initial balance of ${initialBalance}`);
+            this.logger.log(`Wallet created for user ${idBettor} with initial balance of ${INITIAL_BALANCE}`);
             return this.toWalletDto(savedWallet);
         });
     }
@@ -76,19 +68,10 @@ export class WalletService {
         return transactions.map(this.toTransactionDto);
     }
 
-    /**
-     * Credits a wallet. Pass `externalManager` to run inside a caller-owned
-     * transaction (so the credit and the caller's own writes commit atomically);
-     * omit it to run in its own transaction.
-     */
-    async credit(
-        idBettor: string,
-        dto: CreditWalletDto,
-        externalManager?: EntityManager,
-    ): Promise<TransactionResponseDto> {
+    async credit(idBettor: string, dto: CreditWalletDto): Promise<TransactionResponseDto> {
         if (dto.amount <= 0)
             throw new BadRequestException('The credit amount must be positive');
-        const run = async (manager: EntityManager) => {
+        return this.dataSource.transaction(async (manager) => {
             const wallet = await manager
                 .createQueryBuilder(Wallet, 'wallet')
                 .setLock('pessimistic_write')
@@ -115,8 +98,7 @@ export class WalletService {
             const saved = await manager.save(Transaction, transaction);
             this.logger.log(`Credit of ${dto.amount} applied to user ${idBettor}. New balance: ${balanceAfter}`);
             return this.toTransactionDto(saved);
-        };
-        return externalManager ? run(externalManager) : this.dataSource.transaction(run);
+        });
     }
 
     async debit(idBettor: string, dto: DebitWalletDto): Promise<TransactionResponseDto> {

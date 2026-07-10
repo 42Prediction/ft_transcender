@@ -1,13 +1,8 @@
 import { auth } from "@/api/auth/auth.api";
 import Logo from "@/components/Logo";
-import { ChevronDown, LogOut, Menu, Plus, Settings, UserStar, Wallet, X } from "lucide-react";
+import { Bell, ChevronDown, LogOut, Search, Settings, Wallet } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useRevalidator, useRouteLoaderData } from "react-router-dom";
-import { CreateMarketModal } from "@/features/market/components/CreateMarketModal";
-import { SearchBox } from "./SearchBox";
-import { FriendsMenu } from "@/features/user/friends/FriendsMenu";
-import { NotificationsBell } from "@/features/user/notifications/NotificationsBell";
-import { RewardsMenu } from "@/features/user/engagement/RewardsMenu";
 
 
 export function Navbar() {
@@ -15,20 +10,12 @@ export function Navbar() {
   const revalidator = useRevalidator();
   const data = useRouteLoaderData('root') as any;
   const profile = data?.data;
-  // GET /bettor/me nests the account under `.user` — role lives at
-  // profile.user.role, not profile.role.
-  const isAdmin = profile?.user?.role === 'admin';
   const location = useLocation();
   const from = location;
 
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [createMarketOpen, setCreateMarketOpen] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [location]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -60,70 +47,23 @@ export function Navbar() {
         </Link>
 
         <nav className="hidden items-center gap-1 text-sm text-muted-foreground lg:flex">
-          <Link to="/markets" className="rounded-lg px-3 py-1.5 transition hover:bg-surface hover:text-foreground">Markets</Link>
-          <Link to="/leaderboard" className="rounded-lg px-3 py-1.5 transition hover:bg-surface hover:text-foreground">Leaderboard</Link>
+          <Link to="/" className="rounded-lg px-3 py-1.5 transition hover:bg-surface hover:text-foreground">Markets</Link>
+          <Link to="/Leaderboard" className="rounded-lg px-3 py-1.5 transition hover:bg-surface hover:text-foreground">Leaderboard</Link>
         </nav>
 
         <div className="ml-auto flex flex-1 items-center gap-3 lg:flex-initial">
-          {
-            profile &&
-            <SearchBox />
-          }
-        </div>
-        {isAdmin && (
-          <button
-            onClick={() => setCreateMarketOpen(true)}
-            className="hidden h-10 items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 text-sm font-medium text-primary transition hover:bg-primary/20 md:flex"
-          >
-            <Plus className="h-4 w-4" />
-            New Market
-          </button>
-        )}
-        {profile ? UserInfo(profile, dropdownRef, setOpen, open, auth.signout, revalidator, navigate) : SignButtons(from)}
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Menu"
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border/60 bg-surface text-muted-foreground transition hover:text-foreground lg:hidden"
-        >
-          {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-        </button>
-        <CreateMarketModal open={createMarketOpen} onOpenChange={setCreateMarketOpen} />
-      </div>
-
-      {mobileOpen && (
-        <nav className="border-t border-border/40 px-6 py-3 lg:hidden">
-          <div className="flex flex-col gap-1 text-sm">
-            <Link to="/markets" className="rounded-lg px-3 py-2 text-muted-foreground transition hover:bg-surface hover:text-foreground">Markets</Link>
-            <Link to="/leaderboard" className="rounded-lg px-3 py-2 text-muted-foreground transition hover:bg-surface hover:text-foreground">Leaderboard</Link>
-            {isAdmin && (
-              <button
-                onClick={() => {
-                  setMobileOpen(false);
-                  setCreateMarketOpen(true);
-                }}
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-left font-medium text-primary transition hover:bg-primary/10 md:hidden"
-              >
-                <Plus className="h-4 w-4" />
-                New Market
-              </button>
-            )}
-            {profile ? (
-              <div className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-primary md:hidden">
-                <Wallet className="h-4 w-4" />
-                xp {profile?.wallet?.balance?.toLocaleString("pt-PT", { minimumFractionDigits: 2 }) || "0.00"}
-              </div>
-            ) : (
-              <Link
-                to="/signin"
-                state={{ backgroundLocation: from }}
-                className="rounded-lg px-3 py-2 text-muted-foreground transition hover:bg-surface hover:text-foreground md:hidden"
-              >
-                Sign In
-              </Link>
-            )}
+          <div className="relative flex-1 lg:w-80 lg:flex-initial">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              name="search"
+              placeholder="Search students, projects, exams…"
+              className="h-10 w-full rounded-xl border border-border/60 bg-surface pl-10 pr-12 text-sm placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none"
+            />
+            <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground md:block">⌘K</kbd>
           </div>
-        </nav>
-      )}
+        </div>
+        {profile ? UserInfo(profile, dropdownRef, setOpen, open, auth.signout, revalidator, navigate) : SignButtons(from)}
+      </div>
     </header>
   );
 }
@@ -142,9 +82,9 @@ function SignButtons(from: any) {
       <Link
         to="/signup"
         state={{ backgroundLocation: from }}
-        className="flex h-10 shrink-0 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-80"
+        className="flex h-10 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-80"
       >
-        <span>Sign Up</span>
+        <span className="hidden sm:inline">Sign Up</span>
       </Link>
     </>
   )
@@ -161,16 +101,17 @@ function UserInfo(
 ) {
   return (
     <>
-      <RewardsMenu />
-      <FriendsMenu />
-      <NotificationsBell />
+    <button className="relative hidden h-10 w-10 place-items-center rounded-xl border border-border/60 bg-surface text-muted-foreground transition hover:text-foreground md:grid">
+      <Bell className="h-4 w-4" />
+      <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary shadow-glow" />
+    </button>
 
-      <div className="relative" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef}>
       </div>
       <button className="hidden h-10 items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 text-sm font-medium text-primary transition hover:bg-primary/20 md:flex">
-        <Wallet className="h-4 w-4" />
-        xp {profile?.wallet?.balance?.toLocaleString("pt-PT", { minimumFractionDigits: 2 }) || "4,820.50"}
-      </button>
+      <Wallet className="h-4 w-4" />
+      ₳ {profile?.wallet?.balance?.toLocaleString("pt-PT", { minimumFractionDigits: 2 }) || "4,820.50"}
+    </button>
 
       <div className="relative" ref={dropdownRef}>
         <button
@@ -197,23 +138,6 @@ function UserInfo(
                 <Settings className="h-4 w-4" />
               </Link>
             </div>
-
-            {(profile?.user?.role === 'admin' || profile?.user?.role === 'moderator') &&
-              <div className="flex items-center gap-1">
-                <Link
-                  to="admin/users"
-                  onClick={() => setOpen(false)}
-                  className=" flex-1 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-surface hover:text-foreground"
-                >
-                  <span>Management</span>
-                </Link>
-                <Link to="admin/users"
-                  className="rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-surface hover:text-foreground"
-                >
-                  <UserStar className="h-4 w-4" />
-                </Link>
-              </div>
-            }
 
             <div className="my-1 border-t border-border/40" />
 

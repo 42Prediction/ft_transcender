@@ -6,15 +6,7 @@ export enum TransactionType{
     DEPOSIT = 'DEPOSIT',
     WITHDRAW = 'WITHDRAW',
     BET = 'BET',
-    PAYOUT = 'PAYOUT',
-    // House rake collected by the market creator (admin) on each resolution.
-    COMMISSION = 'COMMISSION',
-    // Initial liquidity the admin funds from their wallet when creating a market.
-    MARKET_SEED = 'MARKET_SEED',
-    // xp granted for real 42 progress (level), at signup and on level-ups.
-    SCHOOL42_REWARD = 'SCHOOL42_REWARD',
-    // xp granted for platform engagement (daily streak, quests).
-    ENGAGEMENT_REWARD = 'ENGAGEMENT_REWARD'
+    PAYOUT = 'PAYOUT'
 }
 
 export enum TransactionStatus{

@@ -4,7 +4,6 @@ import { NotFoundException, ConflictException, BadRequestException } from '@nest
 import { FriendService } from './friend.service';
 import { Bettor } from './entities/bettor.entity';
 import { BettorFriendRequest, RequestStatus } from './entities/friend.entity';
-import { NotificationService } from '../market/notification.service';
 
 describe('FriendService', () => {
   let service: FriendService;
@@ -51,10 +50,6 @@ const mockTransactionalEntityManager = {
     manager: { transaction: mockTransactionHandler },
   };
 
-  const mockNotificationService = {
-    createMany: jest.fn().mockResolvedValue(undefined),
-  };
-
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -66,10 +61,6 @@ const mockTransactionalEntityManager = {
         {
           provide: getRepositoryToken(BettorFriendRequest),
           useValue: mockRequestRepository,
-        },
-        {
-          provide: NotificationService,
-          useValue: mockNotificationService,
         },
       ],
     }).compile();

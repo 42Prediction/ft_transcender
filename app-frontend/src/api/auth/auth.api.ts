@@ -1,3 +1,4 @@
+import { redirect } from "react-router-dom";
 import api from "../api";
 
 export interface User {

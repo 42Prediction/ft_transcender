@@ -1,4 +1,4 @@
-import { Controller, Get, Body, Patch, Param, Query, Req, UseInterceptors, ClassSerializerInterceptor, UseGuards, UploadedFile, Post, Delete, HttpCode, HttpStatus, HttpException } from '@nestjs/common';
+import { Controller, Get, Body, Patch, Param, Req, UseInterceptors, ClassSerializerInterceptor, UseGuards, UploadedFile, Post, Delete, HttpCode, HttpStatus, HttpException } from '@nestjs/common';
 import { BettorService } from './bettor.service';
 import { FriendService } from './friend.service';
 import { UpdateBettorDto } from './dto/update-bettor.dto';
@@ -32,21 +32,6 @@ export class BettorController {
     }
   }
 
-  // GDPR: everything the platform holds about the caller's own account, as a
-  // single downloadable JSON payload — identity, profile, wallet ledger, bets.
-  @Get('me/export')
-  @UseGuards(JwtAuthGuard)
-  @HttpCode(HttpStatus.OK)
-  async exportMyData(@Req() req: any) {
-    if (!req.user?.id) return unauthorizedResponse();
-    try {
-      const data = await this.bettorService.exportMyData(req.user.id);
-      return successResponse(HttpStatus.OK, data);
-    } catch (error) {
-      return errorResponse(error);
-    }
-  }
-
   @Patch('me')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
@@ -65,18 +50,6 @@ export class BettorController {
       return errorResponse(error);
     }
     
-  }
-
-  @Get('search')
-  @UseGuards(OptionalJwtAuthGuard)
-  @HttpCode(HttpStatus.OK)
-  async searchBettors(@Req() req: any, @Query('q') q: string) {
-    try {
-      const data = await this.bettorService.searchByNick(q ?? '', 8, req.user?.id);
-      return successResponse(HttpStatus.OK, data);
-    } catch (error) {
-      return errorResponse(error);
-    }
   }
 
   @Get('@:nick/exists')
