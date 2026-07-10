@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Form, useActionData } from "react-router-dom";
 import { ChevronLeft, Eye, EyeOff } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function AdminLogin() {
     const actionData = useActionData() as { error?: string } | undefined;
@@ -9,13 +11,14 @@ export default function AdminLogin() {
     return (
         <>
             <div className="p-4">
-                <button
+                <Button
+                    variant="secondary"
                     onClick={() => (window.location.href = "/")}
-                    className="flex items-center gap-1 rounded-md bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground"
+                    className="h-auto gap-1 rounded-md px-4 py-2 text-sm font-semibold"
                 >
                     <ChevronLeft className="h-4 w-4" />
                     Go back
-                </button>
+                </Button>
             </div>
         <div className="grid h-screen place-items-center overflow-hidden bg-background px-4 text-foreground">
             <Form method="post" className="w-full max-w-xs space-y-4">
@@ -27,21 +30,21 @@ export default function AdminLogin() {
                     </p>
                 )}
 
-                <input
+                <Input
                     name="email"
                     type="email"
                     placeholder="Email"
                     autoComplete="email"
-                    className="w-full rounded-md border border-border/60 bg-surface px-3 py-2 text-sm"
+                    className="w-full rounded-md py-2"
                 />
 
                 <div className="relative">
-                    <input
+                    <Input
                         name="password"
                         type={showPassword ? "text" : "password"}
                         placeholder="Password"
                         autoComplete="current-password"
-                        className="w-full rounded-md border border-border/60 bg-surface px-3 py-2 pr-10 text-sm"
+                        className="w-full rounded-md py-2 pr-10"
                     />
 
                     <button
@@ -57,15 +60,15 @@ export default function AdminLogin() {
                     </button>
                 </div>
 
-                <button
+                <Button
                     type="submit"
-                    className="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                    className="h-auto w-full rounded-md px-4 py-2 text-sm font-semibold"
                 >
                     Login
-                </button>
+                </Button>
             </Form>
 
-           
+
         </div>
         </>
     );

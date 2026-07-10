@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Download, Loader2, ShieldCheck } from "lucide-react";
 import { bettor } from "@/api/bettor/bettor.api";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 function downloadJson(data: unknown, filename: string) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -35,7 +37,7 @@ export function AccountPanel() {
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">Account</h1>
 
-      <div className="rounded-2xl border border-border/60 bg-gradient-card p-6 shadow-card">
+      <Card className="rounded-2xl">
         <div className="flex items-start gap-3">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
             <ShieldCheck className="h-4 w-4" />
@@ -50,17 +52,18 @@ export function AccountPanel() {
           </div>
         </div>
 
-        <button
+        <Button
+          variant="ghost"
           onClick={handleExport}
           disabled={loading}
-          className="mt-4 flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition hover:bg-primary/20 disabled:opacity-50"
+          className="mt-4 h-auto gap-2 rounded-xl bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20"
         >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
           Export my data (JSON)
-        </button>
+        </Button>
 
         {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
-      </div>
+      </Card>
     </div>
   );
 }

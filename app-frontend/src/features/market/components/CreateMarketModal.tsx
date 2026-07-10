@@ -4,6 +4,8 @@ import { Loader2, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { school42Api, type Student42 } from '@/api/market/school42.api';
 import { marketApi } from '@/api/market/market.api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 // Platform scope is strictly Exam Rank 02-06 — no other category exists.
 const CATEGORIES = ['Exam 02', 'Exam 03', 'Exam 04', 'Exam 05', 'Exam 06'] as const;
@@ -232,11 +234,11 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
               <label className="mb-1.5 block text-sm font-medium">
                 Event to predict <span className="text-primary">*</span>
               </label>
-              <input
+              <Input
                 value={project}
                 onChange={(e) => setProject(e.target.value)}
                 placeholder="e.g. ft_transcendence — final defense"
-                className="h-11 w-full rounded-xl border border-border/60 bg-surface px-4 text-sm placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none transition"
+                className="h-11 rounded-xl px-4"
               />
               <p className="mt-1 text-xs text-muted-foreground">
                 Be specific: include the project name and event type.
@@ -250,19 +252,18 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
               </label>
               <div className="flex flex-wrap gap-2">
                 {CATEGORIES.map((c) => (
-                  <button
+                  <Button
                     key={c}
                     type="button"
+                    variant="outline"
                     onClick={() => setCategory(c)}
                     className={cn(
-                      'rounded-xl border px-3 py-1.5 text-xs font-medium transition',
-                      category === c
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border/60 bg-surface text-muted-foreground hover:text-foreground',
+                      'h-auto rounded-xl px-3 py-1.5 text-xs font-medium',
+                      category === c && 'border-primary bg-primary/10 text-primary',
                     )}
                   >
                     {c}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -272,12 +273,12 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
               <label className="mb-1.5 block text-sm font-medium">
                 Closes at <span className="text-primary">*</span>
               </label>
-              <input
+              <Input
                 type="datetime-local"
                 value={closesAt}
                 min={minDate}
                 onChange={(e) => setClosesAt(e.target.value)}
-                className="h-11 w-full rounded-xl border border-border/60 bg-surface px-4 text-sm text-foreground focus:border-primary/50 focus:outline-none transition [color-scheme:dark]"
+                className="h-11 rounded-xl px-4 text-foreground [color-scheme:dark]"
               />
             </div>
 
@@ -292,16 +293,13 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
               </p>
             )}
 
-            <button
+            <Button
               type="submit"
               disabled={!isValid || submitting}
-              className={cn(
-                'flex h-12 w-full items-center justify-center rounded-xl bg-primary font-semibold text-primary-foreground transition-all',
-                isValid && !submitting ? 'hover:opacity-90' : 'cursor-not-allowed opacity-50',
-              )}
+              className="h-12 w-full rounded-xl font-semibold"
             >
               {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Create Market'}
-            </button>
+            </Button>
           </form>
         </div>
       </DialogContent>

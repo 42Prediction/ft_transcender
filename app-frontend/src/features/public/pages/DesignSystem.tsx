@@ -12,6 +12,10 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Avatar } from "@/components/ui/avatar";
 
 const COLOR_TOKENS: { name: string; var: string }[] = [
   { name: "Primary", var: "--primary" },
@@ -31,16 +35,20 @@ const COLOR_TOKENS: { name: string; var: string }[] = [
 const ICONS = [Bell, Search, Download, TrendingUp, ShieldCheck, Users, Calendar, Trash2];
 
 const COMPONENT_CATALOG: { name: string; path: string; description: string }[] = [
-  { name: "MarketCard", path: "features/public/components/MarketCard.tsx", description: "Probability bar, YES/NO buttons, avatar fallback — used on Home, Markets, Trending." },
+  { name: "Button", path: "components/ui/button.tsx", description: "cva-driven variants (default/outline/secondary/ghost/destructive/link) × 8 sizes. Used across auth, admin, settings, and market resolve flows." },
+  { name: "Dialog", path: "components/ui/dialog.tsx", description: "Radix-based modal primitive underlying every modal in the app (auth, create market)." },
+  { name: "Card", path: "components/ui/card.tsx", description: "Header/Title/Description/Content/Footer slots for bordered content blocks (settings, account)." },
+  { name: "Badge", path: "components/ui/badge.tsx", description: "Status pill with 5 color variants (default/success/destructive/warning/muted), used on market cards." },
+  { name: "Input", path: "components/ui/input.tsx", description: "Shared text/number/date input, used in every form: login, market creation, resolve-with-grade." },
+  { name: "Avatar", path: "components/ui/avatar.tsx", description: "Image with dicebear-seeded fallback on load error, used wherever a student/bettor avatar renders." },
+  { name: "MarketCard", path: "features/public/components/MarketCard.tsx", description: "Probability bar, YES/NO buttons, resolve flow — used on Home, Markets, Trending." },
   { name: "WinLossChart", path: "features/user/profile/components/WinLossChart.tsx", description: "Donut chart + legend pattern, reused across profile and analytics cards." },
   { name: "ActivityInsights", path: "features/user/profile/components/ActivityInsights.tsx", description: "Personal analytics card (area chart + stat row) on the profile page." },
   { name: "NotificationsBell", path: "features/user/notifications/NotificationsBell.tsx", description: "Bell icon with unread badge, dropdown inbox, real-time push via WebSocket." },
-  { name: "CreateMarketModal", path: "features/market/components/CreateMarketModal.tsx", description: "Dialog-based form for admin market creation." },
+  { name: "CreateMarketModal", path: "features/market/components/CreateMarketModal.tsx", description: "Dialog-based form for admin market creation, built on Dialog/Button/Input." },
   { name: "MarketChat", path: "features/market/components/MarketChat.tsx", description: "Per-market real-time chat panel over the shared WebSocket." },
   { name: "RewardsMenu", path: "features/user/engagement/RewardsMenu.tsx", description: "Daily bonus + quests popover, reused in the navbar." },
   { name: "Navbar / Footer", path: "features/public/components/{Navbar,Footer}.tsx", description: "Global chrome, present on every public route." },
-  { name: "Dialog", path: "components/ui/dialog.tsx", description: "Radix-based modal primitive underlying every modal in the app." },
-  { name: "Button", path: "components/ui/button.tsx", description: "cva-driven variants (default/outline/secondary/ghost/destructive/link) × 8 sizes." },
 ];
 
 function useCssVar(name: string): string {
@@ -148,6 +156,44 @@ export function DesignSystemPage() {
             <Loader2 className="h-4 w-4 animate-spin" />
           </Button>
         </div>
+      </section>
+
+      {/* Badges */}
+      <section className="mt-10">
+        <h2 className="font-display text-xl font-semibold">Badges</h2>
+        <p className="text-sm text-muted-foreground">All 5 variants of the shared Badge component.</p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <Badge variant="default">Default</Badge>
+          <Badge variant="success">Live</Badge>
+          <Badge variant="destructive">Cancelled</Badge>
+          <Badge variant="warning">Pending</Badge>
+          <Badge variant="muted">Draft</Badge>
+        </div>
+      </section>
+
+      {/* Form controls */}
+      <section className="mt-10">
+        <h2 className="font-display text-xl font-semibold">Form controls</h2>
+        <p className="text-sm text-muted-foreground">Shared Input and Avatar, used across every form and profile in the app.</p>
+        <div className="mt-4 flex flex-wrap items-center gap-4">
+          <Input placeholder="Search by 42 login…" className="w-56" />
+          <Avatar seed="marccarv" className="h-11 w-11" />
+        </div>
+      </section>
+
+      {/* Card */}
+      <section className="mt-10">
+        <h2 className="font-display text-xl font-semibold">Card</h2>
+        <p className="text-sm text-muted-foreground">Header/Content/Footer slots used for bordered content blocks.</p>
+        <Card className="mt-4 max-w-sm rounded-2xl">
+          <CardHeader>
+            <CardTitle>Card title</CardTitle>
+            <CardDescription>A short supporting description goes here.</CardDescription>
+          </CardHeader>
+          <CardContent className="mt-3 text-sm text-muted-foreground">
+            Card content renders below the header, with no default padding of its own.
+          </CardContent>
+        </Card>
       </section>
 
       {/* Component catalog */}

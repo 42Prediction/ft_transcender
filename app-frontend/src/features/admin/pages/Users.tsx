@@ -3,6 +3,8 @@ import { user as userApi, type UserMe } from "@/api/user/user.api";
 import { auth } from "@/api/auth/auth.api";
 import { BarChart3, ChevronLeft, Loader2, LogOut, Search, ShieldCheck, ShieldOff, Trash2 } from "lucide-react";
 import { Link, useRouteLoaderData } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function UsersPage() {
     const [users, setUsers] = useState<UserMe[]>([]);
@@ -86,11 +88,11 @@ export default function UsersPage() {
                 <div className="flex items-center gap-2">
                     <div className="relative">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                        <input
+                        <Input
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search by email…"
-                            className="pl-8 h-8 w-48 md:w-56 rounded-lg border border-border/60 bg-surface text-sm focus:outline-none focus:border-primary/50"
+                            className="pl-8 h-8 w-48 md:w-56 rounded-lg"
                         />
                     </div>
                     <div className="flex items-center gap-2 border-l border-border/60 pl-2">
@@ -102,13 +104,14 @@ export default function UsersPage() {
                                 </span>
                             )}
                         </span>
-                        <button
+                        <Button
+                            variant="ghost"
                             onClick={handleLogout}
-                            className="flex items-center gap-1.5 rounded-lg bg-red-500/10 px-2.5 py-1.5 text-xs text-red-500 hover:bg-red-500/20 transition-colors"
+                            className="h-auto gap-1.5 rounded-lg bg-red-500/10 px-2.5 py-1.5 text-xs text-red-500 hover:bg-red-500/20"
                         >
                             <LogOut className="h-3.5 w-3.5" />
                             <span className="hidden sm:inline">Logout</span>
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -154,29 +157,35 @@ export default function UsersPage() {
                                             <td className="px-4 py-2.5">
                                                 <div className="flex justify-center gap-1.5">
                                                     {u.role === "moderator" ? (
-                                                        <button
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon-sm"
                                                             onClick={() => handleSetRole(u.id, "user")}
                                                             title="Remove moderator"
-                                                            className="grid h-7 w-7 place-items-center rounded-lg bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-colors"
+                                                            className="rounded-lg bg-amber-500/10 text-amber-500 hover:bg-amber-500/20"
                                                         >
                                                             <ShieldOff className="h-3.5 w-3.5" />
-                                                        </button>
+                                                        </Button>
                                                     ) : (
-                                                        <button
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon-sm"
                                                             onClick={() => handleSetRole(u.id, "moderator")}
                                                             title="Promote to moderator"
-                                                            className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                                                            className="rounded-lg bg-primary/10 text-primary hover:bg-primary/20"
                                                         >
                                                             <ShieldCheck className="h-3.5 w-3.5" />
-                                                        </button>
+                                                        </Button>
                                                     )}
-                                                    <button
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon-sm"
                                                         onClick={() => handleDelete(u.id)}
                                                         title="Delete user"
-                                                        className="grid h-7 w-7 place-items-center rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+                                                        className="rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20"
                                                     >
                                                         <Trash2 className="h-3.5 w-3.5" />
-                                                    </button>
+                                                    </Button>
                                                 </div>
                                             </td>
                                         )}
