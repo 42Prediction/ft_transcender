@@ -121,14 +121,18 @@ market) não tem nenhum jogo. **Toda a categoria está N/A** enquanto isso não 
 
 | Módulo | Peso | Estado | Evidência |
 |---|---|---|---|
-| ELK stack (Major) | 2 | ❌ | Sem Elasticsearch/Logstash/Kibana |
-| Prometheus + Grafana (Major) | 2 | ❌ | Sem evidência |
+| ELK stack (Major) | 2 | ✅ | Stack completo no `docker-compose.yml`: **Elasticsearch** (indexa/armazena, X-Pack security ligado), **Logstash** (pipeline `observability/logstash/pipeline/logstash.conf` — file input dos logs JSON do backend → transform → ES), **Kibana** (autenticado como `kibana_system`). Backend emite logs JSON estruturados via `nestjs-pino` para `/app/logs/backend.log` (volume partilhado). **Retenção/arquivamento** via política ILM (delete após `LOG_RETENTION_DAYS`, default 7d) aplicada por template de índice em `observability/setup/setup.sh`. **Acesso seguro** a todos os componentes (passwords em `.env`) |
+| Prometheus + Grafana (Major) | 2 | ✅ | **Prometheus** (`observability/prometheus/prometheus.yml`) faz scrape do backend + exporters; backend expõe `GET /metrics` via `@willsoto/nestjs-prometheus` (métricas default de processo + `http_requests_total`/`http_request_duration_seconds` custom por método/rota/estado, recolhidas por middleware que cobre **todos** os requests incl. 404/401). **Exporters**: `node-exporter` (host) + `postgres-exporter` (BD). **Regras de alerta** em `observability/prometheus/alert.rules.yml` (BackendDown, PostgresDown, HighHttpErrorRate, HighRequestLatencyP95, HighProcessMemory). **Grafana** com datasource+dashboard provisionados e **acesso seguro** (`GF_SECURITY_ADMIN_PASSWORD`, sign-up desativado) |
 | Backend como microserviços (Major) | 2 | ❌ | NestJS monolítico modular, não microserviços |
-| Health check + backups automáticos (Minor) | 1 | ❌ | Sem evidência |
+| Health check + backups automáticos (Minor) | 1 | ❌ | Sem evidência (healthchecks de container existem no compose, mas não um status page + backups/DR completos) |
 
-`docker-compose.dev.yml` atualmente só sobe o **Postgres** (backend/frontend correm via
-`npm`/`make dev`, não em containers) — importante notar que o subject exige deployment
-**containerizado com um único comando**, o que ainda não está cumprido para os 3 componentes.
+**Containerização (requisito mandatório de "deploy com 1 comando"): ✅ cumprido.** Novo
+`docker-compose.yml` na raiz sobe **os 3 componentes** (Postgres + backend em `app-backend/Dockerfile`
++ frontend em `app-frontend/Dockerfile` servido por nginx) **e** todo o stack de observabilidade
+com um único comando: `make up-prod` (ou `docker compose up -d --build`). O antigo
+`docker-compose.dev.yml` (só Postgres, apps via `npm`/`make dev`) mantém-se para o fluxo de
+desenvolvimento. Migrações correm automaticamente no arranque do container (`RUN_MIGRATIONS=true`,
+via `migrationsRun` do TypeORM).
 
 ## IV.8 Data and Analytics
 
@@ -244,3 +248,37 @@ teto de 5 —, mas torna as features existentes defensáveis numa demo):
 **Antes de entregar:** preencher os `[team to confirm]` no `README.md` (canal de
 comunicação/reuniões, e quem implementou cada feature nas secções "Features List" e
 "Individual Contributions") — essa informação não estava disponível ao gerar o documento.
+
+---
+
+## Nota — ronda DevOps (branch `feat/implement_devops`)
+
+Implementados os **2 primeiros Major do IV.7 DevOps** e destravado o requisito mandatório de
+deployment containerizado.
+
+- **Log management com ELK (Major).** Backend passou a emitir **logs JSON estruturados**
+  (`nestjs-pino`, `src/observability/logger.config.ts`) para stdout + `LOG_FILE`, com redaction
+  de cookies/authorization/passwords. **Logstash** faz file-input desse log, transforma (mapeia
+  o nível numérico do pino, timestamp) e indexa em **Elasticsearch** (X-Pack security ligado);
+  **Kibana** liga-se como `kibana_system` (least-privilege). **Retenção** por política **ILM**
+  (delete após `LOG_RETENTION_DAYS`) aplicada via template de índice no `elk-setup` one-shot.
+- **Monitoring com Prometheus + Grafana (Major).** Backend expõe **`/metrics`**
+  (`src/observability/metrics.module.ts` + `http-metrics.middleware.ts`) com métricas default de
+  processo e séries HTTP custom (throughput/latência por método/rota/estado, incluindo 404/401).
+  **Prometheus** faz scrape do backend + **node-exporter** + **postgres-exporter**, com
+  **regras de alerta**. **Grafana** provisiona datasource + dashboard e tem acesso protegido.
+- **Deploy com 1 comando (mandatório).** Novo `docker-compose.yml` + `app-backend/Dockerfile` +
+  `app-frontend/Dockerfile` (nginx) sobem tudo com `make up-prod`. Migrações correm no arranque.
+
+**Impacto na pontuação:** estes 2 Major **não somam pontos** — o teto de bónus (5) já estava
+atingido antes desta ronda, por isso o total permanece **19**. O valor real é: (1) fechar o
+**requisito mandatório** de containerização e (2) robustez/demonstrabilidade da entrega.
+
+**Verificação feita:** imagem do backend construída e testada em container isolado — `/metrics`
+responde 200 com métricas default + custom (404 contabilizado), logs JSON escritos no volume
+partilhado (fonte do Logstash), headers sensíveis redigidos; imagem do frontend construída com
+sucesso; `docker compose config` válido. **Não** foi feito boot end-to-end do stack ELK+Grafana
+completo neste ambiente (imagens multi-GB) — validado por config; correr `make up-prod` para o
+levantar. **Nota:** o `docker-compose.yml` (projeto `transcendence-prod`) e o
+`docker-compose.dev.yml` usam os mesmos portos de host (5432/3000/5173) — não correr os dois em
+simultâneo.

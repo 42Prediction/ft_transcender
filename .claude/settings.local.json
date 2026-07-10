@@ -59,7 +59,17 @@
       "Bash(curl -s \"http://localhost:3000/market/3f6ffead-3564-477f-a91d-e458a722601e/history\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5173/)",
       "Bash(docker compose *)",
-      "Bash(make up *)"
+      "Bash(make up *)",
+      "Bash(npm -v)",
+      "Bash(echo \"npm: $\\(npm -v\\)\")",
+      "Bash(docker --version)",
+      "Bash(npm install *)",
+      "Bash(docker network *)",
+      "Bash(docker rm *)",
+      "Bash(docker run *)",
+      "Bash(grep -nE '^#{1,4} |Devops|DevOps|Observability|Deployment|Getting Started|docker|Docker' README.md)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(make up-prod *)"
     ]
   }
 }

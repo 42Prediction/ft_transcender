@@ -1,4 +1,5 @@
 COMPOSE = docker compose -f docker-compose.dev.yml
+PROD_COMPOSE = docker compose -f docker-compose.yml
 PROJECT_ROOT = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 DATA_DIR = /home/$(USER)/data
 FRONT_DIR = $(PROJECT_ROOT)/app-frontend
@@ -27,6 +28,12 @@ help:
 	@echo "  make clean      - Stop apps and remove containers, volumes, and data dir"
 	@echo "  make fclean     - clean + remove images"
 	@echo "  make re         - clean + make dev"
+	@echo "  --- containerized full stack (app + ELK + Prometheus/Grafana) ---"
+	@echo "  make up-prod    - Build and start the whole stack (one command)"
+	@echo "  make down-prod  - Stop the whole stack"
+	@echo "  make logs-prod  - Follow logs of the whole stack"
+	@echo "  make ps-prod    - Show stack container status"
+	@echo "  make fclean-prod- Stop stack and remove its volumes"
 
 up:
 	mkdir -p $(DATA_DIR)/postgresql
@@ -111,6 +118,24 @@ dev-stop:
 	@$(COMPOSE) stop
 	@echo "Backend and frontend stopped; DB container stopped"
 
+# ---- Containerized full stack (app + observability) — single command ----
+up-prod:
+	@$(PROD_COMPOSE) up -d --build
+	@echo "Stack starting. Frontend: http://localhost:5173 | Backend: http://localhost:3000"
+	@echo "Kibana: http://localhost:5601 | Grafana: http://localhost:3001 | Prometheus: http://localhost:9090"
+
+down-prod:
+	@$(PROD_COMPOSE) down
+
+logs-prod:
+	@$(PROD_COMPOSE) logs -f
+
+ps-prod:
+	@$(PROD_COMPOSE) ps
+
+fclean-prod:
+	@$(PROD_COMPOSE) down -v --remove-orphans
+
 clean: dev-stop
 	@$(COMPOSE) down -v --remove-orphans
 	@sudo rm -rf $(DATA_DIR)
@@ -120,4 +145,4 @@ fclean: clean
 
 re: fclean dev
 
-.PHONY: all help up down wait-db migrate seed test-backend test-frontend test dev dev-status dev-stop clean fclean re
+.PHONY: all help up down wait-db migrate seed test-backend test-frontend test dev dev-status dev-stop clean fclean re up-prod down-prod logs-prod ps-prod fclean-prod

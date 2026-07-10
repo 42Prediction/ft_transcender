@@ -62,6 +62,34 @@ make seed          # seeds the admin account and reference data
 - `make dev-status` — check what's running · `make dev-stop` — stop everything
 - `make clean` / `make fclean` / `make re` — tear down containers/volumes (and images for `fclean`), then rebuild
 
+### Running the full containerized stack (production-like, one command)
+
+The entire platform — Postgres, backend, frontend, and the full observability stack
+(ELK + Prometheus/Grafana) — runs from a single `docker-compose.yml`:
+
+```bash
+make up-prod       # docker compose up -d --build  (builds images, runs migrations on boot)
+make ps-prod       # container status
+make logs-prod     # follow all logs
+make down-prod     # stop the stack   ·   make fclean-prod  (also removes volumes)
+```
+
+Endpoints once up:
+
+| Service | URL | Credentials |
+|---|---|---|
+| Frontend | http://localhost:5173 | — |
+| Backend API | http://localhost:3000 | — |
+| Backend metrics | http://localhost:3000/metrics | — |
+| Kibana (logs) | http://localhost:5601 | `elastic` / `ELASTIC_PASSWORD` |
+| Grafana (dashboards) | http://localhost:3001 | `admin` / `GRAFANA_ADMIN_PASSWORD` |
+| Prometheus | http://localhost:9090 | — |
+
+Set `ELASTIC_PASSWORD`, `KIBANA_SYSTEM_PASSWORD`, `GRAFANA_ADMIN_PASSWORD` and
+`LOG_RETENTION_DAYS` in `.env` (see `.env.example`). In Kibana, create a data view for
+`transcendence-logs-*` to explore the ingested logs. Don't run `make up-prod` and `make dev`
+at the same time — they bind the same host ports (Postgres 5432, backend 3000, frontend 5173).
+
 ### Running per app (when iterating on one side)
 
 Backend (`app-backend/`): `npm run start:dev` (watch mode) · `npm test` (unit) · `npm run test:e2e` (e2e) · `npm run lint`
@@ -196,6 +224,18 @@ Point calculation per `en.subject.pdf` (Chapter IV): **Major = 2 pts, Minor = 1 
 | Documented design system   | 1 (Minor) | The app already had a consistent token-based palette and a growing set of reused components; documenting it makes that consistency verifiable rather than implicit. | `/design-system` — live color palette (read from CSS custom properties), typography scale, icon set, all `Button` variants, and a catalog of 12 reusable components. |
 
 **Total with bonus: 19 pts** (14 mandatory + 5 bonus, the subject's stated cap).
+
+### DevOps modules (IV.7 — completed for platform robustness, beyond the point cap)
+
+These two Major modules are fully implemented but **do not add to the score**: the 5-pt bonus
+cap is already reached. They were built to (a) satisfy the **mandatory** requirement of a
+single-command containerized deployment and (b) make the running platform observable and
+demonstrable. See the containerized-stack instructions above and `observability/`.
+
+| Module | Pts | Justification | How implemented |
+| --- | --- | --- | --- |
+| Log management with ELK | 2 (Major) | A market platform debiting user wallets needs a searchable, retained audit trail of what the backend did — grepping a single file doesn't scale and disappears on restart. | Backend emits structured JSON logs (`nestjs-pino`); **Logstash** tails them and indexes into **Elasticsearch** (X-Pack security on); **Kibana** for search/dashboards; ILM policy enforces retention (`observability/`, `elk-setup` bootstrap). |
+| Monitoring with Prometheus + Grafana | 2 (Major) | Real-time trading means latency/error spikes directly hurt users; the team needs to see them and be alerted, not discover them from complaints. | Backend `/metrics` (`@willsoto/nestjs-prometheus` + a middleware covering every request incl. 4xx); **Prometheus** scrapes backend + node/postgres exporters with alert rules; **Grafana** provisions a datasource + dashboard, access password-protected. |
 
 > Two extra core modules beyond the minimum (`AdvancedPermissions` and `Advanced search+pagination`, 2+1=3pts) plus the 3 modules above (3pts) would exceed the 5-pt bonus cap — only 5 of those "extra" points are actually creditable as bonus per Chapter VII; the rest simply pad the core total above 14.
 
