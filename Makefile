@@ -18,24 +18,40 @@ FRONT_URL ?= http://localhost:$(FRONT_PORT)/
 all: help
 
 help:
-	@echo "Available commands:"
-	@echo "  make dev        - Pull image if needed, start DB container, start backend and frontend"
-	@echo "  make dev-stop   - Stop backend/frontend and stop DB container"
-	@echo "  make dev-status - Show backend/frontend process IDs"
-	@echo "  make migrate    - Run backend migrations"
-	@echo "  make seed       - Run backend seeds"
-	@echo "  make test       - Run backend unit/e2e tests and frontend build/lint"
-	@echo "  make clean      - Stop apps and remove containers, volumes, and data dir"
-	@echo "  make fclean     - clean + remove images"
-	@echo "  make re         - clean + make dev"
-	@echo "  --- containerized full stack (app + ELK + Prometheus/Grafana) ---"
-	@echo "  make up-prod    - Build and start the whole stack (one command)"
-	@echo "  make down-prod  - Stop the whole stack"
-	@echo "  make logs-prod  - Follow logs of the whole stack"
-	@echo "  make ps-prod    - Show stack container status"
-	@echo "  make fclean-prod- Stop stack and remove its volumes"
+	@echo "ft_transcendence - available commands:"
+	@echo ""
+	@echo "Local dev (Postgres in Docker, apps as host processes):"
+	@echo "  make dev            - Start DB container, then backend and frontend"
+	@echo "  make dev-stop       - Stop backend/frontend and stop DB container"
+	@echo "  make dev-status     - Show backend/frontend process IDs"
+	@echo ""
+	@echo "Database:"
+	@echo "  make migrate-run      - Run backend TypeORM migrations"
+	@echo "  make migrate-generate - Run migrations, then generate the next one"
+	@echo "  make seed             - Run backend seeds"
+	@echo ""
+	@echo "Tests:"
+	@echo "  make test           - Backend unit + e2e tests (CI entry point)"
+	@echo "  make test-frontend  - Frontend build + lint"
+	@echo ""
+	@echo "Full containerized stack (app + ELK + Prometheus/Grafana):"
+	@echo "  make up-prod        - Build and start the whole stack (one command)"
+	@echo "  make down-prod      - Stop the whole stack"
+	@echo "  make logs-prod      - Follow logs (make logs-prod SERVICE=backend for one service)"
+	@echo "  make ps-prod        - Show stack container status"
+	@echo "  make fclean-prod    - Stop stack and remove its volumes"
+	@echo ""
+	@echo "Teardown:"
+	@echo "  make clean          - Stop apps, remove dev containers/volumes and data dir"
+	@echo "  make fclean         - clean + remove images"
+	@echo "  make re             - clean + make dev"
 
-up:
+# Fail early with a clear message if .env is missing: docker compose interpolates
+# DB_*, and the prod stack also needs ELASTIC_PASSWORD / GRAFANA_ADMIN_PASSWORD.
+require-env:
+	@test -f .env || { echo "ERROR: .env not found at repo root. Copy .env.example to .env and fill it in first."; exit 1; }
+
+up: require-env
 	mkdir -p $(DATA_DIR)/postgresql
 	$(COMPOSE) up -d --pull missing
 
@@ -46,6 +62,7 @@ wait-db: up
 		sleep 1; \
 	done; \
 	echo " ready"
+
 migrate-generate:
 	@echo "Generating migration..."
 	@cd $(BACK_DIR) && \
@@ -56,9 +73,12 @@ migrate-generate:
 	npm run migration:generate -- "src/migrations/$${NAME}$${NEXT}"
 
 migrate-run:
-	@cd $(BACK_DIR) echo "Running migration"
+	@echo "Running migrations..."
 	@cd $(BACK_DIR) && npm run migration:run
-	@echo "Migration runned"
+	@echo "Migrations complete"
+
+# Backward-compatible alias.
+migrate: migrate-run
 
 seed:
 	@cd $(BACK_DIR) && npm run seed:run
@@ -67,12 +87,6 @@ test-backend: wait-db
 	@cd $(BACK_DIR) && npm ci
 	@cd $(BACK_DIR) && npm test
 	@cd $(BACK_DIR) && npm run test:e2e
-
-test-frontend:
-	@cd $(BACK_DIR) && npm ci
-	@cd $(FRONT_DIR) && npm run build
-	@cd $(FRONT_DIR) && npm run lint
-
 
 test-all: test-backend
 	@echo "All project tests and checks passed"
@@ -118,8 +132,11 @@ dev-stop:
 	@$(COMPOSE) stop
 	@echo "Backend and frontend stopped; DB container stopped"
 
-# ---- Containerized full stack (app + observability) — single command ----
-up-prod:
+# ---- Containerized full stack (app + observability) - single command ----
+# On boot the backend container runs pending migrations and seeds the admin
+# account (docker-entrypoint.sh, idempotent), so no separate migrate/seed step
+# is needed here.
+up-prod: require-env
 	@$(PROD_COMPOSE) up -d --build
 	@echo "Stack starting. Frontend: http://localhost:5173 | Backend: http://localhost:3000"
 	@echo "Kibana: http://localhost:5601 | Grafana: http://localhost:3001 | Prometheus: http://localhost:9090"
@@ -127,8 +144,9 @@ up-prod:
 down-prod:
 	@$(PROD_COMPOSE) down
 
+# Follow all services, or a single one: make logs-prod SERVICE=backend
 logs-prod:
-	@$(PROD_COMPOSE) logs -f
+	@$(PROD_COMPOSE) logs -f $(SERVICE)
 
 ps-prod:
 	@$(PROD_COMPOSE) ps
@@ -145,4 +163,6 @@ fclean: clean
 
 re: fclean dev
 
-.PHONY: all help up down wait-db migrate seed test-backend test-frontend test dev dev-status dev-stop clean fclean re up-prod down-prod logs-prod ps-prod fclean-prod
+.PHONY: all help require-env up wait-db migrate migrate-run migrate-generate seed \
+	test test-all test-backend test-frontend dev dev-status dev-stop \
+	up-prod down-prod logs-prod ps-prod fclean-prod clean fclean re

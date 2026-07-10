@@ -20,8 +20,12 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
 
+# Entrypoint runs migrations + seed on boot, then starts the API.
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+
 # Log file (tailed by Logstash) and avatar uploads live on mounted volumes.
 RUN mkdir -p /app/logs /app/uploads
 
 EXPOSE 3000
-CMD ["node", "dist/main.js"]
+ENTRYPOINT ["./docker-entrypoint.sh"]
