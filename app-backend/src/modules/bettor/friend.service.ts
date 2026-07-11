@@ -4,20 +4,27 @@ import {
   NotFoundException,
   BadRequestException,
   InternalServerErrorException,
+  forwardRef,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Bettor } from './entities/bettor.entity';
 import { BettorFriendRequest, RequestStatus } from './entities/friend.entity';
+import { NotificationService } from '../market/notification.service';
+import { NotificationType } from '../market/entities/notification.entity';
 
 @Injectable()
 export class FriendService {
   constructor(
     @InjectRepository(Bettor)
     private readonly bettorRepository: Repository<Bettor>,
-    
+
     @InjectRepository(BettorFriendRequest)
     private readonly requestRepository: Repository<BettorFriendRequest>,
+
+    @Inject(forwardRef(() => NotificationService))
+    private readonly notificationService: NotificationService,
   ) {}
 
   async getMyFriends(userId: string): Promise<Bettor[]> {
@@ -76,22 +83,30 @@ async sendFriendRequest(userId: string, receiverNick: string): Promise<void> {
       });
     } catch (error) {
       if (error instanceof ConflictException) throw error;
-    
+
       const dbError = error as { code?: string };
-      
+
       if (dbError.code === '23505') {
         throw new ConflictException('O pedido de amizade já foi enviado');
       }
       throw new InternalServerErrorException('Erro ao enviar o pedido de amizade');
     }
+
+    await this.notificationService.createMany([
+      {
+        bettorId: receiver.id,
+        type: NotificationType.FRIEND_REQUEST_RECEIVED,
+        data: { fromNick: sender.nick },
+      },
+    ]);
   }
 
-  async acceptFriendRequest(userId: string, senderNick: string): Promise<void> {
+  async acceptFriendRequest(userId: string, senderId: string): Promise<void> {
     const receiver = await this.bettorRepository.findOne({
       where: { user: { id: userId } },
     });
     const sender = await this.bettorRepository.findOne({
-      where: { nick: senderNick },
+      where: { id: senderId },
     });
 
     if (!receiver || !sender) {
@@ -124,11 +139,19 @@ async sendFriendRequest(userId: string, receiverNick: string): Promise<void> {
         .of(receiver.id)
         .add(sender.id);
     });
+
+    await this.notificationService.createMany([
+      {
+        bettorId: sender.id,
+        type: NotificationType.FRIEND_REQUEST_ACCEPTED,
+        data: { fromNick: receiver.nick },
+      },
+    ]);
   }
 
-async rejectFriendRequest(userId: string, senderNick: string): Promise<void> {
+async rejectFriendRequest(userId: string, senderId: string): Promise<void> {
     const receiver = await this.bettorRepository.findOne({ where: { user: { id: userId } } });
-    const sender = await this.bettorRepository.findOne({ where: { nick: senderNick } });
+    const sender = await this.bettorRepository.findOne({ where: { id: senderId } });
 
     if (!receiver || !sender) throw new NotFoundException('Perfil ou remetente não encontrado');
 
@@ -143,9 +166,9 @@ async rejectFriendRequest(userId: string, senderNick: string): Promise<void> {
     }
   }
 
-  async cancelFriendRequest(userId: string, targetNick: string): Promise<void> {
+  async cancelFriendRequest(userId: string, targetId: string): Promise<void> {
     const sender = await this.bettorRepository.findOne({ where: { user: { id: userId } } });
-    const receiver = await this.bettorRepository.findOne({ where: { nick: targetNick } });
+    const receiver = await this.bettorRepository.findOne({ where: { id: targetId } });
 
     if (!sender || !receiver) throw new NotFoundException('Perfil ou destinatário não encontrado');
 
@@ -160,13 +183,13 @@ async rejectFriendRequest(userId: string, senderNick: string): Promise<void> {
     }
   }
 
-  async removeFriend(userId: string, friendNick: string): Promise<void> {
+  async removeFriend(userId: string, friendId: string): Promise<void> {
     const bettor = await this.bettorRepository.findOne({
       where: { user: { id: userId } },
     });
 
     const friendBettor = await this.bettorRepository.findOne({ 
-      where: { nick: friendNick },
+      where: { id: friendId },
     });
 
     if (!bettor || !friendBettor) throw new NotFoundException('Perfil ou amigo não encontrado');

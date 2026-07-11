@@ -1,4 +1,4 @@
-import { Controller, Get, Body, Patch, Param, Req, UseInterceptors, ClassSerializerInterceptor, UseGuards, UploadedFile, Post, Delete, HttpCode, HttpStatus, HttpException } from '@nestjs/common';
+import { Controller, Get, Body, Patch, Param, Query, Req, UseInterceptors, ClassSerializerInterceptor, UseGuards, UploadedFile, Post, Delete, HttpCode, HttpStatus, HttpException } from '@nestjs/common';
 import { BettorService } from './bettor.service';
 import { FriendService } from './friend.service';
 import { UpdateBettorDto } from './dto/update-bettor.dto';
@@ -32,6 +32,21 @@ export class BettorController {
     }
   }
 
+  // GDPR: everything the platform holds about the caller's own account, as a
+  // single downloadable JSON payload — identity, profile, wallet ledger, bets.
+  @Get('me/export')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async exportMyData(@Req() req: any) {
+    if (!req.user?.id) return unauthorizedResponse();
+    try {
+      const data = await this.bettorService.exportMyData(req.user.id);
+      return successResponse(HttpStatus.OK, data);
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+
   @Patch('me')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
@@ -50,6 +65,25 @@ export class BettorController {
       return errorResponse(error);
     }
     
+  }
+
+  @Get('search')
+  @UseGuards(OptionalJwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async searchBettors(@Req() req: any, @Query('q') q: string) {
+    try {
+      const data = await this.bettorService.searchByNick(q ?? '', 8, req.user?.id);
+      return successResponse(HttpStatus.OK, data);
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+
+  @Get('@:nick/exists')
+  @HttpCode(HttpStatus.OK)
+  async checkNickExists(@Param('nick') nick: string): Promise<{ exists: boolean }> {
+    const exists = await this.bettorService.nickExists(nick);
+    return { exists };
   }
 
   @Get('@:nick')
@@ -100,52 +134,52 @@ export class BettorController {
     }
   }
 
-  @Patch('me/friend-requests/:nick/accept')
+  @Patch('me/friend-requests/:id/accept')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async acceptFriendRequest(@Req() req: any, @Param('nick') nick: string) {
+  async acceptFriendRequest(@Req() req: any, @Param('id') id: string) {
     if (!req.user?.id) return unauthorizedResponse();
     try {
-      const friends = await this.friendService.acceptFriendRequest(req.user.id, nick);
+      const friends = await this.friendService.acceptFriendRequest(req.user.id, id);
       return successResponse(HttpStatus.OK, friends)
     } catch (error) {
       return errorResponse(error);
     }
   }
 
-  @Delete('me/friend-requests/:nick/cancel')
+  @Delete('me/friend-requests/:id/cancel')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async cancelRequest(@Req() req: any, @Param('nick') nick: string) {
+  async cancelRequest(@Req() req: any, @Param('id') id: string) {
     if (!req.user?.id) return unauthorizedResponse();
     try {
-      const friends = await this.friendService.cancelFriendRequest(req.user.id, nick);
+      const friends = await this.friendService.cancelFriendRequest(req.user.id, id);
       return successResponse(HttpStatus.OK, friends)
     } catch (error) {
       return errorResponse(error);
     }
   }
 
-  @Delete('me/friend-requests/:nick/reject')
+  @Delete('me/friend-requests/:id/reject')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async rejectRequest(@Req() req: any, @Param('nick') nick: string) {
+  async rejectRequest(@Req() req: any, @Param('id') id: string) {
     if (!req.user?.id) return unauthorizedResponse();
     try {
-      const friends = await this.friendService.rejectFriendRequest(req.user.id, nick);
+      const friends = await this.friendService.rejectFriendRequest(req.user.id, id);
       return successResponse(HttpStatus.OK, friends)
     } catch (error) {
       return errorResponse(error);
     }
   }
 
-  @Delete('me/friends/:nick')
+  @Delete('me/friends/:id')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async removeFriend(@Req() req: any, @Param('nick') nick: string) {
+  async removeFriend(@Req() req: any, @Param('id') id: string) {
     if (!req.user?.id) return unauthorizedResponse();
     try {
-      const friend = await this.friendService.removeFriend(req.user.id, nick);
+      const friend = await this.friendService.removeFriend(req.user.id, id);
       return successResponse(HttpStatus.OK, friend)
     } catch (error) {
       return errorResponse(error);

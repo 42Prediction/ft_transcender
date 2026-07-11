@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { Row } from "./Row";
 import { Pencil, Save } from "lucide-react";
 import { useRevalidator } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 export function PerfilPanel({ bettor }: { bettor: any }) {
   const revalidator = useRevalidator();
@@ -40,7 +41,6 @@ export function PerfilPanel({ bettor }: { bettor: any }) {
       await revalidator.revalidate();
       setPhoto(bettor?.avatar ?? null); // volta ao URL da BD após revalidate
     } catch (err) {
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -54,7 +54,6 @@ export function PerfilPanel({ bettor }: { bettor: any }) {
       setIsEditingName(false);
       await revalidator.revalidate();
     } catch (error) {
-      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -73,7 +72,6 @@ export function PerfilPanel({ bettor }: { bettor: any }) {
       setBioHasChanges(false);
       await revalidator.revalidate(); // estava em falta
     } catch (error) {
-      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -130,13 +128,13 @@ export function PerfilPanel({ bettor }: { bettor: any }) {
             <span className="truncate font-mono text-sm text-muted-foreground">{name}</span>
           )}
           {isEditingName && (
-            <button
+            <Button
               onClick={saveName}
               disabled={loading}
-              className="rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground disabled:opacity-50"
+              className="h-auto rounded-md px-2 py-1 text-xs"
             >
               <Save size={16} />
-            </button>
+            </Button>
           )}
           <button
             onClick={() => setIsEditingName((v) => !v)}
@@ -161,13 +159,13 @@ export function PerfilPanel({ bettor }: { bettor: any }) {
           className="w-full resize-none rounded-xl border border-border/60 bg-background/60 px-4 py-3 text-sm placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none"
         />
         {bioHasChanges && (
-          <button
+          <Button
             onClick={saveBio}
             disabled={loading}
-            className="mt-2 rounded-md bg-primary px-3 py-1 text-sm text-primary-foreground disabled:opacity-50"
+            className="mt-2 h-auto rounded-md px-3 py-1 text-sm"
           >
             Save
-          </button>
+          </Button>
         )}
         <span className="pointer-events-none absolute bottom-2 right-3 font-mono text-[11px] text-muted-foreground">
           {bio.length}/200

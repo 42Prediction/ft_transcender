@@ -137,8 +137,8 @@ export class AuthService{
         }
 
         const responseData = await response.json();
-        const {email, campus} = await this.profileOauth42School(responseData.access_token);
-        const {token} = await this.generateToken(email, {campus} as Profile42Dto);
+        const {name, email, campus, level} = await this.profileOauth42School(responseData.access_token);
+        const {token} = await this.generateToken(email, {campus, school42Login: name, level} as Profile42Dto);
         return {
             access_token: token,
         };
@@ -157,7 +157,10 @@ export class AuthService{
                 throw new BadRequestException("Can't get user profile of API");
 
         const profileData = await profileResponse.json();
-        return {name: profileData.login, email:profileData.email, campus: profileData.campus?.[0]?.name};
+        // Level lives on the main cursus (same extraction as School42Service.getStudent).
+        const mainCursus = (profileData.cursus_users ?? []).find((c: any) => c.cursus?.kind === 'main');
+        const level = mainCursus ? Number(mainCursus.level) : 0;
+        return {name: profileData.login, email:profileData.email, campus: profileData.campus?.[0]?.name, level};
     }
 
     private async generateToken(email:string, profile42dto?: Profile42Dto){

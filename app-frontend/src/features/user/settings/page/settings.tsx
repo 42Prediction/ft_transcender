@@ -1,4 +1,3 @@
-// import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   User,
@@ -6,24 +5,15 @@ import {
   TrendingUp,
   Bell,
   KeyRound,
-  Code2,
 } from "lucide-react";
 import { PerfilPanel } from "../components/PerfilPanel";
 import { PlaceholderPanel } from "../components/PlaceholderPanel";
 import { SecurityPanel } from "../components/SecurityPanel";
+import { AccountPanel } from "../components/AccountPanel";
 import { useRouteLoaderData } from "react-router-dom";
 
-// export const Route = createFileRoute("/settings")({
-//   head: () => ({
-//     meta: [
-//       { title: "Configurações — ExamBet" },
-//       { name: "description", content: "Gerencie seu perfil, conta e preferências." },
-//     ],
-//   }),
-//   component: SettingsPage,
-// });
 
-type TabKey = "profile" | "account" | "negotiation" | "notifications" | "api" | "builders";
+type TabKey = "profile" | "account" | "negotiation" | "notifications" | "api";
 
 const TABS: { key: TabKey; label: string; icon: typeof User }[] = [
   { key: "profile", label: "Profile", icon: User },
@@ -31,14 +21,13 @@ const TABS: { key: TabKey; label: string; icon: typeof User }[] = [
   { key: "negotiation", label: "Negotiation", icon: TrendingUp },
   { key: "notifications", label: "Notifications", icon: Bell },
   { key: "api", label: "API Keys", icon: KeyRound },
-  { key: "builders", label: "Builders", icon: Code2 },
 ];
 
 
 export function SettingsPage() {
   const [active, setActive] = useState<TabKey>("profile");
   const data = useRouteLoaderData('root');
-  const bettor = data.data;
+  const bettor = data?.data;
 
   return (
     <div className="min-h-screen bg-background">
@@ -53,11 +42,10 @@ export function SettingsPage() {
                   <button
                     key={t.key}
                     onClick={() => setActive(t.key)}
-                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
-                      isActive
-                        ? "bg-surface text-foreground"
-                        : "text-muted-foreground hover:bg-surface/60 hover:text-foreground"
-                    }`}
+                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${isActive
+                      ? "bg-surface text-foreground"
+                      : "text-muted-foreground hover:bg-surface/60 hover:text-foreground"
+                      }`}
                   >
                     <Icon className="h-4 w-4" />
                     <span className="truncate">{t.label}</span>
@@ -70,10 +58,10 @@ export function SettingsPage() {
           <section>
             {active === "profile" && <PerfilPanel bettor={bettor} />}
             {active === "account" && <SecurityPanel isTwoFactorEnabled={bettor?.user?.isTwoFactorEnabled ?? false} />}
+            {active === "account" && <AccountPanel />}
             {active === "negotiation" && <PlaceholderPanel title="Negotiation" />}
             {active === "notifications" && <PlaceholderPanel title="Notifications" />}
             {active === "api" && <PlaceholderPanel title="API Keys" />}
-            {active === "builders" && <PlaceholderPanel title="Builders" />}
           </section>
         </div>
       </main>
