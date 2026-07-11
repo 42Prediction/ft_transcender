@@ -99,7 +99,10 @@ describe('AuthController – Google OAuth', () => {
 
   describe('googleAuthCallBack', () => {
     it('sets the auth cookie and redirects to the frontend URL', async () => {
-      mockAuthService.googleLogin.mockResolvedValue({ access_token: 'jwt-token' });
+      mockAuthService.googleLogin.mockResolvedValue({
+        access_token: 'jwt-token',
+        result: { isTwoFactorEnabled: false },
+      });
       mockConfigService.get.mockReturnValue('https://frontend.test');
 
       const req = { user: { email: 'google@test.com' } };
@@ -114,6 +117,23 @@ describe('AuthController – Google OAuth', () => {
         expect.any(Object),
       );
       expect(res.redirect).toHaveBeenCalledWith('https://frontend.test');
+    });
+
+    it('sets temp 2FA cookie and redirects to the verify-2fa page when 2FA is enabled', async () => {
+      mockAuthService.googleLogin.mockResolvedValue({
+        access_token: 'jwt-token',
+        result: { id: 'u1', isTwoFactorEnabled: true },
+      });
+      mockAuthService.generateTempToken.mockResolvedValue('temp-tok');
+      mockConfigService.get.mockReturnValue('https://frontend.test');
+
+      const req = { user: { email: 'google@test.com' } };
+      const res = makeRes();
+
+      await controller.googleAuthCallBack(req, res as Response);
+
+      expect(res.cookie).toHaveBeenCalledWith('temp_2fa_token', 'temp-tok', expect.any(Object));
+      expect(res.redirect).toHaveBeenCalledWith('https://frontend.test/verify-2fa');
     });
   });
 });
@@ -180,7 +200,10 @@ describe('AuthController – 42 School OAuth', () => {
 
   describe('GET /auth/42luanda/callback', () => {
     it('exchanges code for token, sets cookie and redirects to frontend', async () => {
-      mockAuthService._42SchoolLogin.mockResolvedValue({ access_token: 'signed-jwt-token' });
+      mockAuthService._42SchoolLogin.mockResolvedValue({
+        access_token: 'signed-jwt-token',
+        user: { isTwoFactorEnabled: false },
+      });
 
       const req = { query: { code: 'auth-code-abc' } };
       const res = makeRes();
@@ -192,7 +215,10 @@ describe('AuthController – 42 School OAuth', () => {
     });
 
     it('sets the auth cookie with the JWT before redirecting', async () => {
-      mockAuthService._42SchoolLogin.mockResolvedValue({ access_token: 'my-jwt' });
+      mockAuthService._42SchoolLogin.mockResolvedValue({
+        access_token: 'my-jwt',
+        user: { isTwoFactorEnabled: false },
+      });
 
       const req = { query: { code: 'some-code' } };
       const res = makeRes();
@@ -204,6 +230,22 @@ describe('AuthController – 42 School OAuth', () => {
         'my-jwt',
         expect.any(Object),
       );
+    });
+
+    it('sets temp 2FA cookie and redirects to the verify-2fa page when 2FA is enabled', async () => {
+      mockAuthService._42SchoolLogin.mockResolvedValue({
+        access_token: 'my-jwt',
+        user: { id: 'u1', isTwoFactorEnabled: true },
+      });
+      mockAuthService.generateTempToken.mockResolvedValue('temp-tok');
+
+      const req = { query: { code: 'some-code' } };
+      const res = makeRes();
+
+      await controller._42schoolAuthCallBack(req, res as Response);
+
+      expect(res.cookie).toHaveBeenCalledWith('temp_2fa_token', 'temp-tok', expect.any(Object));
+      expect(res.redirect).toHaveBeenCalledWith('http://localhost:5173/verify-2fa');
     });
 
     it('returns errorResponse structure when AuthService throws', async () => {
@@ -282,7 +324,12 @@ describe('AuthController – signin / signup / signout', () => {
       );
 
       expect(res.cookie).toHaveBeenCalledWith('temp_2fa_token', 'temp-tok', expect.any(Object));
-      expect(result).toEqual({ message: '2FA required' });
+      expect(result).toEqual({
+        success: true,
+        statusCode: HttpStatus.OK,
+        data: { twoFactorRequired: true, message: '2FA required' },
+        error: null,
+      });
     });
   });
 

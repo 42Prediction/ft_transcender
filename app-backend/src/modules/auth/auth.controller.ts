@@ -60,19 +60,14 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,) {
         try {
             const result = await this.authService.signin(signinDto);
-
             const { access_token, user, ...response } = result;
 
-            const isUserActive = await this.userService.findOne(user.id);
-            if (isUserActive.isTwoFactorEnabled) {
-
-                console.log('2FA is enabled for this user. Generating temp token...');
-
-                 this.setAuthCookie(res, access_token);
-                return successResponse(HttpStatus.OK, response);
+            if (user.isTwoFactorEnabled) {
+                const tempToken = await this.authService.generateTempToken(user);
+                this.setTempTwoFactorCookie(res, tempToken);
+                return successResponse(HttpStatus.OK, { twoFactorRequired: true, message: '2FA required' });
             }
 
-            console.log('Direct access granted. Generating access token...');
             this.setAuthCookie(res, access_token);
             return successResponse(HttpStatus.OK, response);
 
@@ -125,9 +120,17 @@ export class AuthController {
     @UseGuards(GoogleAuthGuard)
     async googleAuthCallBack(@Req() req, @Res({ passthrough: true }) res: Response) {
         try {
-            const { access_token } = await this.authService.googleLogin(req.user);
-            this.setAuthCookie(res, access_token);
+            const { access_token, result } = await this.authService.googleLogin(req.user);
             const frontendUrl = this.configService.get('FRONTEND_URL') as string;
+
+            if (result.isTwoFactorEnabled) {
+                const tempToken = await this.authService.generateTempToken(result as User);
+                this.setTempTwoFactorCookie(res, tempToken);
+                res.redirect(`${frontendUrl}/verify-2fa`);
+                return;
+            }
+
+            this.setAuthCookie(res, access_token);
             res.redirect(`${frontendUrl}`);
         } catch (error) {
             return errorResponse(error);
@@ -138,9 +141,17 @@ export class AuthController {
     @Get('42luanda/callback')
     async _42schoolAuthCallBack(@Req() req, @Res({ passthrough: true }) res: Response) {
         try {
-            const { access_token } = await this.authService._42SchoolLogin(req.query.code as string);
-            this.setAuthCookie(res, access_token);
+            const { access_token, user } = await this.authService._42SchoolLogin(req.query.code as string);
             const frontendUrl = this.configService.get('FRONTEND_URL');
+
+            if (user.isTwoFactorEnabled) {
+                const tempToken = await this.authService.generateTempToken(user as User);
+                this.setTempTwoFactorCookie(res, tempToken);
+                res.redirect(`${frontendUrl}/verify-2fa`);
+                return;
+            }
+
+            this.setAuthCookie(res, access_token);
             res.redirect(`${frontendUrl}`);
         } catch (error) {
             return errorResponse(error);
@@ -185,7 +196,6 @@ export class AuthController {
 
 
     @Post('2fa/authenticate')
-    @UseGuards(JwtAuthGuard)
     async authenticate2FA(@Req() req, @Body() dto: TwoFactorCodeDto, @Res({ passthrough: true }) res: Response) {
         const tempToken = req.cookies?.temp_2fa_token;
         if (!tempToken) {

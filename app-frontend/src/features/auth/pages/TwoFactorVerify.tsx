@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { auth } from "@/api/auth/auth.api";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,7 @@ export function TwoFactorVerify() {
     const [loading, setLoading] = useState(false);
     const inputs = useRef<(HTMLInputElement | null)[]>([]);
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     const handleChange = (index: number, value: string) => {
         if (!/^\d?$/.test(value)) return;
@@ -46,7 +47,7 @@ export function TwoFactorVerify() {
         try {
             setLoading(true);
             await auth.twoFactor.authenticate(fullCode);
-            navigate("/", { replace: true });
+            navigate(searchParams.get("redirectTo") || "/", { replace: true });
         } catch {
             setError("Invalid or expired code. Try again.");
             setCode(["", "", "", "", "", ""]);

@@ -54,6 +54,7 @@ export class AuthService{
                 id: user.id,
                 email: user.email,
                 role: user.role,
+                isTwoFactorEnabled: user.isTwoFactorEnabled,
             },
             message: 'User login successfully.',
         }
@@ -104,6 +105,7 @@ export class AuthService{
                 id: user.id,
                 email: user.email,
                 role: user.role,
+                isTwoFactorEnabled: user.isTwoFactorEnabled,
             }
         };
     }
@@ -138,9 +140,15 @@ export class AuthService{
 
         const responseData = await response.json();
         const {name, email, campus, level} = await this.profileOauth42School(responseData.access_token);
-        const {token} = await this.generateToken(email, {campus, school42Login: name, level} as Profile42Dto);
+        const {token, user} = await this.generateToken(email, {campus, school42Login: name, level} as Profile42Dto);
         return {
             access_token: token,
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                isTwoFactorEnabled: user.isTwoFactorEnabled,
+            },
         };
     }
 
@@ -184,8 +192,8 @@ export class AuthService{
         };
 
         return {
-            token:this.jwtService.sign(payload),
-            data:{}
+            token: this.jwtService.sign(payload),
+            user,
         };
     }
 
