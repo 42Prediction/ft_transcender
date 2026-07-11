@@ -245,7 +245,15 @@ describe('AuthService_2', () => {
         mockUserService.findOneByEmail.mockResolvedValue(makeUser());
 
         const result = await service._42SchoolLogin('valid-code');
-        expect(result).toEqual({ access_token: 'signed-jwt-token' });
+        expect(result).toEqual({
+          access_token: 'signed-jwt-token',
+          user: {
+            id: 'user-uuid-1',
+            email: 'student@42luanda.com',
+            role: 'user',
+            isTwoFactorEnabled: undefined,
+          },
+        });
         expect(mockUserService.createOauthUser).not.toHaveBeenCalled();
         expect(mockBettorService.create).not.toHaveBeenCalled();
       });
@@ -274,7 +282,15 @@ describe('AuthService_2', () => {
           school42Login: 'newbie',
           level: 0
         });
-        expect(result).toEqual({ access_token: 'signed-jwt-token' });
+        expect(result).toEqual({
+          access_token: 'signed-jwt-token',
+          user: {
+            id: 'new-uuid',
+            email: 'new@42luanda.com',
+            role: 'user',
+            isTwoFactorEnabled: undefined,
+          },
+        });
       });
 
       it('call token endpoint with the correct body', async () => {

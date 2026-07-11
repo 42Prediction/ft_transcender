@@ -44,7 +44,7 @@ export class UserService {
   }
 
   async findOneByEmail(email: string): Promise<User | null> {
-    return await this.userRepository.findOne({where: { email: this.normalizeEmail(email) }});
+    return await this.userRepository.findOne({ where: { email: this.normalizeEmail(email) } });
   }
 
   async findAll(): Promise<User[]> {
@@ -52,20 +52,20 @@ export class UserService {
   }
 
   async findOne(id: string): Promise<User> {
-    const user : User | null = await this.userRepository.findOne({
+    const user: User | null = await this.userRepository.findOne({
       where: { id },
     });
-    if (!user){
+    if (!user) {
       throw new NotFoundException("User Not Found");
     }
     return user;
   }
 
   async update(id: string, updateUserDto: UpdateUserDto | AdmUpdateUserDto): Promise<User> {
-    const user : User | null = await this.userRepository.findOne({
+    const user: User | null = await this.userRepository.findOne({
       where: { id },
     });
-    if (!user){
+    if (!user) {
       throw new NotFoundException("User Not Found");
     }
 
@@ -91,8 +91,8 @@ export class UserService {
   };
 
   async remove(id: string) {
-    const user = await this.userRepository.findOneBy({id});
-    if (!user){
+    const user = await this.userRepository.findOneBy({ id });
+    if (!user) {
       throw new NotFoundException("User Not Found");
     }
     await this.userRepository.remove(user);
@@ -101,10 +101,38 @@ export class UserService {
     }
   }
 
-  async createOauthUser(dto:CreateOauthUserDto):Promise<User>{
+  async setTwoFactorSecret(userId: string, secret: string): Promise<void> {
+    const user = await this.userRepository.findOneBy({ id: userId });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    user.twoFactorSecret = secret;
+    await this.userRepository.save(user);
+  }
+
+  async enableTwoFactor(userId: string): Promise<void> {
+    const user = await this.userRepository.findOneBy({ id: userId });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    user.isTwoFactorEnabled = true;
+    await this.userRepository.save(user);
+  }
+
+  async disableTwoFactor(userId: string): Promise<void> {
+    const user = await this.userRepository.findOneBy({ id: userId });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    user.isTwoFactorEnabled = false;
+    await this.userRepository.save(user);
+  }
+
+
+  async createOauthUser(dto: CreateOauthUserDto): Promise<User> {
     const normalizedEmail = this.normalizeEmail(dto.email);
     const user = this.userRepository.create({
-        email: normalizedEmail,
+      email: normalizedEmail,
     });
     return this.userRepository.save(user);
   }

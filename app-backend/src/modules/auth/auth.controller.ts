@@ -4,13 +4,21 @@ import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import { CredentialsAuthDto } from './dto/credentials.auth.dto';
+import { User } from '../user/entities/user.entity';
+import { TwoFactorCodeDto } from './dto/two-factor-code.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { TwoFactorService } from './two-factor.service';
+import { UserService } from '../user/user.service';
+import { UnauthorizedException } from '@nestjs/common';
 import { errorResponse, successResponse } from '../../shared/helper/api-response.helper';
 
 
 
 @Controller('auth')
 export class AuthController {
-    constructor(private authService: AuthService, private configService: ConfigService) { }
+    constructor(private authService: AuthService, private configService: ConfigService,
+        private twoFactorService: TwoFactorService, private userService: UserService
+    ) { }
 
     private setAuthCookie(res: Response, accessToken: string) {
         const isProduction = this.configService.get('NODE_ENV') === 'production';
@@ -24,11 +32,22 @@ export class AuthController {
         });
     }
 
+    private setTempTwoFactorCookie(res: Response, tempToken: string) {
+        const isProduction = this.configService.get('NODE_ENV') === 'production';
+        res.cookie('temp_2fa_token', tempToken, {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'lax',
+            maxAge: 5 * 60 * 1000, // 5 minutos
+            path: '/',
+        });
+    }
+
     @Get('google')
     @UseGuards(GoogleAuthGuard)
     async googleAuth(@Req() req) {
         try {
-            
+
         } catch (error) {
             return errorResponse(error);
         }
@@ -36,11 +55,22 @@ export class AuthController {
 
     @Post('signin')
     @HttpCode(HttpStatus.OK)
-    async signin(@Body() signinDto: CredentialsAuthDto, @Res({ passthrough: true }) res: Response) {
+    async signin(
+    @Body() signinDto: CredentialsAuthDto,
+    @Res({ passthrough: true }) res: Response,) {
         try {
-            const { access_token, ...result } = await this.authService.signin(signinDto);
+            const result = await this.authService.signin(signinDto);
+            const { access_token, user, ...response } = result;
+
+            if (user.isTwoFactorEnabled) {
+                const tempToken = await this.authService.generateTempToken(user);
+                this.setTempTwoFactorCookie(res, tempToken);
+                return successResponse(HttpStatus.OK, { twoFactorRequired: true, message: '2FA required' });
+            }
+
             this.setAuthCookie(res, access_token);
-            return successResponse<any>(HttpStatus.OK, result);
+            return successResponse(HttpStatus.OK, response);
+
         } catch (error) {
             return errorResponse(error);
         }
@@ -79,7 +109,7 @@ export class AuthController {
                 response_type: 'code',
                 state: 'xyz'
             });
-    
+
             res.redirect(302, `${url}?${params.toString()}`);
         } catch (error) {
             return console.error(error);
@@ -90,9 +120,17 @@ export class AuthController {
     @UseGuards(GoogleAuthGuard)
     async googleAuthCallBack(@Req() req, @Res({ passthrough: true }) res: Response) {
         try {
-            const { access_token } = await this.authService.googleLogin(req.user);
-            this.setAuthCookie(res, access_token);
+            const { access_token, result } = await this.authService.googleLogin(req.user);
             const frontendUrl = this.configService.get('FRONTEND_URL') as string;
+
+            if (result.isTwoFactorEnabled) {
+                const tempToken = await this.authService.generateTempToken(result as User);
+                this.setTempTwoFactorCookie(res, tempToken);
+                res.redirect(`${frontendUrl}/verify-2fa`);
+                return;
+            }
+
+            this.setAuthCookie(res, access_token);
             res.redirect(`${frontendUrl}`);
         } catch (error) {
             return errorResponse(error);
@@ -103,12 +141,79 @@ export class AuthController {
     @Get('42luanda/callback')
     async _42schoolAuthCallBack(@Req() req, @Res({ passthrough: true }) res: Response) {
         try {
-            const { access_token } = await this.authService._42SchoolLogin(req.query.code as string);
-            this.setAuthCookie(res, access_token);
+            const { access_token, user } = await this.authService._42SchoolLogin(req.query.code as string);
             const frontendUrl = this.configService.get('FRONTEND_URL');
+
+            if (user.isTwoFactorEnabled) {
+                const tempToken = await this.authService.generateTempToken(user as User);
+                this.setTempTwoFactorCookie(res, tempToken);
+                res.redirect(`${frontendUrl}/verify-2fa`);
+                return;
+            }
+
+            this.setAuthCookie(res, access_token);
             res.redirect(`${frontendUrl}`);
         } catch (error) {
             return errorResponse(error);
         }
+    }
+
+    //----------- 2FA Endpoints -----------//
+
+    @Post('2fa/generate')
+    @UseGuards(JwtAuthGuard)
+    async generate2FA(@Req() req) {
+        const secret = this.twoFactorService.generateSecret();
+        await this.userService.setTwoFactorSecret(req.user.id, secret);
+
+        const otpAuthUrl = this.twoFactorService.generateOtpAuthUrl(req.user.email, secret);
+        const qrCode = await this.twoFactorService.generateQrCodeDataUrl(otpAuthUrl);
+
+        return { qrCode };
+    }
+
+    @Post('2fa/turn-on')
+    @UseGuards(JwtAuthGuard)
+    async turnOn2FA(@Req() req, @Body() dto: TwoFactorCodeDto) {
+
+        const user = await this.userService.findOne(req.user.id);
+        const isValid = await this.twoFactorService.verifyToken(dto.code, user.twoFactorSecret);
+
+        if (!isValid) {
+            throw new UnauthorizedException('Código inválido');
+        }
+
+        await this.userService.enableTwoFactor(req.user.id);
+        return { message: '2FA ativado com sucesso' };
+    }
+
+    @Post('2fa/turn-off')
+    @UseGuards(JwtAuthGuard)
+    async turnOff2FA(@Req() req) {
+        await this.userService.disableTwoFactor(req.user.id);
+        return { message: '2FA desativado' };
+    }
+
+
+    @Post('2fa/authenticate')
+    async authenticate2FA(@Req() req, @Body() dto: TwoFactorCodeDto, @Res({ passthrough: true }) res: Response) {
+        const tempToken = req.cookies?.temp_2fa_token;
+        if (!tempToken) {
+            throw new UnauthorizedException('Sessão de 2FA expirada ou inexistente');
+        }
+
+        const payload = await this.authService.verifyTempToken(tempToken);
+        const user = await this.userService.findOne(payload.id);
+
+        const isValid = this.twoFactorService.verifyToken(dto.code, user.twoFactorSecret);
+        if (!isValid) {
+            throw new UnauthorizedException('Código 2FA inválido');
+        }
+
+        const { access_token } = await this.authService.login(user);
+        res.clearCookie('temp_2fa_token', { path: '/' });
+        this.setAuthCookie(res, access_token);
+
+        return { message: 'Autenticado com sucesso' };
     }
 }

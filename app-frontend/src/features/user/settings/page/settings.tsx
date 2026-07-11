@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { PerfilPanel } from "../components/PerfilPanel";
 import { PlaceholderPanel } from "../components/PlaceholderPanel";
+import { SecurityPanel } from "../components/SecurityPanel";
 import { AccountPanel } from "../components/AccountPanel";
 import { useRouteLoaderData } from "react-router-dom";
 
@@ -56,6 +57,7 @@ export function SettingsPage() {
 
           <section>
             {active === "profile" && <PerfilPanel bettor={bettor} />}
+            {active === "account" && <SecurityPanel isTwoFactorEnabled={bettor?.user?.isTwoFactorEnabled ?? false} />}
             {active === "account" && <AccountPanel />}
             {active === "negotiation" && <PlaceholderPanel title="Negotiation" />}
             {active === "notifications" && <PlaceholderPanel title="Notifications" />}
