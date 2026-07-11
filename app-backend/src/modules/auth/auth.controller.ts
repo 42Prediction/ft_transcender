@@ -55,25 +55,30 @@ export class AuthController {
 
     @Post('signin')
     @HttpCode(HttpStatus.OK)
-    async signin(@Body() signinDto: CredentialsAuthDto, @Res({ passthrough: true }) res: Response) {
-     
+    async signin(
+    @Body() signinDto: CredentialsAuthDto,
+    @Res({ passthrough: true }) res: Response,) {
         try {
-            const { access_token, user, ...result } = await this.authService.signin(signinDto);
-            if (user.isTwoFactorEnabled) {
-                
+            const result = await this.authService.signin(signinDto);
+
+            const { access_token, user, ...response } = result;
+
+            const isUserActive = await this.userService.findOne(user.id);
+            if (isUserActive.isTwoFactorEnabled) {
+
                 console.log('2FA is enabled for this user. Generating temp token...');
 
-                const tempToken = await this.authService.generateTempToken(user);
-                this.setTempTwoFactorCookie(res, tempToken);
-                return { message: '2FA required' };
+                 this.setAuthCookie(res, access_token);
+                return successResponse(HttpStatus.OK, response);
             }
-            console.log('Acesso directo concedido. Gerando token de acesso...');
+
+            console.log('Direct access granted. Generating access token...');
             this.setAuthCookie(res, access_token);
-            return successResponse<any>(HttpStatus.OK, result);
+            return successResponse(HttpStatus.OK, response);
+
         } catch (error) {
             return errorResponse(error);
         }
-
     }
 
     @Post('signup')

@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class Migration41782736523578 implements MigrationInterface {
-    name = 'Migration41782736523578'
+export class Migration211783775293501 implements MigrationInterface {
+    name = 'Migration211783775293501'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`ALTER TABLE "users" ADD "twoFactorSecret" character varying`);
