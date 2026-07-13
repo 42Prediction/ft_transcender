@@ -17,8 +17,7 @@ export enum MarketStatus {
   CLOSING = 'closing',
   NEW = 'new',
   RESOLVED = 'resolved',
-  // Auto-generated exam markets are voided (bets refunded) when the cadet
-  // deregisters from the exam before it ends.
+
   CANCELLED = 'cancelled',
 }
 
@@ -27,8 +26,7 @@ export enum MarketResolution {
   NO = 'NO',
 }
 
-// The only markets this platform runs are 42 exam-rank predictions —
-// deliberately no broader category scope (no Piscine/Projects/etc).
+
 export enum MarketCategory {
   EXAM_02 = 'Exam 02',
   EXAM_03 = 'Exam 03',
@@ -46,8 +44,7 @@ export class Market {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  // Set when this market was auto-generated from a 42 School exam; pairs with
-  // subjectLogin to dedupe one market per (exam, cadet).
+  
   @Column({ name: 'exam_id', type: 'varchar', nullable: true })
   examId?: string | null;
 
@@ -78,9 +75,7 @@ export class Market {
   @Column({ name: 'closes_at' })
   closesAt!: Date;
 
-  // Exam session end time (42's `endAt`) — only set for auto-generated exam
-  // markets. Lets a human resolve manually once the session has genuinely
-  // locked, without needing a live 42 call at resolve time.
+  
   @Column({ name: 'exam_ends_at', type: 'timestamp', nullable: true })
   examEndsAt?: Date | null;
 
@@ -90,9 +85,7 @@ export class Market {
   @Column({ type: 'enum', enum: MarketResolution, nullable: true })
   resolution?: MarketResolution;
 
-  // Real 42 grade (0-125+) behind the resolution, when known — from the
-  // published grade on auto-resolve, or entered by hand on a manual
-  // post-exam-end resolve. Null for manually-created (non-exam) markets.
+ 
   @Column({ name: 'final_grade', type: 'decimal', precision: 6, scale: 2, nullable: true })
   finalGrade?: number | null;
 

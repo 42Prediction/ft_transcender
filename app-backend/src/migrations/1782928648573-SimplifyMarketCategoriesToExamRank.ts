@@ -4,13 +4,9 @@ export class SimplifyMarketCategoriesToExamRank1782928648573 implements Migratio
     name = 'SimplifyMarketCategoriesToExamRank1782928648573'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        // Drop the enum constraint so existing category values (from the old,
-        // broader taxonomy) can be freely rewritten before the new enum is applied.
         await queryRunner.query(`ALTER TABLE "markets" ALTER COLUMN "category" TYPE text USING "category"::text`);
         await queryRunner.query(`DROP TYPE "public"."markets_category_enum"`);
 
-        // Platform scope is now strictly Exam Rank 02-06 — anything whose
-        // project name doesn't match one of those ranks is out of scope and removed.
         await queryRunner.query(`
             DELETE FROM "market_positions"
             WHERE "market_id" IN (

@@ -158,7 +158,7 @@ export class AuthController {
         }
     }
 
-    //----------- 2FA Endpoints -----------//
+    
 
     @Post('2fa/generate')
     @UseGuards(JwtAuthGuard)

@@ -35,8 +35,6 @@ import { buildPinoParams } from './observability/logger.config';
         entities: [__dirname + '/modules/**/*.entity{.ts,.js}'],
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
         synchronize: false,
-        // In containers we run pending migrations on boot (RUN_MIGRATIONS=true);
-        // local dev keeps using `npm run migration:run` / `make migrate-run`.
         migrationsRun: config.get<string>('RUN_MIGRATIONS') === 'true',
       }),
     }),

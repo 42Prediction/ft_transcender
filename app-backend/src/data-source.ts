@@ -21,8 +21,6 @@ export const AppDataSource = new DataSource({
     username: process.env.DB_USER,
     password: process.env.DB_PASS,
     database: process.env.DB_NAME,
-    // __dirname-based so this resolves in dev (ts-node -> src) and in the
-    // container (compiled -> dist), matching app.module.ts's entity discovery.
     entities: [__dirname + '/modules/**/*.entity{.ts,.js}'],
     migrations: [__dirname + '/migrations/*{.ts,.js}'],
     synchronize: false,

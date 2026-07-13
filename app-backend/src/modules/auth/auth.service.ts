@@ -165,7 +165,6 @@ export class AuthService{
                 throw new BadRequestException("Can't get user profile of API");
 
         const profileData = await profileResponse.json();
-        // Level lives on the main cursus (same extraction as School42Service.getStudent).
         const mainCursus = (profileData.cursus_users ?? []).find((c: any) => c.cursus?.kind === 'main');
         const level = mainCursus ? Number(mainCursus.level) : 0;
         return {name: profileData.login, email:profileData.email, campus: profileData.campus?.[0]?.name, level};

@@ -32,8 +32,6 @@ export class BettorController {
     }
   }
 
-  // GDPR: everything the platform holds about the caller's own account, as a
-  // single downloadable JSON payload — identity, profile, wallet ledger, bets.
   @Get('me/export')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)

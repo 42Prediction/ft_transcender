@@ -21,8 +21,6 @@ import { BettorModule } from '../bettor/bettor.module';
   imports: [
     TypeOrmModule.forFeature([Market, MarketPosition, Notification, Bettor, User]),
     ScheduleModule.forRoot(),
-    // Secret-less registration: the gateway verifies socket-handshake JWTs
-    // explicitly with the same JWT_SECRET the auth module signs with.
     JwtModule.register({}),
     WalletModule,
     School42Module,

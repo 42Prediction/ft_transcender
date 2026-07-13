@@ -7,7 +7,6 @@ export class OptionalJwtAuthGuard extends AuthGuard('jwt') {
     try {
       await super.canActivate(context);
     } catch {
-      // Ignore auth failures so the controller can always shape a 200 response.
     }
 
     return true;

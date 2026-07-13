@@ -12,7 +12,6 @@ async function bootstrap() {
     bufferLogs: true,
   });
 
-  // Route all Nest logs through pino (structured JSON in production).
   app.useLogger(app.get(Logger));
 
   app.use(cookieParser());
