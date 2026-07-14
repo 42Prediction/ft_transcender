@@ -2,6 +2,7 @@ import { MapPin, Calendar, UserPen } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Bettor } from "../route";
 import type { BettorStats } from "@/api/market/market.api";
+import { LUANDA_TZ } from "@/lib/utils";
 
 
 interface Props {
@@ -56,6 +57,7 @@ export function ProfileHeader({ bettor, isOwn, stats }: Props) {
                       day: "2-digit",
                       month: "long",
                       year: "numeric",
+                      timeZone: LUANDA_TZ,
                     })
                   : "—"}
               </span>

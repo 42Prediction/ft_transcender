@@ -5,6 +5,7 @@ import { BarChart3, ChevronLeft, Loader2, LogOut, Search, ShieldCheck, ShieldOff
 import { Link, useRouteLoaderData } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { LUANDA_TZ } from "@/lib/utils";
 
 export default function UsersPage() {
     const [users, setUsers] = useState<UserMe[]>([]);
@@ -151,7 +152,7 @@ export default function UsersPage() {
                                             </span>
                                         </td>
                                         <td className="px-4 py-2.5 hidden md:table-cell text-muted-foreground">
-                                            {new Date(u.createdAt).toLocaleDateString("pt-PT")}
+                                            {new Date(u.createdAt).toLocaleDateString("pt-PT", { timeZone: LUANDA_TZ })}
                                         </td>
                                         {isAdmin && (
                                             <td className="px-4 py-2.5">

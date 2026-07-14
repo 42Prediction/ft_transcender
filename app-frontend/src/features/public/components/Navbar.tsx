@@ -175,10 +175,10 @@ function UserInfo(
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setOpen(!open)}
-          className="flex h-10 items-center gap-2 rounded-xl bg-gradient-brand px-4 text-sm font-semibold text-primary-foreground shadow-glow transition hover:opacity-90"
+          className="flex h-10 max-w-[180px] items-center gap-2 rounded-xl bg-gradient-brand px-4 text-sm font-semibold text-primary-foreground shadow-glow transition hover:opacity-90"
         >
-          <span className="hidden sm:inline">{profile?.nick}</span>
-          <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+          <span className="hidden truncate sm:inline">{profile?.nick}</span>
+          <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
         </button>
 
         {open && (
@@ -187,9 +187,9 @@ function UserInfo(
               <Link
                 to={`user/${profile?.nick}`}
                 onClick={() => setOpen(false)}
-                className=" flex-1 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-surface hover:text-foreground"
+                className="min-w-0 flex-1 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-surface hover:text-foreground"
               >
-                <span>{profile?.nick}</span>
+                <span className="block truncate">{profile?.nick}</span>
               </Link>
               <Link to="user/settings"
                 className="rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-surface hover:text-foreground"

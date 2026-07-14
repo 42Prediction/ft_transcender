@@ -33,11 +33,10 @@ import {
   X,
 } from 'lucide-react';
 import { marketApi, type ActivityEntry, type MarketDto, type PricePoint } from '@/api/market/market.api';
-import { cn } from '@/lib/utils';
+import { cn, LUANDA_TZ } from '@/lib/utils';
 import { useMarketUpdates } from '@/features/market/hooks/useMarketUpdates';
 import { MarketChat } from '@/features/market/components/MarketChat';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 
 /* ─── types ─────────────────────────────────────────── */
 
@@ -78,8 +77,8 @@ function chartLabel(iso: string, range: Range): string {
   const d = new Date(iso);
   // Short windows read better as a time of day; longer ones as a date.
   return range === '1H' || range === '6H' || range === '1D'
-    ? d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-    : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    ? d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: LUANDA_TZ })
+    : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: LUANDA_TZ });
 }
 
 /** Real price history filtered to the selected window; falls back to the full
@@ -99,7 +98,7 @@ function dicebear(seed: string) {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: LUANDA_TZ });
 }
 
 /* ─── page ───────────────────────────────────────────── */
@@ -218,6 +217,7 @@ function MarketHeader({ market }: { market: MarketDto }) {
             >
               {market.status === 'live' ? '● Live'
                 : market.status === 'closing' ? '● Closing'
+                : market.status === 'closed' ? '● Closed'
                 : market.status === 'new' ? '● New'
                 : market.status === 'cancelled' ? 'Cancelled'
                 : 'Resolved'}
@@ -723,13 +723,15 @@ function MarketInfoCard({ market }: { market: MarketDto }) {
   const [resolveConfirm, setResolveConfirm] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [resolveError, setResolveError] = useState<string | null>(null);
-  const [gradeInput, setGradeInput] = useState('');
 
-  const examEnded = market.examEndsAt != null && new Date(market.examEndsAt).getTime() <= Date.now();
-  const canResolveWithGrade =
+  // Manual markets are settled only by their creator (backend enforces the
+  // same); exam markets resolve themselves when the exam ends.
+  const myNick: string | undefined = root?.data?.nick;
+  const canResolve =
     (isAdmin || isModerator) &&
-    market.isAutoManaged &&
-    examEnded &&
+    !market.isAutoManaged &&
+    market.creatorNick != null &&
+    market.creatorNick === myNick &&
     market.status !== 'resolved' &&
     market.status !== 'cancelled';
 
@@ -740,26 +742,6 @@ function MarketInfoCard({ market }: { market: MarketDto }) {
       await marketApi.resolveMarket(market.id, resolution);
       revalidator.revalidate();
       setResolveConfirm(false);
-    } catch (err: any) {
-      setResolveError(err?.response?.data?.error?.response?.message ?? 'Could not resolve this market.');
-    } finally {
-      setResolving(false);
-    }
-  }
-
-  async function handleResolveWithGrade() {
-    const grade = Number(gradeInput);
-    if (gradeInput.trim() === '' || Number.isNaN(grade)) {
-      setResolveError('Enter a valid grade.');
-      return;
-    }
-    setResolving(true);
-    setResolveError(null);
-    try {
-      await marketApi.resolveMarket(market.id, undefined, grade);
-      revalidator.revalidate();
-      setResolveConfirm(false);
-      setGradeInput('');
     } catch (err: any) {
       setResolveError(err?.response?.data?.error?.response?.message ?? 'Could not resolve this market.');
     } finally {
@@ -801,14 +783,14 @@ function MarketInfoCard({ market }: { market: MarketDto }) {
             <span className="font-mono">@{market.handle}</span> scores 100 on{' '}
             {market.project.split(' — ')[0]}
             {market.isAutoManaged
-              ? ', automatically once 42 publishes the grade.'
-              : ', resolved manually by an admin or moderator.'}
+              ? ', automatically when the exam ends — 100 is YES, anything else (or no grade) is NO.'
+              : ', resolved manually by its creator.'}
           </dd>
         </div>
       </dl>
 
-      {/* admin/moderator resolve — only for markets not owned by the automatic exam-grade pipeline */}
-      {(isAdmin || isModerator) && !market.isAutoManaged && market.status !== 'resolved' && market.status !== 'cancelled' && (
+      {/* creator-only resolve — never for markets owned by the automatic exam pipeline */}
+      {canResolve && (
         <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-3">
           {resolveConfirm ? (
             <div className="space-y-2">
@@ -858,63 +840,10 @@ function MarketInfoCard({ market }: { market: MarketDto }) {
         </div>
       )}
 
-      {canResolveWithGrade && (
-        <div className="mt-4 rounded-xl border border-warning/30 bg-warning/5 p-3">
-          {resolveConfirm ? (
-            <div className="space-y-2">
-              <p className="text-center text-xs text-muted-foreground">
-                Exam ended, 42 hasn't published the grade yet. Enter it to resolve:
-              </p>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  value={gradeInput}
-                  onChange={(e) => setGradeInput(e.target.value)}
-                  placeholder="Grade (0-125)"
-                  disabled={resolving}
-                  className="flex-1 rounded-lg font-mono text-xs"
-                />
-                <Button
-                  variant="ghost"
-                  onClick={handleResolveWithGrade}
-                  disabled={resolving}
-                  className="h-auto rounded-lg border border-primary/30 bg-primary/15 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/25"
-                >
-                  Resolve
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setResolveConfirm(false);
-                    setResolveError(null);
-                    setGradeInput('');
-                  }}
-                  disabled={resolving}
-                  className="h-auto rounded-lg px-3 py-2 text-xs text-muted-foreground"
-                >
-                  Cancel
-                </Button>
-              </div>
-              {resolveError && (
-                <p className="text-center text-[11px] text-destructive">{resolveError}</p>
-              )}
-            </div>
-          ) : (
-            <Button
-              variant="ghost"
-              onClick={() => setResolveConfirm(true)}
-              className="h-auto w-full gap-2 py-1.5 text-xs font-medium text-warning hover:text-warning/80"
-            >
-              <Shield className="h-3.5 w-3.5" /> Resolve manually (exam ended)
-            </Button>
-          )}
-        </div>
-      )}
-
-      {(isAdmin || isModerator) && market.isAutoManaged && !examEnded && market.status !== 'resolved' && market.status !== 'cancelled' && (
+      {(isAdmin || isModerator) && market.isAutoManaged && market.status !== 'resolved' && market.status !== 'cancelled' && (
         <div className="mt-4 flex items-center justify-center gap-1.5 rounded-xl border border-border/60 bg-surface p-2.5 text-[11px] text-muted-foreground">
           <Shield className="h-3.5 w-3.5" />
-          Auto-resolves once 42 publishes the grade
+          Auto-resolves when the exam ends — 100 is YES, anything else is NO
         </div>
       )}
     </section>

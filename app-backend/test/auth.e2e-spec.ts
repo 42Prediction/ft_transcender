@@ -35,6 +35,7 @@ describe('AuthController (E2E)', () => {
 
   const mockAuthService = {
     googleLogin: jest.fn(),
+    generateTempToken: jest.fn(),
     _42SchoolLogin: jest.fn(),
     signin: jest.fn(),
     signup: jest.fn(),
@@ -80,7 +81,12 @@ describe('AuthController (E2E)', () => {
     jest.clearAllMocks();
     currentGoogleUser = { email: 'google@test.com' };
     mockConfigService.get.mockReturnValue('https://frontend.test');
-    mockAuthService.googleLogin.mockResolvedValue({ access_token: 'jwt-token' });
+    // googleLogin's contract since the 2FA feature: { access_token, result },
+    // where the controller branches on result.isTwoFactorEnabled.
+    mockAuthService.googleLogin.mockResolvedValue({
+      access_token: 'jwt-token',
+      result: { isTwoFactorEnabled: false },
+    });
   });
 
   describe('Security Boundaries (Guard Validation)', () => {
@@ -108,6 +114,27 @@ describe('AuthController (E2E)', () => {
         expect.arrayContaining([expect.stringContaining('access_token=jwt-token')]),
       );
       expect(response.headers.location).toBe('https://frontend.test');
+    });
+
+    it('GET /auth/google/callback redirects to /verify-2fa with a temp cookie when 2FA is on', async () => {
+      mockAuthService.googleLogin.mockResolvedValue({
+        access_token: 'jwt-token',
+        result: { isTwoFactorEnabled: true },
+      });
+      mockAuthService.generateTempToken.mockResolvedValue('temp-2fa-jwt');
+
+      const response = await request(app.getHttpServer())
+        .get('/auth/google/callback')
+        .expect(HttpStatus.FOUND);
+
+      expect(response.headers['set-cookie']).toEqual(
+        expect.arrayContaining([expect.stringContaining('temp_2fa_token=temp-2fa-jwt')]),
+      );
+      // No session cookie yet — the user still has to pass the 2FA challenge.
+      expect(response.headers['set-cookie']).not.toEqual(
+        expect.arrayContaining([expect.stringContaining('access_token=')]),
+      );
+      expect(response.headers.location).toBe('https://frontend.test/verify-2fa');
     });
   });
 });

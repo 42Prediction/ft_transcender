@@ -93,7 +93,12 @@ export class ExamMarketSyncService implements OnModuleInit {
         const roster = await this.school42Service.getExamRoster(exam);
         const rosterLogins = new Set(roster.map((c) => c.login));
 
-        const candidates = roster.filter((c) => c.status === 'in_progress' && c.finalMark !== 100);
+        // Business rule: every cadet currently enrolled in the exam project gets
+        // a market — enrolment (`in_progress`) is the only criterion. The grade
+        // never gates creation: resolution handles it (100 → YES, rest → NO).
+        // Cadets whose projects_users sit at other statuses are past attempts,
+        // not this session's roster.
+        const candidates = roster.filter((c) => c.status === 'in_progress');
 
 
         let validCampus: Set<string> | null = null;
@@ -260,19 +265,23 @@ export class ExamMarketSyncService implements OnModuleInit {
         if (Date.now() < new Date(exam.endAt).getTime()) continue;
 
 
+        // Business rule: the moment the exam window is over, EVERY pending
+        // market for it resolves — a published 100 is the only YES; any other
+        // mark, or no mark at all (absent, never graded), is a NO. We read the
+        // mark straight off projects_users and ignore its `status` field, which
+        // 42 routinely leaves as `in_progress` even after grading.
         const roster = await this.school42Service.getExamRoster(exam);
         const gradedByLogin = new Map(
           roster
-            .filter((c) => c.status === 'finished' && c.finalMark != null)
+            .filter((c) => c.finalMark != null)
             .map((c) => [c.login, c.finalMark!]),
         );
 
         const marketsForExam = pending.filter((m) => m.examId === examId);
         for (const market of marketsForExam) {
           const finalMark = gradedByLogin.get(market.subjectLogin);
-          if (finalMark == null) continue;
-
-          const resolution = finalMark >= 100 ? MarketResolution.YES : MarketResolution.NO;
+          const resolution =
+            finalMark != null && finalMark >= 100 ? MarketResolution.YES : MarketResolution.NO;
           await this.marketService.resolveMarket(market.id, resolution, finalMark);
         }
       } catch (err) {

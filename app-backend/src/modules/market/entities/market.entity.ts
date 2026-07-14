@@ -15,6 +15,9 @@ import { MarketPosition } from './market-position.entity';
 export enum MarketStatus {
   LIVE = 'live',
   CLOSING = 'closing',
+  // Betting window is over (the event has started / is under way) but no
+  // verdict yet — distinct from RESOLVED, which means a grade + outcome landed.
+  CLOSED = 'closed',
   NEW = 'new',
   RESOLVED = 'resolved',
 

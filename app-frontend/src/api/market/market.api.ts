@@ -1,6 +1,6 @@
 import api from '../api';
 
-export type MarketStatus = 'live' | 'closing' | 'new' | 'resolved' | 'cancelled';
+export type MarketStatus = 'live' | 'closing' | 'closed' | 'new' | 'resolved' | 'cancelled';
 
 export interface MarketDto {
   id: string;
@@ -262,8 +262,9 @@ export const marketApi = {
     return unwrap(res);
   },
 
-  resolveMarket: async (marketId: string, resolution?: 'YES' | 'NO', finalGrade?: number) => {
-    const res = await api.patch(`/market/${marketId}/resolve`, { resolution, finalGrade });
+  /** Manual markets only — exam markets resolve themselves when the exam ends. */
+  resolveMarket: async (marketId: string, resolution: 'YES' | 'NO') => {
+    const res = await api.patch(`/market/${marketId}/resolve`, { resolution });
     return unwrap(res);
   },
 };

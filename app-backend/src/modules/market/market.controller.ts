@@ -248,10 +248,10 @@ export class MarketController {
   async resolve(
     @Param('id') id: string,
     @Body('resolution') resolution: MarketResolution | undefined,
-    @Body('finalGrade') finalGrade: number | undefined,
+    @Req() req: any,
   ) {
     try {
-      const data = await this.marketService.resolveMarketManually(id, resolution, finalGrade);
+      const data = await this.marketService.resolveMarketManually(id, req.user.id, resolution);
       return successResponse(HttpStatus.OK, data);
     } catch (error) {
       return errorResponse(error);

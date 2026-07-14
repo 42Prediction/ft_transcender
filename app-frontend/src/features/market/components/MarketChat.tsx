@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useRouteLoaderData } from 'react-router-dom';
 import { MessagesSquare, SendHorizonal } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, LUANDA_TZ } from '@/lib/utils';
 import { friendApi } from '@/api/bettor/friend.api';
 import { useMarketChat } from '../hooks/useMarketChat';
 
@@ -10,7 +10,7 @@ function dicebear(seed: string) {
 }
 
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: LUANDA_TZ });
 }
 
 interface Friend {

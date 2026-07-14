@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -214,23 +215,24 @@ export class MarketService {
   }
 
   
-  async resolveMarketManually(id: string, resolution?: MarketResolution, finalGrade?: number) {
+  async resolveMarketManually(id: string, userId: string, resolution?: MarketResolution) {
     const market = await this.marketRepo.findOne({ where: { id } });
     if (!market) throw new NotFoundException('Market not found');
 
+    // Exam-sourced markets belong exclusively to the automatic pipeline: they
+    // resolve on their own the moment the exam window ends (100 → YES, anything
+    // else → NO). Nobody resolves them by hand.
     if (market.examId != null) {
-      if (!market.examEndsAt || new Date() < market.examEndsAt) {
-        throw new BadRequestException(
-          'This market is sourced from a 42 exam and resolves automatically once the grade is published — it cannot be resolved manually until the exam session ends.',
-        );
-      }
-      if (finalGrade == null) {
-        throw new BadRequestException(
-          'Enter the final grade from 42 to resolve this exam market manually.',
-        );
-      }
-      const derivedResolution = finalGrade >= 100 ? MarketResolution.YES : MarketResolution.NO;
-      return this.resolveMarket(id, derivedResolution, finalGrade);
+      throw new BadRequestException(
+        'This market is sourced from a 42 exam and resolves automatically when the exam ends.',
+      );
+    }
+
+    // Manual markets can only be settled by whoever created them — being an
+    // admin or moderator is not enough on its own.
+    const bettor = await this.bettorRepo.findOne({ where: { user: { id: userId } } });
+    if (!bettor || market.creatorId !== bettor.id) {
+      throw new ForbiddenException('Only the creator of this market can resolve it.');
     }
 
     if (!resolution) {
@@ -306,16 +308,25 @@ export class MarketService {
     }
 
 
-    if (rake > 0) {
+    // Credit the creator. Normally that's just the house rake carved from the
+    // losing side. But when there are no winning positions (nobody bet, or every
+    // bet landed on the losing side) the loop above distributes nothing, so the
+    // whole pool — the admin's seed liquidity plus any forfeited losing stakes —
+    // would otherwise be stranded and lost. Hand it all back to the creator.
+    const noWinners = totalWinShares === 0;
+    const creatorCredit = noWinners ? totalPool : rake;
+    if (creatorCredit > 0) {
       try {
         await this.walletService.credit(market.creatorId, {
-          amount: rake,
+          amount: creatorCredit,
           type: TransactionType.COMMISSION,
-          description: `House rake (${(MarketService.HOUSE_RAKE_RATE * 100).toFixed(0)}%) on market: ${market.project}`,
+          description: noWinners
+            ? `Seed refund (no winners) on market: ${market.project}`
+            : `House rake (${(MarketService.HOUSE_RAKE_RATE * 100).toFixed(0)}%) on market: ${market.project}`,
         });
       } catch (err) {
         this.logger.warn(
-          `Rake credit of ${rake} to creator ${market.creatorId} failed on market ${market.id}: ${err}`,
+          `Creator credit of ${creatorCredit} to ${market.creatorId} failed on market ${market.id}: ${err}`,
         );
       }
     }
@@ -837,6 +848,9 @@ export class MarketService {
 
   computeStatus(closesAt: Date, now: Date, createdAt?: Date): MarketStatus {
     const diff = closesAt.getTime() - now.getTime();
+    // Once the close time has passed the event is under way: betting is shut but
+    // the market isn't resolved until a grade/verdict arrives (see resolveMarket).
+    if (diff <= 0) return MarketStatus.CLOSED;
     if (diff < 24 * 60 * 60 * 1000) return MarketStatus.CLOSING;
     if (createdAt) {
       const ageHours = (now.getTime() - createdAt.getTime()) / (60 * 60 * 1000);
