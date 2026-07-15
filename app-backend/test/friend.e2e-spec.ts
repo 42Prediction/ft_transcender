@@ -136,7 +136,7 @@ describe('FriendController via BettorController (E2E)', () => {
 
       const res = await request(app.getHttpServer())
         .post('/bettor/me/friend-requests/gildo/send')
-        .expect(HttpStatus.OK); // Modificado para 200 refletindo seu @HttpCode
+        .expect(HttpStatus.OK);
 
       expect(mockFriendService.sendFriendRequest).toHaveBeenCalledWith('user-id-123', 'gildo');
       expect(res.body).toEqual({

@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 export function Footer() {
   return (
     <footer className="border-t border-border/60 bg-background py-12">
-      <div className="mx-auto grid max-w-[1400px] gap-8 px-6 md:grid-cols-4">
-        <div>
+      <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-8 px-4 sm:grid-cols-2 sm:px-6 md:grid-cols-4">
+        <div className="sm:col-span-2 md:col-span-1">
           <a href="/" className="flex items-center gap-2">
           <div className="relative h-11 w-11">
             <svg
@@ -76,7 +76,7 @@ export function Footer() {
           </div>
         ))}
       </div>
-      <div className="mx-auto mt-10 flex max-w-[1400px] flex-wrap items-center justify-between gap-4 border-t border-border/40 px-6 pt-6 text-xs text-muted-foreground">
+      <div className="mx-auto mt-10 flex max-w-[1400px] flex-wrap items-center justify-between gap-4 border-t border-border/40 px-4 pt-6 text-xs text-muted-foreground sm:px-6">
         <span>© 2026 42 Prediction. Built for the 42 community. Not affiliated with 42 Network.</span>
         <span className="font-mono">v1.0.0 · made with caffeine</span>
       </div>

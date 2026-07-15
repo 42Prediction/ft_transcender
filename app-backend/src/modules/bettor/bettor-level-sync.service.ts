@@ -8,13 +8,6 @@ import { WalletService } from '../wallet/wallet.service';
 import { TransactionType } from '../wallet/entities/transaction.entity';
 import { School42Service } from '../school42/school42.service';
 
-/**
- * Phase 2 of the "42 level → xp" economy: a daily job that re-reads each cadet's
- * current 42 level and credits the gain since we last saw it (`Δlevel × rate`).
- * Level is monotonic, so we only ever pay increases — no anti-farming guard and
- * no need to handle decreases. The credit and the snapshot update commit in one
- * transaction, so a crash can neither double-pay nor lose a level-up.
- */
 @Injectable()
 export class BettorLevelSyncService {
   private readonly logger = new Logger(BettorLevelSyncService.name);
@@ -44,8 +37,6 @@ export class BettorLevelSyncService {
 
         const newLevel = student.level;
         const oldLevel = Number(cadet.school42Level ?? 0);
-        // Only pay real gains; 42 levels never drop, so a lower/equal reading is
-        // a transient API hiccup or no progress — skip without touching anything.
         if (!(newLevel > oldLevel)) continue;
 
         const reward = Number(((newLevel - oldLevel) * LEVEL_TO_ANDA_RATE).toFixed(2));

@@ -34,10 +34,10 @@ interface ChatIdentity {
   avatar: string | null;
 }
 
-/** Chat is deliberately ephemeral — a rolling window per market, no persistence. */
+
 const CHAT_HISTORY_LIMIT = 50;
 const CHAT_MESSAGE_MAX_LENGTH = 500;
-/** Minimum gap between messages from one socket, to keep spam from flooding a room. */
+
 const CHAT_SEND_COOLDOWN_MS = 500;
 
 @WebSocketGateway({
@@ -60,16 +60,11 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {}
 
   async handleConnection(client: Socket) {
-    // The browser sends the auth cookie on the socket handshake
-    // (withCredentials), but handshakes bypass the HTTP cookie-parser
-    // middleware — extract and verify the JWT by hand. Anonymous sockets
-    // stay connected: market updates are public, only chat:send needs an
-    // identity.
+ 
     const userId = this.extractUserId(client);
     client.data.userId = userId;
 
-    // Authenticated sockets join a private room so bet-resolution and mention
-    // notifications can be pushed to this bettor on any page, not just chats.
+  
     if (userId) {
       const bettor = await this.resolveBettor(client, userId);
       if (bettor) void client.join(this.notificationRoom(bettor.id));
@@ -89,12 +84,12 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server?.emit('market:removed', marketId);
   }
 
-  /** Pushes a notification to every live socket of one bettor. */
+
   emitNotification(bettorId: string, notification: Notification) {
     this.server?.to(this.notificationRoom(bettorId)).emit('notification:new', notification);
   }
 
-  /** Joins the market's chat room; the ack carries the rolling history so the client can render instantly. */
+
   @SubscribeMessage('chat:join')
   handleChatJoin(
     @ConnectedSocket() client: Socket,
@@ -157,8 +152,7 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     this.server.to(this.chatRoom(marketId)).emit('chat:message', message);
 
-    // Notify any @mentioned bettors — fire-and-forget so a lookup hiccup never
-    // blocks the message the sender already sees delivered.
+ 
     if (text.includes('@')) {
       this.notificationService
         .createChatMention({
@@ -197,10 +191,7 @@ export class MarketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  /**
-   * The JWT `sub` is the User id, not the Bettor — resolve (and cache on the
-   * socket) the bettor profile that authors this socket's chat messages.
-   */
+ 
   private async resolveBettor(client: Socket, userId: string): Promise<ChatIdentity | null> {
     const cached = client.data.chatIdentity as ChatIdentity | undefined;
     if (cached) return cached;

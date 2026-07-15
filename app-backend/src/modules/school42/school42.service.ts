@@ -15,7 +15,7 @@ export interface Exam42 {
   beginAt: string;
   endAt: string;
   location: string | null;
-  /** id of the project this exam grades (e.g. "Exam Rank 06"); null if 42 didn't link one. */
+ 
   projectId: number | null;
 }
 
@@ -23,12 +23,12 @@ export interface ExamCadet42 {
   login: string;
   name: string;
   avatar: string | null;
-  /** Final grade for the exam once published by 42, 0-100. `null` while pending. */
+  
   finalMark: number | null;
 }
 
 export interface ExamRosterEntry42 extends ExamCadet42 {
-  /** Raw 42 `projects_users` status, e.g. "in_progress" / "finished". */
+  
   status: string;
 }
 
@@ -48,43 +48,24 @@ export class School42Service {
   private readonly campusId: number;
   private cachedToken: AppToken | null = null;
 
-  /**
-   * `syncExamMarkets` (every 15min) and `autoResolveExamMarkets` (every 10min)
-   * both end up calling `fetchProjectUsers` for the same exam when their
-   * schedules coincide (every 30min). A short TTL is enough to dedupe that
-   * overlap without meaningfully delaying either job outside of it.
-   */
+ 
   private readonly projectUsersCache = new Map<number, { data: ExamRosterEntry42[]; expiresAt: number }>();
   private static readonly PROJECT_USERS_CACHE_TTL_MS = 2 * 60 * 1000;
 
-  /**
-   * Per-login primary-campus cache for the targeted verification
-   * (`filterToPrimaryCampus`). Membership shifts on the scale of weeks, so a
-   * multi-hour TTL means repeat exam candidates across cycles cost no calls.
-   */
+ 
   private campusMembershipCache = new Map<string, { isMember: boolean; expiresAt: number }>();
   private static readonly CAMPUS_MEMBERSHIP_TTL_MS = 6 * 60 * 60 * 1000;
-  /** 42 `filter[login]` takes a comma-separated OR list; keep batches small so the URL stays sane. */
+  
   private static readonly LOGIN_FILTER_BATCH = 40;
 
-  /**
-   * 42's secondary "spam" limit is far tighter than its hourly quota — bursts
-   * of concurrent calls (e.g. checking several candidates' campus at once)
-   * get 429'd, and 42 then briefly 429s unrelated follow-up requests too.
-   * Every outgoing call is funneled through `fetch42`, which serializes
-   * dispatch to at most one request per `MIN_REQUEST_INTERVAL_MS` no matter
-   * how many callers are in flight, and retries a 429 with backoff instead
-   * of abandoning the exam/candidate until the next cron cycle.
-   */
+
   private static readonly MIN_REQUEST_INTERVAL_MS = 600;
   private static readonly MAX_429_RETRIES = 4;
   private throttleChain: Promise<void> = Promise.resolve();
   private lastRequestAt = 0;
 
   constructor(private readonly configService: ConfigService) {
-    // ConfigService reads env vars as strings regardless of the generic type
-    // param — cast explicitly so numeric comparisons against 42 API payloads
-    // (which return real numbers) don't silently fail.
+
     this.campusId = Number(this.configService.get<string>('_42SCHOOL_CAMPUS_ID', '68'));
   }
 
@@ -122,7 +103,7 @@ export class School42Service {
     return this.cachedToken.access_token;
   }
 
-  /** Serializes dispatch so concurrent callers still respect a single global minimum interval. */
+  
   private async throttle(): Promise<void> {
     const next = this.throttleChain.then(async () => {
       const wait = this.lastRequestAt + School42Service.MIN_REQUEST_INTERVAL_MS - Date.now();
@@ -135,12 +116,7 @@ export class School42Service {
     await next;
   }
 
-  /**
-   * Rate-limited, retrying fetch used by every 42 API call. A 429 is retried
-   * with backoff (honoring `Retry-After` when 42 sends it) instead of being
-   * thrown straight away — callers only ever see a final, non-429 response
-   * or the last 429 once retries are exhausted.
-   */
+  
   private async fetch42(path: string): Promise<Response> {
     for (let attempt = 0; ; attempt++) {
       await this.throttle();
@@ -179,11 +155,7 @@ export class School42Service {
     return res.json() as Promise<T>;
   }
 
-  /**
-   * Follows `page[number]` until every result is collected (per `X-Total`),
-   * capped at `maxPages` as a safety net. `basePath` must not already carry
-   * a `page[...]` param — this appends its own.
-   */
+  
   private async get42AllPages<T>(basePath: string, maxPages = 10): Promise<T[]> {
     const results: T[] = [];
     const separator = basePath.includes('?') ? '&' : '?';
@@ -259,18 +231,7 @@ export class School42Service {
     }
   }
 
-  /**
-   * Exams scheduled at the campus within the next `days`, used to auto-generate
-   * prediction markets. Defensive against the couple of key-naming variants
-   * seen across 42 intra API deployments (campus_id vs campus_ids).
-   *
-   * `pastBufferDays` extends the lower bound backwards from "now" — a
-   * `range[begin_at]` starting exactly at "now" excludes an exam that began
-   * a few hours ago today but is still running (cadets `in_progress`,
-   * corrections ongoing). Without this, a session found via the app's own
-   * clock would silently vanish from sync the moment its `begin_at` ticks
-   * into the past, even though registrants are still actively being graded.
-   */
+  
   async getUpcomingExams(days = 14, pastBufferDays = 2): Promise<Exam42[]> {
     try {
       const now = new Date();
@@ -291,7 +252,7 @@ export class School42Service {
     }
   }
 
-  /** Single exam lookup, used when only the numeric id is on hand (e.g. resolving a stored market). */
+  
   async getExam(examId: number): Promise<Exam42 | null> {
     try {
       const e = await this.get42<any>(`/exams/${examId}`);
@@ -303,16 +264,7 @@ export class School42Service {
     }
   }
 
-  /**
-   * Given candidate logins, returns the subset whose PRIMARY campus is this
-   * campus. Replaces paging the whole campus roster: we only ever look up the
-   * exam's ~100 candidates, batching `filter[login]` (an OR-list) together with
-   * `filter[primary_campus_id]` (ANDed) so the API returns exactly the primary
-   * members of the batch. Per-login results cache for hours.
-   *
-   * Throws if a batch request fails, so a transient API error surfaces to the
-   * caller as "unverifiable this cycle" rather than a false "not a member".
-   */
+  
   async filterToPrimaryCampus(logins: string[]): Promise<Set<string>> {
     const result = new Set<string>();
     const now = Date.now();
@@ -335,8 +287,7 @@ export class School42Service {
         'filter[primary_campus_id]': String(this.campusId),
         'page[size]': '100',
       });
-      // Both filters ANDed → the response is exactly the batch members whose
-      // primary campus matches; anyone missing is not a primary member.
+   
       const users = await this.get42<any[]>(`/users?${params.toString()}`);
       const matched = new Set(Array.isArray(users) ? users.map((u) => u.login) : []);
       const expiresAt = now + School42Service.CAMPUS_MEMBERSHIP_TTL_MS;
@@ -361,41 +312,17 @@ export class School42Service {
     };
   }
 
-  /**
-   * Grades for everyone with a `projects_users` record on the exam's linked
-   * project, regardless of status — used to resolve markets once 42 marks a
-   * cadet's attempt.
-   *
-   * `exams_users` (the direct exam-subscriber list) requires an
-   * elevated/staff-scoped app token that this app doesn't have (403 for
-   * plain client_credentials). Every 42 exam is graded through a linked
-   * project of the same name (e.g. "Exam Rank 06" -> project "Exam Rank 06"),
-   * and `projects_users` for that project *is* reachable with a normal app
-   * token when filtered by campus. `finalMark` is `null` until 42 publishes
-   * the grade; callers should treat that as "not graded yet", not "failed".
-   */
+ 
   async getExamGrades(exam: Exam42): Promise<ExamCadet42[]> {
     const entries = await this.fetchProjectUsers(exam);
     return entries.map(({ status, ...c }) => c);
   }
 
-  /**
-   * Full roster (any status) with status kept, so callers can tell "gone
-   * entirely" (deregistered) apart from "finished" (should resolve, not
-   * cancel) — `getExamCadets`/`getExamGrades` alone can't distinguish those.
-   */
+  
   async getExamRoster(exam: Exam42): Promise<ExamRosterEntry42[]> {
     return this.fetchProjectUsers(exam);
   }
 
-  /**
-   * Deliberately does NOT swallow fetch errors into `[]` — an empty roster
-   * here is indistinguishable from "everyone deregistered" to callers doing
-   * deregistration cleanup, and a transient failure returned as `[]` would
-   * make `syncExamMarkets` cancel every legitimate market for the exam. Let
-   * it throw; the per-exam try/catch in the caller skips that exam for this
-   * cycle instead.
-   */
   private async fetchProjectUsers(exam: Exam42): Promise<ExamRosterEntry42[]> {
     const cached = this.projectUsersCache.get(exam.id);
     if (cached && cached.expiresAt > Date.now()) {

@@ -7,8 +7,12 @@ import { marketApi } from '@/api/market/market.api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-// Platform scope is strictly Exam Rank 02-06 — no other category exists.
 const CATEGORIES = ['Exam 02', 'Exam 03', 'Exam 04', 'Exam 05', 'Exam 06'] as const;
+
+const LUANDA_UTC_OFFSET_MS = 60 * 60 * 1000;
+function luandaWallClockToDate(local: string) {
+  return new Date(`${local}:00+01:00`);
+}
 
 type Category = (typeof CATEGORIES)[number];
 
@@ -29,7 +33,6 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
   const [selected, setSelected] = useState<Student42 | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
 
-  const [project, setProject] = useState('');
   const [category, setCategory] = useState<Category>('Exam 02');
   const [closesAt, setClosesAt] = useState('');
 
@@ -40,7 +43,6 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Debounced search
   useEffect(() => {
     if (query.trim().length < 2) {
       setResults([]);
@@ -61,7 +63,6 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
     return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
   }, [query]);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -88,7 +89,6 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
     setQuery('');
     setResults([]);
     setSelected(null);
-    setProject('');
     setCategory('Exam 02');
     setClosesAt('');
     setError(null);
@@ -98,9 +98,8 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selected) { setError('Select a 42 student first.'); return; }
-    if (!project.trim()) { setError('Describe the event to predict.'); return; }
     if (!closesAt) { setError('Set a closing date.'); return; }
-    if (new Date(closesAt) <= new Date()) { setError('Closing date must be in the future.'); return; }
+    if (luandaWallClockToDate(closesAt) <= new Date()) { setError('Closing date must be in the future.'); return; }
 
     setSubmitting(true);
     setError(null);
@@ -109,9 +108,9 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
         subjectLogin: selected.login,
         subjectName: selected.name,
         subjectAvatar: selected.avatar ?? undefined,
-        project: project.trim(),
+        project: category,
         category,
-        closesAt: new Date(closesAt).toISOString(),
+        closesAt: luandaWallClockToDate(closesAt).toISOString(),
       });
       setSuccess(true);
       onCreated?.();
@@ -126,8 +125,10 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
     }
   }
 
-  const isValid = !!selected && project.trim().length >= 4 && !!closesAt;
-  const minDate = new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16);
+  const isValid = !!selected && !!closesAt;
+  const minDate = new Date(Date.now() + 60 * 60 * 1000 + LUANDA_UTC_OFFSET_MS)
+    .toISOString()
+    .slice(0, 16);
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) resetForm(); onOpenChange(o); }}>
@@ -147,7 +148,6 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
 
           <form onSubmit={handleSubmit} className="space-y-5">
 
-            {/* Student search */}
             <div>
               <label className="mb-1.5 block text-sm font-medium">
                 Student <span className="text-primary">*</span>
@@ -229,26 +229,9 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
               )}
             </div>
 
-            {/* Event/project */}
             <div>
               <label className="mb-1.5 block text-sm font-medium">
-                Event to predict <span className="text-primary">*</span>
-              </label>
-              <Input
-                value={project}
-                onChange={(e) => setProject(e.target.value)}
-                placeholder="e.g. ft_transcendence — final defense"
-                className="h-11 rounded-xl px-4"
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Be specific: include the project name and event type.
-              </p>
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="mb-1.5 block text-sm font-medium">
-                Category <span className="text-primary">*</span>
+                Event <span className="text-primary">*</span>
               </label>
               <div className="flex flex-wrap gap-2">
                 {CATEGORIES.map((c) => (
@@ -268,7 +251,6 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
               </div>
             </div>
 
-            {/* Closing date */}
             <div>
               <label className="mb-1.5 block text-sm font-medium">
                 Closes at <span className="text-primary">*</span>

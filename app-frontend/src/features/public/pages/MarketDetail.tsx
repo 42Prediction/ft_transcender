@@ -33,13 +33,11 @@ import {
   X,
 } from 'lucide-react';
 import { marketApi, type ActivityEntry, type MarketDto, type PricePoint } from '@/api/market/market.api';
-import { cn } from '@/lib/utils';
+import { cn, LUANDA_TZ } from '@/lib/utils';
 import { useMarketUpdates } from '@/features/market/hooks/useMarketUpdates';
 import { MarketChat } from '@/features/market/components/MarketChat';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 
-/* ─── types ─────────────────────────────────────────── */
 
 const RANGES = ['1H', '6H', '1D', '1W', '1M', 'ALL'] as const;
 type Range = (typeof RANGES)[number];
@@ -50,7 +48,6 @@ export interface MarketDetailLoaderData {
   history: PricePoint[];
 }
 
-/* ─── loader ─────────────────────────────────────────── */
 
 export async function marketDetailLoader({ params }: LoaderFunctionArgs): Promise<MarketDetailLoaderData> {
   const [market, activity, history] = await Promise.all([
@@ -61,7 +58,6 @@ export async function marketDetailLoader({ params }: LoaderFunctionArgs): Promis
   return { market, activity, history };
 }
 
-/* ─── chart helpers ──────────────────────────────────── */
 
 type ChartPoint = { t: string; label: string; yes: number; no: number };
 
@@ -76,15 +72,11 @@ const RANGE_MS: Record<Range, number> = {
 
 function chartLabel(iso: string, range: Range): string {
   const d = new Date(iso);
-  // Short windows read better as a time of day; longer ones as a date.
   return range === '1H' || range === '6H' || range === '1D'
-    ? d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-    : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    ? d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: LUANDA_TZ })
+    : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: LUANDA_TZ });
 }
 
-/** Real price history filtered to the selected window; falls back to the full
- *  series when the window holds fewer than two points, so the chart is never
- *  empty for a young market. */
 function buildSeries(history: PricePoint[], range: Range): ChartPoint[] {
   const cutoff = Date.now() - RANGE_MS[range];
   let pts = history.filter((p) => new Date(p.t).getTime() >= cutoff);
@@ -92,23 +84,17 @@ function buildSeries(history: PricePoint[], range: Range): ChartPoint[] {
   return pts.map((p) => ({ ...p, label: chartLabel(p.t, range) }));
 }
 
-/* ─── small helpers ──────────────────────────────────── */
 
 function dicebear(seed: string) {
   return `https://api.dicebear.com/9.x/glass/svg?seed=${encodeURIComponent(seed)}&backgroundType=gradientLinear`;
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: LUANDA_TZ });
 }
 
-/* ─── page ───────────────────────────────────────────── */
 
 export function MarketDetail() {
-  // This page is also rendered as the frozen background behind the auth modal
-  // (Sign in / Sign up). At that point its route is no longer active, so its
-  // loader data is gone — bail out gracefully instead of destructuring
-  // `undefined` and crashing the whole app.
   const loaderData = useLoaderData() as MarketDetailLoaderData | undefined;
   if (!loaderData?.market) return null;
   return <MarketDetailView loaderData={loaderData} />;
@@ -146,9 +132,8 @@ function MarketDetailView({ loaderData }: { loaderData: MarketDetailLoaderData }
 
   return (
     <div>
-      {/* breadcrumb */}
       <div className="border-b border-border/40 bg-background/60">
-        <div className="mx-auto flex max-w-[1400px] items-center gap-2 px-6 py-3 text-xs text-muted-foreground">
+        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2 px-4 py-3 text-xs text-muted-foreground sm:px-6">
           <Link to="/markets" className="hover:text-foreground transition">Markets</Link>
           <span>/</span>
           <span className="text-foreground/80">{market.category}</span>
@@ -157,7 +142,7 @@ function MarketDetailView({ loaderData }: { loaderData: MarketDetailLoaderData }
         </div>
       </div>
 
-      <main className="mx-auto max-w-[1400px] px-6 py-8">
+      <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-8">
         <MarketHeader market={market} />
 
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
@@ -187,7 +172,6 @@ function MarketDetailView({ loaderData }: { loaderData: MarketDetailLoaderData }
   );
 }
 
-/* ─── MarketHeader ───────────────────────────────────── */
 
 function MarketHeader({ market }: { market: MarketDto }) {
   const yesPct = Math.round(market.yesPrice * 100);
@@ -218,12 +202,13 @@ function MarketHeader({ market }: { market: MarketDto }) {
             >
               {market.status === 'live' ? '● Live'
                 : market.status === 'closing' ? '● Closing'
+                : market.status === 'closed' ? '● Closed'
                 : market.status === 'new' ? '● New'
                 : market.status === 'cancelled' ? 'Cancelled'
                 : 'Resolved'}
             </span>
           </div>
-          <h1 className="mt-2 font-display text-3xl font-bold tracking-tight md:text-4xl">
+          <h1 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
             Will <span className="text-brand">@{market.handle}</span> score 100 on{' '}
             {market.project.split(' — ')[0]}?
           </h1>
@@ -256,7 +241,6 @@ function MarketHeader({ market }: { market: MarketDto }) {
   );
 }
 
-/* ─── ChartCard ──────────────────────────────────────── */
 
 function ChartCard({
   data,
@@ -296,7 +280,7 @@ function ChartCard({
         </div>
       </div>
 
-      <div className="h-[340px] w-full">
+      <div className="h-[240px] w-full sm:h-[340px]">
         <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 500, height: 340 }}>
           <AreaChart data={data} margin={{ top: 10, right: 8, left: -10, bottom: 0 }}>
             <defs>
@@ -359,7 +343,6 @@ function Legend({ color, label, value }: { color: string; label: string; value: 
   );
 }
 
-/* ─── StatsRow ───────────────────────────────────────── */
 
 function StatsRow({ market }: { market: MarketDto }) {
   const liquidity = (market.volumeRaw + 200).toLocaleString('pt-PT', { minimumFractionDigits: 2 });
@@ -388,7 +371,6 @@ function StatsRow({ market }: { market: MarketDto }) {
   );
 }
 
-/* ─── OutcomesTable ──────────────────────────────────── */
 
 function OutcomesTable({ market }: { market: MarketDto }) {
   const rows = [
@@ -445,7 +427,6 @@ function OutcomesTable({ market }: { market: MarketDto }) {
   );
 }
 
-/* ─── RecentActivity ─────────────────────────────────── */
 
 function RecentActivity({ activity }: { activity: ActivityEntry[] }) {
   return (
@@ -509,7 +490,6 @@ function RecentActivity({ activity }: { activity: ActivityEntry[] }) {
   );
 }
 
-/* ─── TradePanel ─────────────────────────────────────── */
 
 const quickAdds = [1, 5, 10, 50, 100];
 
@@ -574,7 +554,6 @@ function TradePanel({
         )}
       </div>
 
-      {/* outcome selector */}
       <div className="mt-4 grid grid-cols-2 gap-2">
         <button
           onClick={() => setBetSide('YES')}
@@ -606,7 +585,6 @@ function TradePanel({
         </button>
       </div>
 
-      {/* amount */}
       <div className="mt-5">
         <div className="flex items-baseline justify-between">
           <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Amount (xp)</label>
@@ -636,7 +614,6 @@ function TradePanel({
         </div>
       </div>
 
-      {/* estimates */}
       <div className="mt-5 space-y-2 rounded-xl border border-border/40 bg-surface/60 p-3 text-sm">
         <div className="flex justify-between">
           <span className="text-muted-foreground">Est. Shares</span>
@@ -709,12 +686,9 @@ function TradePanel({
   );
 }
 
-/* ─── MarketInfoCard ─────────────────────────────────── */
 
 function MarketInfoCard({ market }: { market: MarketDto }) {
   const root = useRouteLoaderData('root') as any;
-  // GET /bettor/me nests the account under `.user` — role lives at
-  // data.user.role, not data.role.
   const role: string | undefined = root?.data?.user?.role;
   const isAdmin = role === 'admin';
   const isModerator = role === 'moderator';
@@ -723,13 +697,13 @@ function MarketInfoCard({ market }: { market: MarketDto }) {
   const [resolveConfirm, setResolveConfirm] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [resolveError, setResolveError] = useState<string | null>(null);
-  const [gradeInput, setGradeInput] = useState('');
 
-  const examEnded = market.examEndsAt != null && new Date(market.examEndsAt).getTime() <= Date.now();
-  const canResolveWithGrade =
+  const myNick: string | undefined = root?.data?.nick;
+  const canResolve =
     (isAdmin || isModerator) &&
-    market.isAutoManaged &&
-    examEnded &&
+    !market.isAutoManaged &&
+    market.creatorNick != null &&
+    market.creatorNick === myNick &&
     market.status !== 'resolved' &&
     market.status !== 'cancelled';
 
@@ -740,26 +714,6 @@ function MarketInfoCard({ market }: { market: MarketDto }) {
       await marketApi.resolveMarket(market.id, resolution);
       revalidator.revalidate();
       setResolveConfirm(false);
-    } catch (err: any) {
-      setResolveError(err?.response?.data?.error?.response?.message ?? 'Could not resolve this market.');
-    } finally {
-      setResolving(false);
-    }
-  }
-
-  async function handleResolveWithGrade() {
-    const grade = Number(gradeInput);
-    if (gradeInput.trim() === '' || Number.isNaN(grade)) {
-      setResolveError('Enter a valid grade.');
-      return;
-    }
-    setResolving(true);
-    setResolveError(null);
-    try {
-      await marketApi.resolveMarket(market.id, undefined, grade);
-      revalidator.revalidate();
-      setResolveConfirm(false);
-      setGradeInput('');
     } catch (err: any) {
       setResolveError(err?.response?.data?.error?.response?.message ?? 'Could not resolve this market.');
     } finally {
@@ -801,14 +755,13 @@ function MarketInfoCard({ market }: { market: MarketDto }) {
             <span className="font-mono">@{market.handle}</span> scores 100 on{' '}
             {market.project.split(' — ')[0]}
             {market.isAutoManaged
-              ? ', automatically once 42 publishes the grade.'
-              : ', resolved manually by an admin or moderator.'}
+              ? ', automatically when the exam ends — 100 is YES, anything else (or no grade) is NO.'
+              : ', resolved manually by its creator.'}
           </dd>
         </div>
       </dl>
 
-      {/* admin/moderator resolve — only for markets not owned by the automatic exam-grade pipeline */}
-      {(isAdmin || isModerator) && !market.isAutoManaged && market.status !== 'resolved' && market.status !== 'cancelled' && (
+      {canResolve && (
         <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-3">
           {resolveConfirm ? (
             <div className="space-y-2">
@@ -858,63 +811,10 @@ function MarketInfoCard({ market }: { market: MarketDto }) {
         </div>
       )}
 
-      {canResolveWithGrade && (
-        <div className="mt-4 rounded-xl border border-warning/30 bg-warning/5 p-3">
-          {resolveConfirm ? (
-            <div className="space-y-2">
-              <p className="text-center text-xs text-muted-foreground">
-                Exam ended, 42 hasn't published the grade yet. Enter it to resolve:
-              </p>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  value={gradeInput}
-                  onChange={(e) => setGradeInput(e.target.value)}
-                  placeholder="Grade (0-125)"
-                  disabled={resolving}
-                  className="flex-1 rounded-lg font-mono text-xs"
-                />
-                <Button
-                  variant="ghost"
-                  onClick={handleResolveWithGrade}
-                  disabled={resolving}
-                  className="h-auto rounded-lg border border-primary/30 bg-primary/15 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/25"
-                >
-                  Resolve
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setResolveConfirm(false);
-                    setResolveError(null);
-                    setGradeInput('');
-                  }}
-                  disabled={resolving}
-                  className="h-auto rounded-lg px-3 py-2 text-xs text-muted-foreground"
-                >
-                  Cancel
-                </Button>
-              </div>
-              {resolveError && (
-                <p className="text-center text-[11px] text-destructive">{resolveError}</p>
-              )}
-            </div>
-          ) : (
-            <Button
-              variant="ghost"
-              onClick={() => setResolveConfirm(true)}
-              className="h-auto w-full gap-2 py-1.5 text-xs font-medium text-warning hover:text-warning/80"
-            >
-              <Shield className="h-3.5 w-3.5" /> Resolve manually (exam ended)
-            </Button>
-          )}
-        </div>
-      )}
-
-      {(isAdmin || isModerator) && market.isAutoManaged && !examEnded && market.status !== 'resolved' && market.status !== 'cancelled' && (
+      {(isAdmin || isModerator) && market.isAutoManaged && market.status !== 'resolved' && market.status !== 'cancelled' && (
         <div className="mt-4 flex items-center justify-center gap-1.5 rounded-xl border border-border/60 bg-surface p-2.5 text-[11px] text-muted-foreground">
           <Shield className="h-3.5 w-3.5" />
-          Auto-resolves once 42 publishes the grade
+          Auto-resolves when the exam ends — 100 is YES, anything else is NO
         </div>
       )}
     </section>

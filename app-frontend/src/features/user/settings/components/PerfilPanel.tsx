@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 export function PerfilPanel({ bettor }: { bettor: any }) {
   const revalidator = useRevalidator();
 
-  // ── estados ──────────────────────────────────────────────
-  const [loading, setLoading] = useState(false); // declarado primeiro
+  const [loading, setLoading] = useState(false);
 
   const [photo, setPhoto] = useState<string | null>(bettor?.avatar ?? null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -19,10 +18,9 @@ export function PerfilPanel({ bettor }: { bettor: any }) {
   const [name, setName] = useState(bettor?.nick ?? "");
   const [isEditingName, setIsEditingName] = useState(false);
 
-  const [bio, setBio] = useState(bettor?.bio ?? ""); // fallback para string vazia
+  const [bio, setBio] = useState(bettor?.bio ?? "");
   const [bioHasChanges, setBioHasChanges] = useState(false);
 
-  // ── avatar ───────────────────────────────────────────────
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -39,14 +37,13 @@ export function PerfilPanel({ bettor }: { bettor: any }) {
       setPhotoHasChanges(false);
       setPhotoFile(null);
       await revalidator.revalidate();
-      setPhoto(bettor?.avatar ?? null); // volta ao URL da BD após revalidate
+      setPhoto(bettor?.avatar ?? null);
     } catch (err) {
     } finally {
       setLoading(false);
     }
   };
 
-  // ── nome ─────────────────────────────────────────────────
   const saveName = async () => {
     try {
       setLoading(true);
@@ -59,7 +56,6 @@ export function PerfilPanel({ bettor }: { bettor: any }) {
     }
   };
 
-  // ── bio ──────────────────────────────────────────────────
   const handleBioChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setBio(e.target.value.slice(0, 200));
     setBioHasChanges(true);
@@ -70,14 +66,13 @@ export function PerfilPanel({ bettor }: { bettor: any }) {
       setLoading(true);
       await bettorApi.updateMe({ bio });
       setBioHasChanges(false);
-      await revalidator.revalidate(); // estava em falta
+      await revalidator.revalidate();
     } catch (error) {
     } finally {
       setLoading(false);
     }
   };
 
-  // ── render ───────────────────────────────────────────────
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">Profile</h1>

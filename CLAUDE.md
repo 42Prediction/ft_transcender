@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-ft_transcender: a NestJS backend (`app-backend`) + React/Vite frontend (`app-frontend`), backed by PostgreSQL. The current branch (`feat/marteket`) adds a "Market" feature — a prediction market where users bet an internal currency (₳) on real events from the 42 school ecosystem (project defenses, exams, piscines, internships). See `MARKET_FEATURE.md` for the full design/file map of that feature and `FRIENDLIST_RELATIONS.md` for the friend-request/friendship data model.
+ft_transcender: a NestJS backend (`app-backend`) + React/Vite frontend (`app-frontend`), backed by PostgreSQL, deployable as a fully containerized stack with ELK log management and Prometheus/Grafana monitoring. The core product is a "Market" feature — a prediction market where users bet an internal currency (₳) on real events from the 42 school ecosystem (project defenses, exams, piscines, internships). See `MARKET_FEATURE.md` for the full design/file map of that feature, `MODULES_PROGRESS.md` for feature status across modules, and `FRIENDLIST_RELATIONS.md` for the friend-request/friendship data model.
 
 ## Common commands
 
@@ -16,8 +16,15 @@ Run from the repo root using the `Makefile` (wraps docker-compose + npm for both
 - `make migrate-run` — run TypeORM migrations against the DB.
 - `make migrate-generate` — run migrations then generate a new one under `app-backend/src/migrations`.
 - `make seed` — run backend seeds (`npm run seed:run`, see `app-backend/src/seeds/`).
-- `make test` — runs `test-backend` (waits for DB, `npm ci`, `npm test`, `npm run test:e2e` in `app-backend`).
+- `make test` — runs `test-backend` (waits for DB, `npm ci`, `npm test`, `npm run test:e2e` in `app-backend`). `make test-all` is the CI entry point; `make test-frontend` runs the frontend `build` + `lint`.
 - `make clean` / `make fclean` / `make re` — stop and tear down containers/volumes (and images for fclean), then rebuild.
+
+The `make dev` path (above) runs only Postgres in Docker and the two apps as local host processes (`docker-compose.dev.yml`). Separately, the **full containerized stack** (`docker-compose.yml`, project name `transcendence-prod`) builds and runs everything in containers — app tier (postgres, backend, nginx-served frontend) plus the observability tiers:
+
+- `make up-prod` — `docker compose -f docker-compose.yml up -d --build`: the entire stack in one command. Frontend :5173, backend :3000, Kibana :5601, Grafana :3001, Prometheus :9090.
+- `make down-prod` / `make logs-prod` / `make ps-prod` / `make fclean-prod` — stop / follow logs / status / tear down with volumes.
+
+The two compose files use distinct project names and volumes so they don't collide; don't run both against the same ports at once.
 
 Per-app commands (when iterating inside one app instead of via Makefile):
 
@@ -58,6 +65,15 @@ React 19 + React Router v7 using **data routers** (`createBrowserRouter`) with r
 - **API clients**: `src/api/api.ts` exports a shared axios instance (`withCredentials: true`, base URL from `VITE_API_URL`, default `http://localhost:3000`). Per-domain API modules (`src/api/<domain>/<domain>.api.ts`) wrap it, mirroring backend modules (`auth`, `bettor` incl. `friend.api.ts`, `market` incl. `school42.api.ts`, `user`).
 - **Styling**: colocate CSS with its component (`Component.tsx` + `Component.css` in the same folder), except shared/global styles under `src/shared`/`src/styles`. Tailwind v4 + shadcn/radix-ui components live in `components/ui/`.
 
+## DevOps / observability
+
+The containerized stack (`docker-compose.yml` + `observability/`) wires the app to a logging and monitoring pipeline. Understanding the data flow matters before touching backend logging/metrics code or the observability configs:
+
+- **Metrics (Prometheus/Grafana)**: the backend exposes `GET /metrics` via `src/observability/metrics.module.ts` (`@willsoto/nestjs-prometheus` + `prom-client`) — default Node.js process metrics plus custom `http_requests_total` / `http_request_duration_seconds` series added by `HttpMetricsMiddleware` (applied to all routes). Prometheus (`observability/prometheus/prometheus.yml`) scrapes `backend:3000/metrics`, `node-exporter` (host), and `postgres-exporter`; `alert.rules.yml` defines alerts; Grafana auto-provisions its datasource + dashboards from `observability/grafana/provisioning` and `observability/grafana/dashboards`.
+- **Logs (ELK)**: the backend logs through **pino** (`nestjs-pino`, configured in `src/observability/logger.config.ts`, installed as the Nest logger in `main.ts` via `app.useLogger`). In containers it writes newline-delimited JSON to `/app/logs/backend.log` on the shared `backend_logs` volume. Logstash tails that file (`observability/logstash/pipeline/logstash.conf`), maps pino's numeric levels to names, and ships to Elasticsearch as daily `transcendence-logs-*` indices; a one-shot `elk-setup` container (`observability/setup/setup.sh`) sets the `kibana_system` password and installs the ILM retention policy (`LOG_RETENTION_DAYS`). Kibana reads it back.
+- **Migrations + seed on boot**: the backend image's entrypoint (`app-backend/docker-entrypoint.sh`) runs `node dist/seeds/seeds.js` before starting the API. That boots `AppModule` (so `migrationsRun`, gated on `RUN_MIGRATIONS=true`, applies pending migrations) and then runs the idempotent `adminSeed` — so the first container boot on an empty DB migrates and creates the admin account, and later boots are no-ops. The seed needs `ADMIN_PWD` in `.env`. `AppDataSource` (`src/data-source.ts`) uses `__dirname`-based entity/migration globs so it resolves under both `src` (ts-node) and `dist` (container). Local `make dev` neither migrates nor seeds automatically; use `make migrate-run` / `make seed`.
+- **Secrets/config**: the observability tiers read passwords from `.env` (`ELASTIC_PASSWORD`, `KIBANA_SYSTEM_PASSWORD`, `GRAFANA_ADMIN_PASSWORD`, `LOG_RETENTION_DAYS`) — see `.env.example`. Frontend is built by its own `Dockerfile` and served by nginx (`app-frontend/nginx.conf`); `VITE_API_URL` is a build arg baked into the bundle.
+
 ## PR / branch workflow
 
 Enforced by `.github/workflows/pr-rules.yml` (see `PR_RULES.md` for full detail and troubleshooting):
@@ -66,3 +82,4 @@ Enforced by `.github/workflows/pr-rules.yml` (see `PR_RULES.md` for full detail 
 - Branch flow: `feat/*`/`fix/*` → `dev`; `dev` → `main`/`master`. Other target branches fail the check.
 - Every commit message must start with `feat:` or `fix:` (squash/rebase if history is mixed).
 - Review requirements before merge: 1 approval when targeting `dev`, 2 approvals when targeting `main`/`master`.
+- A second workflow, `.github/workflows/pr-tests.yml`, runs `make test-all` (backend unit + e2e) on every PR; it needs the `DB_PASS` / `FT_TRANSCENDER_DB_PASSWORD` repo secrets.

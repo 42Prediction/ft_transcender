@@ -20,7 +20,7 @@ export function Hero() {
 
   return (
     <section className="relative overflow-hidden">
-      <div className="relative mx-auto grid max-w-[1400px] gap-12 px-6 pb-24 pt-20 lg:grid-cols-[1.1fr_0.9fr] lg:pt-28">
+      <div className="relative mx-auto grid max-w-[1400px] gap-10 px-4 pb-16 pt-12 sm:gap-12 sm:px-6 sm:pb-24 sm:pt-20 lg:grid-cols-[1.1fr_0.9fr] lg:pt-28">
         <div className="flex flex-col justify-center">
           <span className="mb-6 inline-flex w-fit items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-xs uppercase tracking-wider text-primary">
             <span className="h-1.5 w-1.5 animate-pulse-glow rounded-full bg-primary" />
@@ -61,7 +61,7 @@ export function Hero() {
                 <dt className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                   {s.label}
                 </dt>
-                <dd className="mt-1 font-display text-2xl font-bold">{s.value}</dd>
+                <dd className="mt-1 font-display text-xl font-bold sm:text-2xl">{s.value}</dd>
               </div>
             ))}
           </dl>

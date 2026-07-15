@@ -44,4 +44,27 @@ export const auth = {
 		const res = await api.post('/auth/signout');
 		return res.data;
 	},
+
+	twoFactor: {
+		generate: async (): Promise<{ qrCode: string }> => {
+			const res = await api.post('/auth/2fa/generate');
+			if (!res.data?.success) throw new Error('Failed to generate 2FA QR code');
+			return res.data.data;
+		},
+
+		turnOn: async (code: string): Promise<void> => {
+			const res = await api.post('/auth/2fa/turn-on', { code });
+			if (!res.data?.success) throw new Error('Invalid 2FA code');
+		},
+
+		turnOff: async (): Promise<void> => {
+			const res = await api.post('/auth/2fa/turn-off');
+			if (!res.data?.success) throw new Error('Failed to disable 2FA');
+		},
+
+		authenticate: async (code: string): Promise<void> => {
+			const res = await api.post('/auth/2fa/authenticate', { code });
+			if (!res.data?.success) throw new Error('Invalid 2FA code');
+		},
+	},
 };

@@ -6,21 +6,16 @@ import { BettorQuest } from './entities/bettor-quest.entity';
 import { WalletService } from '../wallet/wallet.service';
 import { TransactionType } from '../wallet/entities/transaction.entity';
 
-/** One-time onboarding quests. Rewards are bounded (each pays once, ever). */
 const QUESTS: { key: string; title: string; description: string; reward: number }[] = [
   { key: 'first_bet', title: 'Place your first bet', description: 'Back a prediction on any market.', reward: 100 },
   { key: 'add_friend', title: 'Make your first friend', description: 'Get a friend request accepted.', reward: 50 },
   { key: 'first_win', title: 'Win your first bet', description: 'Have a bet resolve in your favour.', reward: 150 },
 ];
 
-/**
- * Phase 3 of the economy: universal engagement faucet. Currently the daily
- * streak bonus — a self-capped source (one claim per calendar day, reward
- * bounded by DAILY_MAX_BONUS_DAYS) that rewards showing up, not clicking.
- */
+
 @Injectable()
 export class EngagementService {
-  // reward = BASE + min(streak-1, MAX_BONUS_DAYS) * STEP  → capped at 120/day.
+
   private static readonly DAILY_BASE = 50;
   private static readonly DAILY_STEP = 10;
   private static readonly DAILY_MAX_BONUS_DAYS = 7;
@@ -35,7 +30,6 @@ export class EngagementService {
     private readonly dataSource: DataSource,
   ) {}
 
-  /** Whole UTC calendar day for a timestamp, so same-day claims collide. */
   private utcDay(date: Date): number {
     return Math.floor(date.getTime() / EngagementService.MS_PER_DAY);
   }
@@ -45,7 +39,6 @@ export class EngagementService {
     return EngagementService.DAILY_BASE + bonusDays * EngagementService.DAILY_STEP;
   }
 
-  /** The streak the next claim would land on, given the last claim day. */
   private nextStreak(lastDay: number | null, todayDay: number, currentStreak: number): number {
     if (lastDay !== null && todayDay - lastDay === 1) return currentStreak + 1;
     return 1;
@@ -66,7 +59,6 @@ export class EngagementService {
     return {
       canClaim: !claimedToday,
       streak: bettor.dailyStreak,
-      // What they'd earn if they claimed now (null once already claimed today).
       nextReward: claimedToday ? null : this.rewardFor(previewStreak),
       nextStreak: claimedToday ? bettor.dailyStreak : previewStreak,
     };
@@ -85,8 +77,6 @@ export class EngagementService {
     const streak = this.nextStreak(lastDay, todayDay, bettor.dailyStreak);
     const reward = this.rewardFor(streak);
 
-    // Credit and streak update commit together, so a crash can neither double-pay
-    // nor advance the streak without paying.
     await this.dataSource.transaction(async (manager) => {
       await this.walletService.credit(
         bettor.id,
@@ -103,7 +93,6 @@ export class EngagementService {
     return { claimed: true, reward, streak };
   }
 
-  /** Evaluates a quest against the bettor's current state (results, not clicks). */
   private async isMet(key: string, bettorId: string): Promise<boolean> {
     let sql: string;
     switch (key) {
@@ -114,7 +103,6 @@ export class EngagementService {
         sql = `SELECT EXISTS(SELECT 1 FROM bettor_friends WHERE bettor_id=$1) AS e`;
         break;
       case 'first_win':
-        // A real, profitable win: refunds set payout=amount, losers=0, open=null.
         sql = `SELECT EXISTS(SELECT 1 FROM market_positions WHERE bettor_id=$1 AND payout IS NOT NULL AND payout > amount) AS e`;
         break;
       default:
@@ -153,8 +141,6 @@ export class EngagementService {
       if (!(await this.isMet(q.key, bettor.id))) continue;
       try {
         await this.dataSource.transaction(async (manager) => {
-          // Insert the completion row first: the unique (bettor, quest) index makes
-          // a concurrent double-claim fail here, before any second credit.
           await manager.insert(BettorQuest, {
             bettorId: bettor.id,
             questKey: q.key,
@@ -172,7 +158,6 @@ export class EngagementService {
         });
         newlyClaimed.push({ key: q.key, title: q.title, reward: q.reward });
       } catch {
-        // Unique violation → claimed concurrently; skip without double-paying.
       }
     }
     return { claimed: newlyClaimed, total: newlyClaimed.reduce((s, q) => s + q.reward, 0) };

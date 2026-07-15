@@ -13,7 +13,6 @@ export function useDailyBonus() {
     try {
       setStatus(await engagementApi.getDailyStatus());
     } catch {
-      /* not logged in / transient — leave status null */
     } finally {
       setLoading(false);
     }
@@ -30,10 +29,10 @@ export function useDailyBonus() {
       const res = await engagementApi.claimDaily();
       setJustClaimed({ reward: res.reward, streak: res.streak });
       await load();
-      // Refresh route loaders so the navbar wallet balance reflects the credit.
+     
       revalidator.revalidate();
     } catch {
-      // Already claimed elsewhere or failed — resync to the truth.
+    
       await load();
     } finally {
       setClaiming(false);

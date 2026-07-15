@@ -1,18 +1,12 @@
 import { TrendingUp, TrendingDown, Wallet, Target } from 'lucide-react';
 import type { Portfolio } from '@/api/market/market.api';
 
-/**
- * The old standalone /user/portfolio page, merged into the profile. Only
- * rendered on the viewer's own profile — balance and open positions are
- * private (JWT-guarded endpoint).
- */
 export function PortfolioSection({ portfolio }: { portfolio: Portfolio }) {
   const pnlNum = parseFloat(portfolio.pnl);
   const isPos = pnlNum >= 0;
 
   return (
     <section className="space-y-6">
-      {/* Stats row */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           {
@@ -53,7 +47,6 @@ export function PortfolioSection({ portfolio }: { portfolio: Portfolio }) {
         ))}
       </div>
 
-      {/* Positions table */}
       <div className="rounded-2xl border border-border/60 bg-gradient-card overflow-hidden">
         <div className="border-b border-border/50 px-6 py-4">
           <h2 className="font-semibold">Open Positions</h2>

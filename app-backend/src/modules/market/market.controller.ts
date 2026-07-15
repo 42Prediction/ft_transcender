@@ -99,9 +99,7 @@ export class MarketController {
     }
   }
 
-  // Admin/moderator-only aggregate volume+bets series and category breakdown
-  // for the analytics dashboard. Kept ahead of the `:id` route below so
-  // "analytics" isn't swallowed as a market id.
+  
   @Get('analytics')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.MODERATOR)
@@ -127,8 +125,7 @@ export class MarketController {
     }
   }
 
-  // Personal analytics ("My Activity") — always the caller's own data, no
-  // admin/moderator role required (unlike GET /market/analytics above).
+
   @Get('portfolio/activity')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
@@ -218,8 +215,7 @@ export class MarketController {
     }
   }
 
-  // Markets are normally sourced automatically from the 42 API (see
-  // ExamMarketSyncService); this stays admin-only as a manual override.
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
@@ -252,18 +248,17 @@ export class MarketController {
   async resolve(
     @Param('id') id: string,
     @Body('resolution') resolution: MarketResolution | undefined,
-    @Body('finalGrade') finalGrade: number | undefined,
+    @Req() req: any,
   ) {
     try {
-      const data = await this.marketService.resolveMarketManually(id, resolution, finalGrade);
+      const data = await this.marketService.resolveMarketManually(id, req.user.id, resolution);
       return successResponse(HttpStatus.OK, data);
     } catch (error) {
       return errorResponse(error);
     }
   }
 
-  // Manual override alongside auto-resolve — e.g. voiding a market the sync
-  // job would otherwise have cancelled on its own next run.
+  
   @Patch(':id/cancel')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.MODERATOR)

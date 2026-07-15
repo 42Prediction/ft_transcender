@@ -1,4 +1,3 @@
-// Ajusta o caminho de importação conforme necessário para chegar ao teu ficheiro api.ts principal
 import { api } from '../api';
 
 export interface BettorSearchResult {

@@ -42,7 +42,6 @@ export function RewardsMenu() {
 
       {open && (
         <div className="fixed inset-x-3 top-20 z-50 max-h-[70vh] origin-top-right overflow-y-auto rounded-xl border border-border/60 bg-background p-4 shadow-xl backdrop-blur-xl md:absolute md:inset-x-auto md:right-0 md:top-full md:mt-2 md:w-[340px]">
-          {/* Daily bonus */}
           <div className="flex items-center justify-between">
             <h3 className="font-display text-sm font-semibold">Daily bonus</h3>
             <span className="flex items-center gap-1 rounded-lg bg-surface px-2 py-1 font-mono text-[11px] text-muted-foreground">
@@ -84,7 +83,6 @@ export function RewardsMenu() {
 
           <div className="my-4 border-t border-border/40" />
 
-          {/* Quests */}
           <div className="flex items-center justify-between">
             <h3 className="font-display text-sm font-semibold">Quests</h3>
             {claimableQuests > 0 && (

@@ -5,12 +5,12 @@ import type { MarketDto } from '@/api/market/market.api';
 import { marketApi } from '@/api/market/market.api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 
 const statusLabel: Record<MarketDto['status'], string> = {
   live: 'Featured · Live',
   closing: 'Closing soon',
+  closed: 'Closed · awaiting result',
   new: 'New market',
   resolved: 'Resolved',
   cancelled: 'Cancelled',
@@ -28,8 +28,6 @@ function timeUntil(closes: string): string {
 
 export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => void }) {
   const root = useRouteLoaderData('root') as any;
-  // GET /bettor/me nests the account under `.user` — role lives at
-  // data.user.role, not data.role.
   const role: string | undefined = root?.data?.user?.role;
   const revalidator = useRevalidator();
   const navigate = useNavigate();
@@ -37,7 +35,6 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
   const [resolveConfirm, setResolveConfirm] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [resolveError, setResolveError] = useState<string | null>(null);
-  const [gradeInput, setGradeInput] = useState('');
 
   const yesPct = Math.round(m.yesPrice * 100);
   const noPct = Math.round(m.noPrice * 100);
@@ -45,9 +42,13 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
   const canBet = !isSettled && new Date(m.closes).getTime() > Date.now();
   const isAdmin = role === 'admin';
   const isModerator = role == 'moderator';
-  const examEnded = m.examEndsAt != null && new Date(m.examEndsAt).getTime() <= Date.now();
-  const canResolve = (isAdmin || isModerator) && !isSettled && !m.isAutoManaged;
-  const canResolveWithGrade = (isAdmin || isModerator) && !isSettled && m.isAutoManaged && examEnded;
+  const myNick: string | undefined = root?.data?.nick;
+  const canResolve =
+    (isAdmin || isModerator) &&
+    !isSettled &&
+    !m.isAutoManaged &&
+    m.creatorNick != null &&
+    m.creatorNick === myNick;
 
   function openBet(side: 'YES' | 'NO') {
     navigate(`/market/${m.id}?side=${side}`);
@@ -61,27 +62,6 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
       revalidator.revalidate();
       onRefresh?.();
       setResolveConfirm(false);
-    } catch (err: any) {
-      setResolveError(err?.response?.data?.error?.response?.message ?? 'Could not resolve this market.');
-    } finally {
-      setResolving(false);
-    }
-  }
-
-  async function handleResolveWithGrade() {
-    const grade = Number(gradeInput);
-    if (gradeInput.trim() === '' || Number.isNaN(grade)) {
-      setResolveError('Enter a valid grade.');
-      return;
-    }
-    setResolving(true);
-    setResolveError(null);
-    try {
-      await marketApi.resolveMarket(m.id, undefined, grade);
-      revalidator.revalidate();
-      onRefresh?.();
-      setResolveConfirm(false);
-      setGradeInput('');
     } catch (err: any) {
       setResolveError(err?.response?.data?.error?.response?.message ?? 'Could not resolve this market.');
     } finally {
@@ -150,7 +130,6 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
           </button>
         </div>
 
-        {/* Admin resolve section */}
         {canResolve && (
           <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
             {resolveConfirm ? (
@@ -206,64 +185,10 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
           </div>
         )}
 
-        {canResolveWithGrade && (
-          <div className="rounded-xl border border-warning/30 bg-warning/5 p-3">
-            {resolveConfirm ? (
-              <div className="space-y-2">
-                <p className="text-center text-xs text-muted-foreground">
-                  Exam ended, 42 hasn't published the grade yet. Enter it to resolve:
-                </p>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    value={gradeInput}
-                    onChange={(e) => setGradeInput(e.target.value)}
-                    placeholder="Grade (0-125)"
-                    disabled={resolving}
-                    className="flex-1 rounded-lg font-mono text-xs"
-                  />
-                  <Button
-                    variant="ghost"
-                    onClick={handleResolveWithGrade}
-                    disabled={resolving}
-                    className="h-auto rounded-lg border border-primary/30 bg-primary/15 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/25"
-                  >
-                    Resolve
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setResolveConfirm(false);
-                      setResolveError(null);
-                      setGradeInput('');
-                    }}
-                    disabled={resolving}
-                    className="h-auto rounded-lg px-3 py-2 text-xs text-muted-foreground"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-                {resolveError && (
-                  <p className="text-center text-[11px] text-destructive">{resolveError}</p>
-                )}
-              </div>
-            ) : (
-              <Button
-                variant="ghost"
-                onClick={() => setResolveConfirm(true)}
-                className="h-auto w-full gap-2 py-1.5 text-xs font-medium text-warning hover:text-warning/80"
-              >
-                <Shield className="h-3.5 w-3.5" />
-                Resolve manually (exam ended)
-              </Button>
-            )}
-          </div>
-        )}
-
-        {(isAdmin || isModerator) && !isSettled && m.isAutoManaged && !examEnded && (
+        {(isAdmin || isModerator) && !isSettled && m.isAutoManaged && (
           <div className="flex items-center justify-center gap-1.5 rounded-xl border border-border/60 bg-surface p-2.5 text-[11px] text-muted-foreground">
             <Shield className="h-3.5 w-3.5" />
-            Auto-resolves once 42 publishes the grade
+            Auto-resolves when the exam ends — 100 is YES, anything else is NO
           </div>
         )}
 

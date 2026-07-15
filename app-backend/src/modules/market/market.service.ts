@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -26,19 +27,8 @@ import { avataaarsNeutral } from '@dicebear/collection';
 export class MarketService {
   private readonly logger = new Logger(MarketService.name);
 
-  /**
-   * House rake: the fraction of the losing side's total stake that the market
-   * creator (admin) collects on each resolution. Carved out of the pool before
-   * winners are paid, so winners split the pool net of rake.
-   */
   private static readonly HOUSE_RAKE_RATE = 0.05;
 
-  /**
-   * Initial liquidity seeded into each side of a new market's pool. The admin
-   * funds it from their own wallet on creation (see `create`), so the seed that
-   * winners ultimately collect at resolution is real, ledgered money rather
-   * than currency minted from nowhere.
-   */
   private static readonly MARKET_SEED_PER_SIDE = 100;
 
   constructor(
@@ -65,10 +55,6 @@ export class MarketService {
       qb.andWhere('m.category = :category', { category });
     }
     if (status === 'closed') {
-      // Virtual status, not a real MarketStatus value — the inverse of the
-      // default view below: resolved/cancelled markets, plus any whose
-      // closesAt has simply passed regardless of what `status` column says
-      // (it stays CLOSING until an outcome is actually recorded).
       qb.andWhere(
         '(m.status IN (:...settled) OR m.closes_at <= :now)',
         { settled: [MarketStatus.RESOLVED, MarketStatus.CANCELLED], now: new Date() },
@@ -76,9 +62,7 @@ export class MarketService {
     } else if (status) {
       qb.andWhere('m.status = :status', { status });
     } else {
-      // Default view only shows markets still open for betting — resolved,
-      // cancelled, and time-closed-but-not-yet-resolved markets are all
-      // hidden unless a status is explicitly requested.
+
       qb.andWhere('m.status NOT IN (:...inactive)', {
         inactive: [MarketStatus.RESOLVED, MarketStatus.CANCELLED],
       });
@@ -102,8 +86,7 @@ export class MarketService {
       .where('m.status NOT IN (:...inactive)', {
         inactive: [MarketStatus.RESOLVED, MarketStatus.CANCELLED],
       })
-      // Same "open only" rule as the default /markets view — closed markets
-      // are only ever browsable through the dedicated Closed filter there.
+
       .andWhere('m.closes_at > :now', { now: new Date() })
       .orderBy('(m.yes_pool + m.no_pool)', 'DESC')
       .limit(limit)
@@ -124,7 +107,7 @@ export class MarketService {
   async create(dto: CreateMarketDto, userId: string) {
     let bettor = await this.bettorRepo.findOne({ where: { user: { id: userId } } });
     if (!bettor) {
-      // Auto-provision bettor for admin users created via seed
+     
       const user = await this.userRepo.findOne({ where: { id: userId } });
       if (!user) throw new NotFoundException('User not found');
       const avatar = createAvatar(avataaarsNeutral, { seed: user.email }).toDataUri();
@@ -132,7 +115,7 @@ export class MarketService {
       bettor = await this.bettorRepo.save(
         this.bettorRepo.create({ nick: `${prefix}_${Math.floor(1000 + Math.random() * 9000)}`, avatar, user }),
       );
-      // Only admins reach create() (@Roles(ADMIN)); provision the house treasury.
+     
       await this.walletService.createWallet(bettor.id, ADMIN_TREASURY_BALANCE, 'Admin treasury');
     }
 
@@ -152,10 +135,7 @@ export class MarketService {
 
     const saved = await this.marketRepo.save(market);
 
-    // The admin funds the market's seed liquidity from their own wallet, so no
-    // currency is minted when winners collect the pool at resolution. If the
-    // admin can't cover it, `debit` throws (insufficient balance) — undo the
-    // just-created market so we never leave an unfunded one behind.
+  
     try {
       await this.walletService.debit(bettor.id, {
         amount: seedPerSide * 2,
@@ -186,7 +166,7 @@ export class MarketService {
     });
     if (!bettor) throw new NotFoundException('Bettor not found');
 
-    // Debit wallet first (has its own transaction + pessimistic lock)
+   
     await this.walletService.debit(bettor.id, {
       amount: dto.amount,
       type: TransactionType.BET,
@@ -223,40 +203,20 @@ export class MarketService {
     return { position: position.id, entryPrice, shares };
   }
 
-  /**
-   * Entry point for a human (admin/moderator) resolving a market via the API.
-   *
-   * Exam-sourced markets (`examId` set) are normally owned end-to-end by
-   * ExamMarketSyncService#autoResolveExamMarkets, which only settles once 42
-   * publishes a real, final grade — letting a human resolve one by guess
-   * while the exam is still active could pre-empt the authoritative outcome,
-   * with no way to correct it afterwards (the auto-resolver skips anything
-   * already RESOLVED). Once the exam session has genuinely locked
-   * (`examEndsAt` passed) but 42 still hasn't published the grade, a human
-   * can step in — but must supply the real `finalGrade` themselves rather
-   * than pick YES/NO blind, so the resolution is always backed by an actual
-   * number and bettors can see it (same `>= 100` rule as the automatic path).
-   *
-   * Manually-created markets (no `examId`) have no automatic path at all, so
-   * they resolve the original way: a plain YES/NO from the caller.
-   */
-  async resolveMarketManually(id: string, resolution?: MarketResolution, finalGrade?: number) {
+  
+  async resolveMarketManually(id: string, userId: string, resolution?: MarketResolution) {
     const market = await this.marketRepo.findOne({ where: { id } });
     if (!market) throw new NotFoundException('Market not found');
 
     if (market.examId != null) {
-      if (!market.examEndsAt || new Date() < market.examEndsAt) {
-        throw new BadRequestException(
-          'This market is sourced from a 42 exam and resolves automatically once the grade is published — it cannot be resolved manually until the exam session ends.',
-        );
-      }
-      if (finalGrade == null) {
-        throw new BadRequestException(
-          'Enter the final grade from 42 to resolve this exam market manually.',
-        );
-      }
-      const derivedResolution = finalGrade >= 100 ? MarketResolution.YES : MarketResolution.NO;
-      return this.resolveMarket(id, derivedResolution, finalGrade);
+      throw new BadRequestException(
+        'This market is sourced from a 42 exam and resolves automatically when the exam ends.',
+      );
+    }
+
+    const bettor = await this.bettorRepo.findOne({ where: { user: { id: userId } } });
+    if (!bettor || market.creatorId !== bettor.id) {
+      throw new ForbiddenException('Only the creator of this market can resolve it.');
     }
 
     if (!resolution) {
@@ -285,18 +245,14 @@ export class MarketService {
     const totalWinShares = winners.reduce((s, p) => s + Number(p.shares), 0);
     const totalPool = Number(market.yesPool) + Number(market.noPool);
 
-    // House rake: the admin who opened this market takes a cut of what the
-    // losing side staked (classic bookmaker "vig"). It's carved out of the
-    // pool before winners are paid, so winners split the pool net of rake.
-    // No losers → no rake.
+  
     const losersStake = positions
       .filter((p) => p.side !== winSide)
       .reduce((s, p) => s + Number(p.amount), 0);
     const rake = Number((losersStake * MarketService.HOUSE_RAKE_RATE).toFixed(2));
     const distributable = totalPool - rake;
 
-    // Payout for winners; a settled 0 for losers so history/stats can tell a
-    // resolved-loss (payout 0) apart from a still-open bet (payout null).
+   
     const notifications: {
       bettorId: string;
       type: NotificationType;
@@ -335,19 +291,21 @@ export class MarketService {
       });
     }
 
-    // Pay the house rake to the market creator (admin). Guarded so a missing
-    // creator wallet can't undo an otherwise-complete resolution — winners
-    // have already been paid at this point.
-    if (rake > 0) {
+
+    const noWinners = totalWinShares === 0;
+    const creatorCredit = noWinners ? totalPool : rake;
+    if (creatorCredit > 0) {
       try {
         await this.walletService.credit(market.creatorId, {
-          amount: rake,
+          amount: creatorCredit,
           type: TransactionType.COMMISSION,
-          description: `House rake (${(MarketService.HOUSE_RAKE_RATE * 100).toFixed(0)}%) on market: ${market.project}`,
+          description: noWinners
+            ? `Seed refund (no winners) on market: ${market.project}`
+            : `House rake (${(MarketService.HOUSE_RAKE_RATE * 100).toFixed(0)}%) on market: ${market.project}`,
         });
       } catch (err) {
         this.logger.warn(
-          `Rake credit of ${rake} to creator ${market.creatorId} failed on market ${market.id}: ${err}`,
+          `Creator credit of ${creatorCredit} to ${market.creatorId} failed on market ${market.id}: ${err}`,
         );
       }
     }
@@ -357,11 +315,6 @@ export class MarketService {
     return { resolved: true, resolution, totalPool, rake, winnersCount: winners.length };
   }
 
-  /**
-   * Voids a market — e.g. an auto-generated exam market whose cadet
-   * deregistered before the exam ended. Every position is refunded in full
-   * (not a payout, since the event no longer resolves either way).
-   */
   async cancelMarket(id: string, reason: string) {
     const market = await this.marketRepo.findOne({ where: { id } });
     if (!market) throw new NotFoundException('Market not found');
@@ -418,7 +371,7 @@ export class MarketService {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     const [liveMarkets, activeRow, volumeRow] = await Promise.all([
-      // Live = still open for betting: not settled and not past its close time.
+   
       this.marketRepo
         .createQueryBuilder('m')
         .where('m.status NOT IN (:...inactive)', {
@@ -426,8 +379,7 @@ export class MarketService {
         })
         .andWhere('m.closes_at > :now', { now })
         .getCount(),
-      // Active traders = distinct accounts that have actually placed a bet,
-      // excluding the admin/house (which seeds markets, it doesn't trade).
+
       this.positionRepo
         .createQueryBuilder('pos')
         .innerJoin('pos.bettor', 'b')
@@ -435,8 +387,7 @@ export class MarketService {
         .where('u.role != :admin', { admin: Role.ADMIN })
         .select('COUNT(DISTINCT pos.bettor_id)', 'n')
         .getRawOne(),
-      // Volume = xp actually wagered in the last 30 days (real bets only — the
-      // seed isn't a position — and excluding the admin).
+
       this.positionRepo
         .createQueryBuilder('pos')
         .innerJoin('pos.bettor', 'b')
@@ -454,12 +405,7 @@ export class MarketService {
     };
   }
 
-  /**
-   * Real YES/NO price history, reconstructed by replaying every bet in order
-   * over the market's seed pool — the actual probability the market carried at
-   * each trade, not a synthetic curve. Starts at the 50/50 seed (market
-   * creation) and ends at the current price.
-   */
+
   async getPriceHistory(id: string) {
     const market = await this.marketRepo.findOne({ where: { id } });
     if (!market) throw new NotFoundException('Market not found');
@@ -484,8 +430,7 @@ export class MarketService {
       else no += Number(pos.amount);
       history.push(point(pos.createdAt));
     }
-    // Trailing point at "now" so the line runs flat up to the present when the
-    // last trade was a while ago (skip if the last bet is already the latest).
+
     const now = new Date();
     const last = history[history.length - 1];
     if (last.t !== now.toISOString()) history.push(point(now));
@@ -603,12 +548,7 @@ export class MarketService {
     };
   }
 
-  /**
-   * Personal day-bucketed activity for the logged-in bettor — same shape as
-   * getAnalytics() but scoped to one account, for their own "My Activity"
-   * view on the profile page (no admin/moderator role required, since it's
-   * always the caller's own data).
-   */
+ 
   async getMyActivity(userId: string, from?: string, to?: string) {
     const bettor = await this.bettorRepo.findOne({ where: { user: { id: userId } } });
     if (!bettor) throw new NotFoundException('Bettor not found');
@@ -667,11 +607,7 @@ export class MarketService {
     return { from: fromDate.toISOString(), to: toDate.toISOString(), series, categories, totals };
   }
 
-  /**
-   * Public betting stats for any bettor by nick — aggregates only, never
-   * balance or the open-position details (those stay behind the
-   * JWT-guarded /market/portfolio "me" endpoint).
-   */
+  
   async getBettorStats(nick: string) {
     const bettor = await this.bettorRepo.findOne({ where: { nick } });
     if (!bettor) throw new NotFoundException('Bettor not found');
@@ -712,11 +648,7 @@ export class MarketService {
     };
   }
 
-  /**
-   * Public bet history for any bettor by nick — same visibility level as the
-   * global activity feed (nick + market + side + amount are already public
-   * there); balance stays private.
-   */
+ 
   async getBettorPositions(nick: string, limit = 50) {
     const bettor = await this.bettorRepo.findOne({ where: { nick } });
     if (!bettor) throw new NotFoundException('Bettor not found');
@@ -757,11 +689,7 @@ export class MarketService {
     });
   }
 
-  /**
-   * Navbar search: markets and registered bettors in one round-trip.
-   * Markets match on subject login/name or project across ALL statuses —
-   * a search is a lookup, not the "open for betting" browse view.
-   */
+ 
   async globalSearch(query: string) {
     const q = query.trim();
     if (q.length < 2) return { markets: [], bettors: [] };
@@ -817,12 +745,7 @@ export class MarketService {
     }));
   }
 
-  /**
-   * Day-bucketed volume/bets series plus a category volume breakdown, for the
-   * admin analytics dashboard. Same "real trader" exclusions as `getStats()`
-   * (admin/house wagers don't count) so the numbers stay consistent across
-   * both endpoints. Defaults to the trailing 30 days when no range is given.
-   */
+  
   async getAnalytics(from?: string, to?: string) {
     const toDate = to ? new Date(to) : new Date();
     const fromDate = from
@@ -891,9 +814,7 @@ export class MarketService {
     const countByCategory = new Map(rows.map((r) => [r.category, Number(r.count)]));
     const all = rows.reduce((s, r) => s + Number(r.count), 0);
 
-    // Always list the full Exam 02-06 scope, even with zero markets right
-    // now, so the /markets filter buttons are stable rather than appearing
-    // and disappearing as exams come and go.
+
     return [
       { name: 'All', count: all },
       ...Object.values(MarketCategory).map((category) => ({
@@ -903,19 +824,10 @@ export class MarketService {
     ];
   }
 
-  /**
-   * Never returns RESOLVED — that status means "an outcome was recorded and
-   * paid out", which only `resolveMarket()` can do. Treating a passed
-   * `closesAt` as resolved-by-time-alone left exam markets whose exam had
-   * already started (closesAt in the past at creation, or the 15s status
-   * sweep beating the 10min grade-check cron) permanently stuck: flagged
-   * RESOLVED with no resolution/payout, and invisible to both
-   * `autoResolveExamMarkets` (which skips RESOLVED) and admins (hidden from
-   * the default market list). Once betting time is up, cap at CLOSING —
-   * betting itself is separately blocked by `placeBet`'s closesAt check.
-   */
+
   computeStatus(closesAt: Date, now: Date, createdAt?: Date): MarketStatus {
     const diff = closesAt.getTime() - now.getTime();
+    if (diff <= 0) return MarketStatus.CLOSED;
     if (diff < 24 * 60 * 60 * 1000) return MarketStatus.CLOSING;
     if (createdAt) {
       const ageHours = (now.getTime() - createdAt.getTime()) / (60 * 60 * 1000);
@@ -924,11 +836,7 @@ export class MarketService {
     return MarketStatus.LIVE;
   }
 
-  /**
-   * Markets close purely based on time (`closesAt`), so status can go stale
-   * between requests. Recompute it periodically and broadcast anything that
-   * changed so connected clients stay in sync without polling.
-   */
+
   @Cron('*/15 * * * * *')
   async refreshMarketStatuses() {
     const markets = await this.marketRepo.find({
@@ -976,14 +884,11 @@ export class MarketService {
       noPrice,
       resolution: market.resolution ?? null,
       creatorNick: market.creator?.nick ?? null,
-      // Sourced from a 42 exam — settles itself via ExamMarketSyncService once
-      // the grade is published; the frontend uses this to hide manual resolve.
+
       isAutoManaged: market.examId != null,
-      // When the exam session locks — once passed, a human can step in with
-      // resolveMarketManually() if 42 still hasn't published the grade.
+
       examEndsAt: market.examEndsAt ?? null,
-      // Real 42 grade behind the resolution (auto or manually entered); null
-      // for manually-created markets or markets resolved before this existed.
+
       finalGrade: market.finalGrade != null ? Number(market.finalGrade) : null,
     };
   }

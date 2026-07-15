@@ -16,11 +16,8 @@ export interface Bettor {
 
 export interface ProfileLoaderData {
   bettor: Bettor;
-  /** Public aggregate stats — real data for any profile; null if the fetch failed. */
   stats: BettorStats | null;
-  /** Public bet history (won/lost/open, amounts) — real data for any profile. */
   positions: BettorPosition[];
-  /** Full portfolio (balance + open positions) — only loaded for the viewer's own profile. */
   portfolio: Portfolio | null;
 }
 

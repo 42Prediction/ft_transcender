@@ -55,7 +55,6 @@ function describe(n: AppNotification): { icon: typeof Bell; tint: string; title:
       body: `@${d.fromNick ?? 'someone'} accepted your friend request`,
     };
   }
-  // chat_mention
   return {
     icon: MessageSquare,
     tint: 'text-primary',

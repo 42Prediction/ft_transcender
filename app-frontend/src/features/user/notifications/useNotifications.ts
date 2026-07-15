@@ -4,11 +4,7 @@ import { notificationApi, type AppNotification } from '@/api/notification/notifi
 
 const LIST_LIMIT = 30;
 
-/**
- * Loads the notification inbox once (when enabled) and keeps it live: the
- * `/market` socket pushes `notification:new` to the bettor's private room, so
- * bet resolutions and chat mentions arrive without polling.
- */
+
 export function useNotifications(enabled: boolean) {
   const [items, setItems] = useState<AppNotification[]>([]);
   const [unread, setUnread] = useState(0);
@@ -22,7 +18,6 @@ export function useNotifications(enabled: boolean) {
       setItems(data.items);
       setUnread(data.unread);
     } catch {
-      /* keep whatever we had */
     } finally {
       setLoading(false);
     }
@@ -67,7 +62,6 @@ export function useNotifications(enabled: boolean) {
     try {
       await notificationApi.markRead(id);
     } catch {
-      /* best-effort */
     }
   }, []);
 

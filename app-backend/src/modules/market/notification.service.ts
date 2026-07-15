@@ -7,7 +7,6 @@ import { Notification, NotificationType } from './entities/notification.entity';
 import { MarketGateway } from './market.gateway';
 
 const INBOX_LIMIT = 30;
-/** Nicks mentioned in a chat message, e.g. "@ana gg" -> ["ana"]. */
 const MENTION_RE = /(?:^|\s)@([A-Za-z0-9_.-]+)/g;
 
 interface NewNotification {
@@ -28,13 +27,12 @@ export class NotificationService {
     private readonly bettorRepo: Repository<Bettor>,
     @InjectRepository(Market)
     private readonly marketRepo: Repository<Market>,
-    // Circular: the gateway creates chat-mention notifications, and this
-    // service pushes every notification back out through the gateway.
+
     @Inject(forwardRef(() => MarketGateway))
     private readonly gateway: MarketGateway,
   ) {}
 
-  /** Persists notifications and pushes each to its recipient's live sockets. */
+  
   async createMany(items: NewNotification[]): Promise<void> {
     if (items.length === 0) return;
     const entities = items.map((item) =>
@@ -72,10 +70,7 @@ export class NotificationService {
     await this.notificationRepo.update({ bettorId, isRead: false }, { isRead: true });
   }
 
-  /**
-   * Resolves the @nicks in a chat message to real bettors (excluding the
-   * author) and notifies each that they were mentioned.
-   */
+
   async createChatMention(params: {
     marketId: string;
     fromBettorId: string;

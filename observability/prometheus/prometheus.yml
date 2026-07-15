@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/alert.rules.yml
+
+scrape_configs:
+  # The NestJS backend exposes app + default Node.js metrics at /metrics.
+  - job_name: backend
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["backend:3000"]
+
+  # Host-level metrics (CPU, memory, disk, network).
+  - job_name: node
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  # PostgreSQL metrics (connections, transactions, locks, size).
+  - job_name: postgres
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+
+  # Prometheus self-monitoring.
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

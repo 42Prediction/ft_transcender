@@ -22,11 +22,6 @@ const EXAM_CATEGORY_BY_RANK: Record<string, MarketCategory> = {
   '06': MarketCategory.EXAM_06,
 };
 
-/**
- * The platform's whole scope is Exam Rank 02-06 — anything else (Rank 01,
- * non-rank exams/events) is deliberately out of scope and must not produce a
- * market. Returns `null` for anything outside that.
- */
 function mapExamNameToCategory(examName: string): MarketCategory | null {
   const match = examName.match(/rank\s*0*(\d+)/i);
   if (!match) return null;
@@ -34,21 +29,11 @@ function mapExamNameToCategory(examName: string): MarketCategory | null {
   return EXAM_CATEGORY_BY_RANK[rank] ?? null;
 }
 
-/**
- * Markets are no longer created by hand: this service sources them straight
- * from the 42 School API. Every cadet registered for an upcoming exam at the
- * campus gets a YES/NO market — "will they score 100 on this exam?" — and
- * markets auto-resolve once 42 publishes the grade.
- */
 @Injectable()
 export class ExamMarketSyncService implements OnModuleInit {
   private readonly logger = new Logger(ExamMarketSyncService.name);
   private systemBettorId: string | null = null;
 
-  /**
-   * xp the admin (house) funds per auto-generated exam market — the full 100/100
-   * pool, matching what manual markets debit, so no currency is minted.
-   */
   private static readonly AUTO_MARKET_SEED = 200;
 
   constructor(
@@ -64,18 +49,9 @@ export class ExamMarketSyncService implements OnModuleInit {
     private readonly marketService: MarketService,
   ) {}
 
-  /**
-   * `@Cron` only fires on its configured ticks — after a fresh deploy/restart
-   * that leaves a gap of up to 15 minutes with no markets in the DB at all,
-   * so the first users to log in see an empty list. Kick off one sync
-   * shortly after the app boots, without blocking startup on it (42's API
-   * can be slow; `syncExamMarkets` already contains its own failure
-   * handling). The short delay gives TypeORM's connection time to settle
-   * first — this hook can otherwise fire before the DB driver is ready.
-   */
+
   onModuleInit() {
-    // The seed script boots AppModule just to reach a couple of services; skip
-    // the startup sync there — it would run against a DB that seeds tears down.
+
     if (process.env.SEED_MODE === 'true') return;
     setTimeout(() => {
       void this.syncExamMarkets().catch((err) =>
@@ -84,13 +60,7 @@ export class ExamMarketSyncService implements OnModuleInit {
     }, 5000);
   }
 
-  /**
-   * Runs for every upcoming exam at the campus (not just a specific project —
-   * whatever `/campus/:id/exams` returns), covering both directions of
-   * market membership up until the exam ends:
-   *  - new registrants get a market opened for them;
-   *  - cadets who deregister get their market cancelled and refunded.
-   */
+
   @Cron('0 */15 * * * *')
   async syncExamMarkets() {
     const startedAt = Date.now();
@@ -108,25 +78,15 @@ export class ExamMarketSyncService implements OnModuleInit {
         const roster = await this.school42Service.getExamRoster(exam);
         const rosterLogins = new Set(roster.map((c) => c.login));
 
-        // `projects_users?filter[campus]=X` matches where the attempt took
-        // place, not the cadet's home campus — network-wide staff/QA test
-        // accounts hold a record at nearly every campus and slip through
-        // that filter. Verify each in_progress candidate against the actual
-        // primary-campus membership list before it's allowed to get a market.
-        const candidates = roster.filter((c) => c.status === 'in_progress' && c.finalMark !== 100);
+        const candidates = roster.filter((c) => c.status === 'in_progress');
 
-        // Verify only these candidates' primary campus (targeted, batched)
-        // instead of paging the whole campus. `null` = unverifiable this cycle
-        // → skip creation and campus-based cancellation (deregistration cleanup
-        // below still runs; it only needs the roster).
+
         let validCampus: Set<string> | null = null;
         try {
           validCampus = await this.school42Service.filterToPrimaryCampus(
             candidates.map((c) => c.login),
           );
-          // A non-empty candidate set matching nobody is suspicious (bad API
-          // shape or a transient blip) — refuse to act rather than let
-          // cancelDeregisteredMarkets void every real market as "not a cadet".
+
           if (validCampus.size === 0 && candidates.length > 0) {
             this.logger.warn(
               `syncExamMarkets: campus verify matched 0 of ${candidates.length} candidates for exam ${exam.id}, skipping this cycle`,
@@ -156,10 +116,7 @@ export class ExamMarketSyncService implements OnModuleInit {
           : [];
         const existingByLogin = new Map(existingMarkets.map((m) => [m.subjectLogin, m]));
 
-        // Active existing markets skip the create/revive branch below (it
-        // would wrongly reset their live pools), but still need `examEndsAt`
-        // backfilled — either they predate this field, or 42 rescheduled the
-        // exam. A targeted UPDATE, no pool/status side effects.
+
         const examEndsAt = new Date(exam.endAt);
         const staleEndsAt = existingMarkets.filter(
           (m) =>
@@ -176,17 +133,11 @@ export class ExamMarketSyncService implements OnModuleInit {
         for (const cadet of eligible) {
           const existing = existingByLogin.get(cadet.login);
 
-          // A cadet who re-registers after a deregistration finds their old
-          // (unique-indexed) market row still there, just CANCELLED — revive
-          // it with a clean pool rather than skip creating a fresh one.
           if (existing && existing.status !== MarketStatus.CANCELLED) continue;
 
           const creatorId = await this.getOrCreateSystemBettorId();
           if (!creatorId) continue;
 
-          // The admin (house) funds a fixed seed for every auto-generated
-          // market, so its creation is ledgered rather than free. Skip this
-          // cadet if the treasury can't cover it instead of minting.
           try {
             await this.walletService.debit(creatorId, {
               amount: ExamMarketSyncService.AUTO_MARKET_SEED,
@@ -245,16 +196,7 @@ export class ExamMarketSyncService implements OnModuleInit {
     this.logger.log(`syncExamMarkets: processed ${exams.length} exam(s) in ${Date.now() - startedAt}ms`);
   }
 
-  /**
-   * Cancels (with refund) any active market whose cadet either:
-   *  - has no `projects_users` record for the exam at all anymore
-   *    (deregistered) — status other than `in_progress` alone doesn't count,
-   *    that also matches cadets who simply finished and should be resolved,
-   *    not voided; or
-   *  - failed the primary-campus check (not actually a 42 Luanda cadet).
-   * Only applies before the exam ends; once it's over, `autoResolveExamMarkets`
-   * owns the outcome for anyone still legitimately in the roster.
-   */
+
   private async cancelDeregisteredMarkets(
     exam: Exam42,
     rosterLogins: Set<string>,
@@ -280,19 +222,7 @@ export class ExamMarketSyncService implements OnModuleInit {
     }
   }
 
-  /**
-   * Settles exam markets, but only once the exam session is over ("trancado")
-   * AND the cadet's attempt is `finished` with a published grade. Waiting on
-   * both matters because:
-   *  - a still-`in_progress` attempt reports `finalMark` 0 by default (meaning
-   *    "not graded yet", not "scored 0"); and
-   *  - a 0 on a not-yet-locked exam is typically a cadet re-sitting after an
-   *    earlier 0 — settling now would decide a bet they can still overturn,
-   *    and a `finished`-with-0 record can even belong to a *future* session
-   *    the cadet is re-registered for.
-   * Betting already closes at the exam's start (`closesAt` / `placeBet`), so
-   * delaying settlement never reopens a betting window.
-   */
+ 
   @Cron('0 */10 * * * *')
   async autoResolveExamMarkets() {
     const startedAt = Date.now();
@@ -311,26 +241,22 @@ export class ExamMarketSyncService implements OnModuleInit {
         const exam = await this.school42Service.getExam(Number(examId));
         if (!exam) continue;
 
-        // Only settle once the exam session is locked (over). Before that a
-        // cadet's 0 can still be a pending re-sit rather than a final fail.
+
         if (Date.now() < new Date(exam.endAt).getTime()) continue;
 
-        // Even after lock, require `finished` with a real grade — a lingering
-        // `in_progress` (re-sitting elsewhere) reports a default 0 that isn't
-        // this session's outcome.
+
         const roster = await this.school42Service.getExamRoster(exam);
         const gradedByLogin = new Map(
           roster
-            .filter((c) => c.status === 'finished' && c.finalMark != null)
+            .filter((c) => c.finalMark != null)
             .map((c) => [c.login, c.finalMark!]),
         );
 
         const marketsForExam = pending.filter((m) => m.examId === examId);
         for (const market of marketsForExam) {
           const finalMark = gradedByLogin.get(market.subjectLogin);
-          if (finalMark == null) continue;
-
-          const resolution = finalMark >= 100 ? MarketResolution.YES : MarketResolution.NO;
+          const resolution =
+            finalMark != null && finalMark >= 100 ? MarketResolution.YES : MarketResolution.NO;
           await this.marketService.resolveMarket(market.id, resolution, finalMark);
         }
       } catch (err) {

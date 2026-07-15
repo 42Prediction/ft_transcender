@@ -36,13 +36,11 @@ const rankIcon: Record<number, React.ReactNode> = {
 };
 
 export function Leaderboard() {
-  // Falls back to empty data when rendered as the frozen background behind the
-  // auth modal (route inactive → loader data purged), instead of crashing.
   const { leaderboard, activity } =
     (useLoaderData() as LeaderboardLoaderData | undefined) ?? { leaderboard: [], activity: [] };
 
   return (
-    <div className="mx-auto max-w-[1400px] px-6 py-12">
+    <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 sm:py-12">
       <div className="mb-8">
         <span className="inline-flex items-center gap-2 rounded-full border border-warning/30 bg-warning/10 px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-warning">
           <Crown className="h-3 w-3" /> Rankings
@@ -54,7 +52,6 @@ export function Leaderboard() {
       </div>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
-        {/* Leaderboard table */}
         <div className="rounded-2xl border border-border/60 bg-gradient-card overflow-hidden">
           <div className="grid grid-cols-[32px_1fr_92px] gap-3 border-b border-border/50 px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground sm:grid-cols-[40px_1fr_100px_80px_80px] sm:gap-4 sm:px-5">
             <span>#</span>
@@ -108,7 +105,6 @@ export function Leaderboard() {
           )}
         </div>
 
-        {/* Activity feed */}
         <div className="rounded-2xl border border-border/60 bg-gradient-card overflow-hidden">
           <div className="flex items-center gap-2 border-b border-border/50 px-5 py-3">
             <Zap className="h-4 w-4 text-primary" />

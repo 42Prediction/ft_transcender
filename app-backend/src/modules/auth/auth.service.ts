@@ -54,6 +54,7 @@ export class AuthService{
                 id: user.id,
                 email: user.email,
                 role: user.role,
+                isTwoFactorEnabled: user.isTwoFactorEnabled,
             },
             message: 'User login successfully.',
         }
@@ -104,6 +105,7 @@ export class AuthService{
                 id: user.id,
                 email: user.email,
                 role: user.role,
+                isTwoFactorEnabled: user.isTwoFactorEnabled,
             }
         };
     }
@@ -138,9 +140,15 @@ export class AuthService{
 
         const responseData = await response.json();
         const {name, email, campus, level} = await this.profileOauth42School(responseData.access_token);
-        const {token} = await this.generateToken(email, {campus, school42Login: name, level} as Profile42Dto);
+        const {token, user} = await this.generateToken(email, {campus, school42Login: name, level} as Profile42Dto);
         return {
             access_token: token,
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                isTwoFactorEnabled: user.isTwoFactorEnabled,
+            },
         };
     }
 
@@ -157,7 +165,6 @@ export class AuthService{
                 throw new BadRequestException("Can't get user profile of API");
 
         const profileData = await profileResponse.json();
-        // Level lives on the main cursus (same extraction as School42Service.getStudent).
         const mainCursus = (profileData.cursus_users ?? []).find((c: any) => c.cursus?.kind === 'main');
         const level = mainCursus ? Number(mainCursus.level) : 0;
         return {name: profileData.login, email:profileData.email, campus: profileData.campus?.[0]?.name, level};
@@ -184,8 +191,42 @@ export class AuthService{
         };
 
         return {
-            token:this.jwtService.sign(payload),
-            data:{}
+            token: this.jwtService.sign(payload),
+            user,
+        };
+    }
+
+    async verifyTempToken(token: string): Promise<User> {
+        try {
+            const decoded = this.jwtService.verify(token);
+            const userId = decoded.sub;
+            const user = await this.userService.findOne(userId);
+            if (!user) {
+                throw new UnauthorizedException('User not found');
+            }
+            return user;
+        } catch (error) {
+            throw new UnauthorizedException('Invalid or expired token');
+        }
+    }
+
+    async generateTempToken(user: User): Promise<string> {
+        const payload = {
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+        };
+        return this.jwtService.sign(payload, { expiresIn: '5m' });
+    }
+
+    async login(user: User): Promise<{ access_token: string }> {
+        const payload = {
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+        };
+        return {
+            access_token: this.jwtService.sign(payload),
         };
     }
 }

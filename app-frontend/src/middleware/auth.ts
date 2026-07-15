@@ -21,11 +21,6 @@ async function fetchAdminProfile(retried = false): Promise<any> {
     try {
         return await auth.getMeAdmin();
     } catch (error) {
-        // A rejection here means the request itself failed (network hiccup, backend
-        // restart, transient 5xx) — auth.getMeAdmin() already resolves genuine 401s to
-        // null instead of throwing. Retry once before giving up, and never treat this
-        // as "not authenticated": doing so was booting still-logged-in admins to the
-        // login screen on every transient error.
         if (!retried) {
             return fetchAdminProfile(true);
         }
@@ -39,9 +34,3 @@ export async function adminAuthMiddleware({ context }: LoaderFunctionArgs) {
 }
 
 
-// response{
-//     success: boolean;
-//     data: any;
-//     statusCode: number;
-//     error: string | null;
-// }

@@ -5,6 +5,7 @@ import { BarChart3, ChevronLeft, Loader2, LogOut, Search, ShieldCheck, ShieldOff
 import { Link, useRouteLoaderData } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { LUANDA_TZ } from "@/lib/utils";
 
 export default function UsersPage() {
     const [users, setUsers] = useState<UserMe[]>([]);
@@ -60,7 +61,6 @@ export default function UsersPage() {
     return (
         <div className="p-4 md:p-6 space-y-4">
 
-            {/* header */}
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                     <Link
@@ -116,7 +116,6 @@ export default function UsersPage() {
                 </div>
             </div>
 
-            {/* tabela */}
             <div className="rounded-xl border border-border/60 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -151,7 +150,7 @@ export default function UsersPage() {
                                             </span>
                                         </td>
                                         <td className="px-4 py-2.5 hidden md:table-cell text-muted-foreground">
-                                            {new Date(u.createdAt).toLocaleDateString("pt-PT")}
+                                            {new Date(u.createdAt).toLocaleDateString("pt-PT", { timeZone: LUANDA_TZ })}
                                         </td>
                                         {isAdmin && (
                                             <td className="px-4 py-2.5">

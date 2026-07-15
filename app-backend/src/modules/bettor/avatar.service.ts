@@ -16,7 +16,7 @@ export class AvatarService {
     async processAndSave(file: Express.Multer.File): Promise<string> {
         const baseURL = "http://localhost:3000";
         const filename = `${uuidv4()}.webp`;
-        const filepath = join(this.uploadDir, filename); // caminho do disco para o sharp
+        const filepath = join(this.uploadDir, filename);
 
         try {
             await sharp(file.buffer)
@@ -30,7 +30,7 @@ export class AvatarService {
             throw new BadRequestException('fail to process avatar');
         }
 
-        return `${baseURL}/uploads/avatar/${filename}`; // URL completo para guardar na BD
+        return `${baseURL}/uploads/avatar/${filename}`;
     }
     
     deleteOldAvatar(filename: string | null): void {

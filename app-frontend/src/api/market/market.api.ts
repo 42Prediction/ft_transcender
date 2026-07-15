@@ -1,6 +1,6 @@
 import api from '../api';
 
-export type MarketStatus = 'live' | 'closing' | 'new' | 'resolved' | 'cancelled';
+export type MarketStatus = 'live' | 'closing' | 'closed' | 'new' | 'resolved' | 'cancelled';
 
 export interface MarketDto {
   id: string;
@@ -18,11 +18,8 @@ export interface MarketDto {
   noPrice: number;
   resolution: 'YES' | 'NO' | null;
   creatorNick: string | null;
-  /** Sourced from a 42 exam — resolves itself once the grade is published, can't be resolved by hand. */
   isAutoManaged: boolean;
-  /** When the exam session locks — once passed, a moderator/admin can step in with a manual grade. */
   examEndsAt: string | null;
-  /** Real 42 grade behind the resolution (auto or manually entered). Null if unknown/not applicable. */
   finalGrade: number | null;
 }
 
@@ -76,7 +73,6 @@ export interface Portfolio {
   positions: PortfolioPosition[];
 }
 
-/** Public aggregate betting stats for any bettor (no balance/positions). */
 export interface BettorStats {
   nick: string;
   pnl: string;
@@ -108,7 +104,6 @@ export interface GlobalSearchResults {
   bettors: SearchBettorResult[];
 }
 
-/** One entry of a bettor's public bet history. */
 export interface BettorPosition {
   id: string;
   marketId: string;
@@ -123,21 +118,18 @@ export interface BettorPosition {
   createdAt: string;
 }
 
-/** One point of a market's real YES/NO price history (0-100), at ISO time `t`. */
 export interface PricePoint {
   t: string;
   yes: number;
   no: number;
 }
 
-/** One day of the platform-wide volume/bets series (admin analytics). */
 export interface AnalyticsSeriesPoint {
   date: string;
   volume: number;
   bets: number;
 }
 
-/** Volume/bets share of one category within the analytics date range. */
 export interface AnalyticsCategoryBreakdown {
   category: string;
   volume: number;
@@ -152,7 +144,6 @@ export interface AnalyticsData {
   totals: { volume: number; bets: number };
 }
 
-/** One day of the logged-in bettor's own activity ("My Activity" — personal analytics). */
 export interface MyActivitySeriesPoint {
   date: string;
   wagered: number;
@@ -262,8 +253,8 @@ export const marketApi = {
     return unwrap(res);
   },
 
-  resolveMarket: async (marketId: string, resolution?: 'YES' | 'NO', finalGrade?: number) => {
-    const res = await api.patch(`/market/${marketId}/resolve`, { resolution, finalGrade });
+  resolveMarket: async (marketId: string, resolution: 'YES' | 'NO') => {
+    const res = await api.patch(`/market/${marketId}/resolve`, { resolution });
     return unwrap(res);
   },
 };

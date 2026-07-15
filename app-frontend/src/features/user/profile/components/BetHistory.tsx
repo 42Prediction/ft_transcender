@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { BettorPosition } from '@/api/market/market.api';
+import { LUANDA_TZ } from '@/lib/utils';
 
 type Filter = 'ALL' | 'OPEN' | 'WON' | 'LOST';
 
@@ -21,7 +22,7 @@ const STATUS_LABEL: Record<BettorPosition['status'], string> = {
 };
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: LUANDA_TZ });
 }
 
 export function BetHistory({ positions }: { positions: BettorPosition[] }) {

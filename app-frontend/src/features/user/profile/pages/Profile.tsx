@@ -21,7 +21,7 @@ export default function ProfilePage() {
     <div className="dark min-h-screen bg-background text-foreground">
       <div className="pointer-events-none fixed inset-0 bg-gradient-hero opacity-60" />
       <div className="relative">
-        <main className="mx-auto max-w-[1400px] px-6 py-8 space-y-8">
+        <main className="mx-auto max-w-[1400px] px-4 py-6 space-y-6 sm:px-6 sm:py-8 sm:space-y-8">
 
           <ProfileHeader bettor={bettor} isOwn={isOwn} stats={stats} />
 

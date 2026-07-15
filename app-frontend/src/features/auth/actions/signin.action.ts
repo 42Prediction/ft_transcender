@@ -14,11 +14,16 @@ export async function signinAction({ request }: { request: Request }) {
 
     try {
         const res = await auth.signin({email, password});
+        const url: URL = new URL(request.url);
+        const redirectTo = url.searchParams.get('redirectTo') || '/';
+
+        if (res.data?.twoFactorRequired) {
+            return redirect(`/verify-2fa?redirectTo=${encodeURIComponent(redirectTo)}`);
+        }
+
         const role = res.data?.user?.role;
         if (role === 'admin')
             return redirect('/admin/users');
-        const url: URL = new URL(request.url);
-        const redirectTo = url.searchParams.get('redirectTo') || '/';
         return redirect(redirectTo);
     } catch (err: any) {
         return {

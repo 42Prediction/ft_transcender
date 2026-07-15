@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { PerfilPanel } from "../components/PerfilPanel";
 import { PlaceholderPanel } from "../components/PlaceholderPanel";
+import { SecurityPanel } from "../components/SecurityPanel";
 import { AccountPanel } from "../components/AccountPanel";
 import { useRouteLoaderData } from "react-router-dom";
 
@@ -30,10 +31,10 @@ export function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="mx-auto max-w-[1400px] px-6 py-10">
-        <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
-          <aside>
-            <nav className="flex flex-col gap-1">
+      <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-10">
+        <div className="grid gap-6 lg:grid-cols-[260px_1fr] lg:gap-8">
+          <aside className="min-w-0">
+            <nav className="flex gap-1 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
               {TABS.map((t) => {
                 const Icon = t.icon;
                 const isActive = active === t.key;
@@ -41,7 +42,7 @@ export function SettingsPage() {
                   <button
                     key={t.key}
                     onClick={() => setActive(t.key)}
-                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${isActive
+                    className={`flex shrink-0 items-center gap-3 whitespace-nowrap rounded-xl px-4 py-3 text-sm font-medium transition ${isActive
                       ? "bg-surface text-foreground"
                       : "text-muted-foreground hover:bg-surface/60 hover:text-foreground"
                       }`}
@@ -54,8 +55,9 @@ export function SettingsPage() {
             </nav>
           </aside>
 
-          <section>
+          <section className="min-w-0">
             {active === "profile" && <PerfilPanel bettor={bettor} />}
+            {active === "account" && <SecurityPanel isTwoFactorEnabled={bettor?.user?.isTwoFactorEnabled ?? false} />}
             {active === "account" && <AccountPanel />}
             {active === "negotiation" && <PlaceholderPanel title="Negotiation" />}
             {active === "notifications" && <PlaceholderPanel title="Notifications" />}
