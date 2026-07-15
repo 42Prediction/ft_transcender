@@ -161,59 +161,78 @@ export class AuthController {
     
 
     @Post('2fa/generate')
+    @HttpCode(HttpStatus.OK)
     @UseGuards(JwtAuthGuard)
     async generate2FA(@Req() req) {
-        const secret = this.twoFactorService.generateSecret();
-        await this.userService.setTwoFactorSecret(req.user.id, secret);
+        try {
+            const secret = this.twoFactorService.generateSecret();
+            await this.userService.setTwoFactorSecret(req.user.id, secret);
 
-        const otpAuthUrl = this.twoFactorService.generateOtpAuthUrl(req.user.email, secret);
-        const qrCode = await this.twoFactorService.generateQrCodeDataUrl(otpAuthUrl);
+            const otpAuthUrl = this.twoFactorService.generateOtpAuthUrl(req.user.email, secret);
+            const qrCode = await this.twoFactorService.generateQrCodeDataUrl(otpAuthUrl);
 
-        return { qrCode };
+            return successResponse(HttpStatus.OK, { qrCode });
+        } catch (error) {
+            return errorResponse(error);
+        }
     }
 
     @Post('2fa/turn-on')
+    @HttpCode(HttpStatus.OK)
     @UseGuards(JwtAuthGuard)
     async turnOn2FA(@Req() req, @Body() dto: TwoFactorCodeDto) {
+        try {
+            const user = await this.userService.findOne(req.user.id);
+            const isValid = await this.twoFactorService.verifyToken(dto.code, user.twoFactorSecret);
 
-        const user = await this.userService.findOne(req.user.id);
-        const isValid = await this.twoFactorService.verifyToken(dto.code, user.twoFactorSecret);
+            if (!isValid) {
+                throw new UnauthorizedException('Código inválido');
+            }
 
-        if (!isValid) {
-            throw new UnauthorizedException('Código inválido');
+            await this.userService.enableTwoFactor(req.user.id);
+            return successResponse(HttpStatus.OK, { message: '2FA ativado com sucesso' });
+        } catch (error) {
+            return errorResponse(error);
         }
-
-        await this.userService.enableTwoFactor(req.user.id);
-        return { message: '2FA ativado com sucesso' };
     }
 
     @Post('2fa/turn-off')
+    @HttpCode(HttpStatus.OK)
     @UseGuards(JwtAuthGuard)
     async turnOff2FA(@Req() req) {
-        await this.userService.disableTwoFactor(req.user.id);
-        return { message: '2FA desativado' };
+        try {
+            await this.userService.disableTwoFactor(req.user.id);
+            return successResponse(HttpStatus.OK, { message: '2FA desativado' });
+        } catch (error) {
+            return errorResponse(error);
+        }
     }
 
 
     @Post('2fa/authenticate')
+    @HttpCode(HttpStatus.OK)
     async authenticate2FA(@Req() req, @Body() dto: TwoFactorCodeDto, @Res({ passthrough: true }) res: Response) {
-        const tempToken = req.cookies?.temp_2fa_token;
-        if (!tempToken) {
-            throw new UnauthorizedException('Sessão de 2FA expirada ou inexistente');
+        try {
+            const tempToken = req.cookies?.temp_2fa_token;
+            if (!tempToken) {
+                throw new UnauthorizedException('Sessão de 2FA expirada ou inexistente');
+            }
+
+            const payload = await this.authService.verifyTempToken(tempToken);
+            const user = await this.userService.findOne(payload.id);
+
+            const isValid = this.twoFactorService.verifyToken(dto.code, user.twoFactorSecret);
+            if (!isValid) {
+                throw new UnauthorizedException('Código 2FA inválido');
+            }
+
+            const { access_token } = await this.authService.login(user);
+            res.clearCookie('temp_2fa_token', { path: '/' });
+            this.setAuthCookie(res, access_token);
+
+            return successResponse(HttpStatus.OK, { message: 'Autenticado com sucesso' });
+        } catch (error) {
+            return errorResponse(error);
         }
-
-        const payload = await this.authService.verifyTempToken(tempToken);
-        const user = await this.userService.findOne(payload.id);
-
-        const isValid = this.twoFactorService.verifyToken(dto.code, user.twoFactorSecret);
-        if (!isValid) {
-            throw new UnauthorizedException('Código 2FA inválido');
-        }
-
-        const { access_token } = await this.authService.login(user);
-        res.clearCookie('temp_2fa_token', { path: '/' });
-        this.setAuthCookie(res, access_token);
-
-        return { message: 'Autenticado com sucesso' };
     }
 }
