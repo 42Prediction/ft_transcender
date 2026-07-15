@@ -164,7 +164,7 @@ describe('MarketGateway chat', () => {
       const client = authedSocket();
 
       for (let i = 0; i < 55; i++) {
-        client.data.lastChatAt = 0; // bypass the per-socket cooldown between test sends
+        client.data.lastChatAt = 0;
         await gateway.handleChatSend(client, { marketId: 'm1', text: `msg ${i}` });
       }
 

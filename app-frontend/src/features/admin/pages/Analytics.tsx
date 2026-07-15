@@ -96,8 +96,6 @@ export default function AnalyticsPage() {
         fetchAnalytics(range.from, range.to);
     }, [range.from, range.to, fetchAnalytics]);
 
-    // Real-time: any market activity (a new bet, a resolution) can shift these
-    // aggregates. Debounce so a burst of updates triggers one refetch, not N.
     const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const scheduleRefetch = useCallback(() => {
         if (refetchTimer.current) clearTimeout(refetchTimer.current);
@@ -117,7 +115,6 @@ export default function AnalyticsPage() {
 
     return (
         <div className="p-4 md:p-6 space-y-4">
-            {/* header */}
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                     <Link
@@ -195,7 +192,6 @@ export default function AnalyticsPage() {
                 </div>
             ) : (
                 <>
-                    {/* summary tiles */}
                     <div className="grid gap-3 sm:grid-cols-3">
                         <div className="rounded-2xl border border-border/60 bg-gradient-card p-4 shadow-card">
                             <p className="text-xs text-muted-foreground">Total volume</p>
@@ -218,7 +214,6 @@ export default function AnalyticsPage() {
                     </div>
 
                     <div className="grid gap-4 lg:grid-cols-3">
-                        {/* volume trend — line/area chart */}
                         <div className="min-w-0 rounded-2xl border border-border/60 bg-gradient-card p-4 shadow-card lg:col-span-2">
                             <h3 className="mb-3 text-sm font-medium text-foreground">Volume over time</h3>
                             <ResponsiveContainer width="100%" height={220} minWidth={0} initialDimension={{ width: 500, height: 220 }}>
@@ -257,7 +252,6 @@ export default function AnalyticsPage() {
                             </ResponsiveContainer>
                         </div>
 
-                        {/* category breakdown — pie chart */}
                         <div className="rounded-2xl border border-border/60 bg-gradient-card p-4 shadow-card">
                             <h3 className="mb-3 text-sm font-medium text-foreground">Volume by category</h3>
                             <ResponsiveContainer width="100%" height={160} minWidth={0} initialDimension={{ width: 300, height: 160 }}>
@@ -290,7 +284,6 @@ export default function AnalyticsPage() {
                         </div>
                     </div>
 
-                    {/* bets per day — bar chart */}
                     <div className="rounded-2xl border border-border/60 bg-gradient-card p-4 shadow-card">
                         <h3 className="mb-3 text-sm font-medium text-foreground">Bets per day</h3>
                         <ResponsiveContainer width="100%" height={180} minWidth={0} initialDimension={{ width: 500, height: 180 }}>

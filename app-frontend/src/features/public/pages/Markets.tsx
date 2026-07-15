@@ -48,13 +48,9 @@ export async function marketsLoader(): Promise<MarketsLoaderData> {
 }
 
 export function Markets() {
-  // Falls back to empty data when rendered as the frozen background behind the
-  // auth modal (route inactive → loader data purged), instead of crashing.
   const { markets: initial, categories: initialCategories } =
     (useLoaderData() as MarketsLoaderData | undefined) ?? { markets: [], categories: [] };
   const root = useRouteLoaderData('root') as any;
-  // authMiddleware backs this with GET /bettor/me — the response nests the
-  // account under `.user`, so the role lives at data.user.role, not data.role.
   const isAdmin = root?.data?.user?.role === 'admin';
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
@@ -66,10 +62,6 @@ export function Markets() {
   const [sortBy, setSortBy] = useState<SortKey>('volume');
   const [page, setPage] = useState(1);
 
-  // Category badge counts are a server-side aggregate independent of the
-  // current search/category filter, so a market appearing/disappearing (via
-  // the exam sync's create/cancel/resolve) needs its own lightweight refetch
-  // to stay accurate — the filtered `markets` list alone can't derive it.
   function refreshCategoryCounts() {
     marketApi.getCategories().then(setCategories).catch(() => {});
   }
@@ -120,8 +112,6 @@ export function Markets() {
     setMarkets(data);
   }
 
-  // Keep the currently active filters available to the socket handlers below
-  // without re-subscribing on every keystroke/category change.
   const filtersRef = useRef({ activeCategory, search, showClosed });
   useEffect(() => {
     filtersRef.current = { activeCategory, search, showClosed };
@@ -131,10 +121,6 @@ export function Markets() {
     const { activeCategory: category, search: q, showClosed: closed } = filtersRef.current;
     const isClosed = m.status === 'resolved' || m.status === 'cancelled'
       || new Date(m.closes).getTime() <= Date.now();
-    // Live socket pushes only ever reflect real-time events (bets, new
-    // markets, resolutions) — a market can't flip from open to closed
-    // purely from the clock ticking without one of those firing, so this
-    // doesn't need its own polling to stay accurate.
     if (isClosed !== closed) return false;
     if (category !== 'All' && m.category !== category) return false;
     if (q) {

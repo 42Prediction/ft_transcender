@@ -20,8 +20,6 @@ import { Profile42Dto } from './dto/profile-42.dto';
 import { Role } from '../../shared/enums/roles.enum';
 import { MarketService } from '../market/market.service';
 
-// xp granted per 42 cursus level — the welcome bonus for cadets (base + level),
-// and (Phase 2) the rate for crediting future level-ups. See economy design.
 export const LEVEL_TO_ANDA_RATE = 500;
 
 @Injectable()
@@ -64,8 +62,6 @@ export class BettorService {
     });
     const bettorSaved =  await this.bettorRepository.save(bettor);
 
-    // The admin is the house — it seeds every market and needs a treasury, not
-    // the regular new-user bonus.
     if (user.role === Role.ADMIN) {
       await this.walletService.createWallet(
         bettorSaved.id,
@@ -73,9 +69,6 @@ export class BettorService {
         'Admin treasury',
       );
     } else {
-      // Everyone gets the flat base bonus; 42 cadets get an extra bonus scaled
-      // by their current level (real 42 progress → xp). Level only ever rises,
-      // so this is monotonic and needs no anti-farming guard.
       await this.walletService.createWallet(bettorSaved.id);
       if (level && level > 0) {
         const levelBonus = Number((level * LEVEL_TO_ANDA_RATE).toFixed(2));
@@ -157,12 +150,6 @@ export class BettorService {
     return await this.bettorRepository.save(bettor);
   }
 
-  /**
-   * GDPR data export — everything the platform holds about this account, in
-   * one machine-readable payload: identity, profile, wallet balance +
-   * transaction ledger, and full bet history. No admin-only or other-user
-   * data is ever reachable from here.
-   */
   async exportMyData(userId: string) {
     const bettor = await this.bettorRepository.findOne({
       where: { user: { id: userId } },

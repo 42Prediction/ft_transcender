@@ -13,7 +13,6 @@ export class AddClosedMarketStatus1784100000000 implements MigrationInterface {
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
-        // Fold any 'closed' rows back into 'closing' so the narrower enum accepts them.
         await queryRunner.query(`UPDATE "markets" SET "status" = 'closing' WHERE "status" = 'closed'`);
         await queryRunner.query(`CREATE TYPE "public"."markets_status_enum_old" AS ENUM('live', 'closing', 'new', 'resolved', 'cancelled')`);
         await queryRunner.query(`ALTER TABLE "markets" ALTER COLUMN "status" DROP DEFAULT`);

@@ -22,11 +22,6 @@ const EXAM_CATEGORY_BY_RANK: Record<string, MarketCategory> = {
   '06': MarketCategory.EXAM_06,
 };
 
-/**
- * The platform's whole scope is Exam Rank 02-06 — anything else (Rank 01,
- * non-rank exams/events) is deliberately out of scope and must not produce a
- * market. Returns `null` for anything outside that.
- */
 function mapExamNameToCategory(examName: string): MarketCategory | null {
   const match = examName.match(/rank\s*0*(\d+)/i);
   if (!match) return null;
@@ -34,21 +29,11 @@ function mapExamNameToCategory(examName: string): MarketCategory | null {
   return EXAM_CATEGORY_BY_RANK[rank] ?? null;
 }
 
-/**
- * Markets are no longer created by hand: this service sources them straight
- * from the 42 School API. Every cadet registered for an upcoming exam at the
- * campus gets a YES/NO market — "will they score 100 on this exam?" — and
- * markets auto-resolve once 42 publishes the grade.
- */
 @Injectable()
 export class ExamMarketSyncService implements OnModuleInit {
   private readonly logger = new Logger(ExamMarketSyncService.name);
   private systemBettorId: string | null = null;
 
-  /**
-   * xp the admin (house) funds per auto-generated exam market — the full 100/100
-   * pool, matching what manual markets debit, so no currency is minted.
-   */
   private static readonly AUTO_MARKET_SEED = 200;
 
   constructor(
@@ -93,11 +78,6 @@ export class ExamMarketSyncService implements OnModuleInit {
         const roster = await this.school42Service.getExamRoster(exam);
         const rosterLogins = new Set(roster.map((c) => c.login));
 
-        // Business rule: every cadet currently enrolled in the exam project gets
-        // a market — enrolment (`in_progress`) is the only criterion. The grade
-        // never gates creation: resolution handles it (100 → YES, rest → NO).
-        // Cadets whose projects_users sit at other statuses are past attempts,
-        // not this session's roster.
         const candidates = roster.filter((c) => c.status === 'in_progress');
 
 
@@ -265,11 +245,6 @@ export class ExamMarketSyncService implements OnModuleInit {
         if (Date.now() < new Date(exam.endAt).getTime()) continue;
 
 
-        // Business rule: the moment the exam window is over, EVERY pending
-        // market for it resolves — a published 100 is the only YES; any other
-        // mark, or no mark at all (absent, never graded), is a NO. We read the
-        // mark straight off projects_users and ignore its `status` field, which
-        // 42 routinely leaves as `in_progress` even after grading.
         const roster = await this.school42Service.getExamRoster(exam);
         const gradedByLogin = new Map(
           roster

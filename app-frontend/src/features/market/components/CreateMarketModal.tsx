@@ -7,14 +7,8 @@ import { marketApi } from '@/api/market/market.api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-// Platform scope is strictly Exam Rank 02-06 — no other category exists.
 const CATEGORIES = ['Exam 02', 'Exam 03', 'Exam 04', 'Exam 05', 'Exam 06'] as const;
 
-/**
- * Platform rule: market times are Angola time (WAT, UTC+1 — no DST), whatever
- * the browser's locale is. datetime-local gives a zone-less wall-clock string,
- * so pin it to +01:00 instead of letting the browser assume its own zone.
- */
 const LUANDA_UTC_OFFSET_MS = 60 * 60 * 1000;
 function luandaWallClockToDate(local: string) {
   return new Date(`${local}:00+01:00`);
@@ -49,7 +43,6 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Debounced search
   useEffect(() => {
     if (query.trim().length < 2) {
       setResults([]);
@@ -70,7 +63,6 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
     return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
   }, [query]);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -134,8 +126,6 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
   }
 
   const isValid = !!selected && !!closesAt;
-  // "now + 1h" expressed as a Luanda wall-clock string: shift the UTC ISO
-  // rendering by the WAT offset so the datetime-local min reads in Angola time.
   const minDate = new Date(Date.now() + 60 * 60 * 1000 + LUANDA_UTC_OFFSET_MS)
     .toISOString()
     .slice(0, 16);
@@ -158,7 +148,6 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
 
           <form onSubmit={handleSubmit} className="space-y-5">
 
-            {/* Student search */}
             <div>
               <label className="mb-1.5 block text-sm font-medium">
                 Student <span className="text-primary">*</span>
@@ -240,7 +229,6 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
               )}
             </div>
 
-            {/* Event / exam */}
             <div>
               <label className="mb-1.5 block text-sm font-medium">
                 Event <span className="text-primary">*</span>
@@ -263,7 +251,6 @@ export function CreateMarketModal({ open, onOpenChange, onCreated }: Props) {
               </div>
             </div>
 
-            {/* Closing date */}
             <div>
               <label className="mb-1.5 block text-sm font-medium">
                 Closes at <span className="text-primary">*</span>

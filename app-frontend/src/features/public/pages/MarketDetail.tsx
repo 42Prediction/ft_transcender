@@ -38,7 +38,6 @@ import { useMarketUpdates } from '@/features/market/hooks/useMarketUpdates';
 import { MarketChat } from '@/features/market/components/MarketChat';
 import { Button } from '@/components/ui/button';
 
-/* ─── types ─────────────────────────────────────────── */
 
 const RANGES = ['1H', '6H', '1D', '1W', '1M', 'ALL'] as const;
 type Range = (typeof RANGES)[number];
@@ -49,7 +48,6 @@ export interface MarketDetailLoaderData {
   history: PricePoint[];
 }
 
-/* ─── loader ─────────────────────────────────────────── */
 
 export async function marketDetailLoader({ params }: LoaderFunctionArgs): Promise<MarketDetailLoaderData> {
   const [market, activity, history] = await Promise.all([
@@ -60,7 +58,6 @@ export async function marketDetailLoader({ params }: LoaderFunctionArgs): Promis
   return { market, activity, history };
 }
 
-/* ─── chart helpers ──────────────────────────────────── */
 
 type ChartPoint = { t: string; label: string; yes: number; no: number };
 
@@ -75,15 +72,11 @@ const RANGE_MS: Record<Range, number> = {
 
 function chartLabel(iso: string, range: Range): string {
   const d = new Date(iso);
-  // Short windows read better as a time of day; longer ones as a date.
   return range === '1H' || range === '6H' || range === '1D'
     ? d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: LUANDA_TZ })
     : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: LUANDA_TZ });
 }
 
-/** Real price history filtered to the selected window; falls back to the full
- *  series when the window holds fewer than two points, so the chart is never
- *  empty for a young market. */
 function buildSeries(history: PricePoint[], range: Range): ChartPoint[] {
   const cutoff = Date.now() - RANGE_MS[range];
   let pts = history.filter((p) => new Date(p.t).getTime() >= cutoff);
@@ -91,7 +84,6 @@ function buildSeries(history: PricePoint[], range: Range): ChartPoint[] {
   return pts.map((p) => ({ ...p, label: chartLabel(p.t, range) }));
 }
 
-/* ─── small helpers ──────────────────────────────────── */
 
 function dicebear(seed: string) {
   return `https://api.dicebear.com/9.x/glass/svg?seed=${encodeURIComponent(seed)}&backgroundType=gradientLinear`;
@@ -101,13 +93,8 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: LUANDA_TZ });
 }
 
-/* ─── page ───────────────────────────────────────────── */
 
 export function MarketDetail() {
-  // This page is also rendered as the frozen background behind the auth modal
-  // (Sign in / Sign up). At that point its route is no longer active, so its
-  // loader data is gone — bail out gracefully instead of destructuring
-  // `undefined` and crashing the whole app.
   const loaderData = useLoaderData() as MarketDetailLoaderData | undefined;
   if (!loaderData?.market) return null;
   return <MarketDetailView loaderData={loaderData} />;
@@ -145,7 +132,6 @@ function MarketDetailView({ loaderData }: { loaderData: MarketDetailLoaderData }
 
   return (
     <div>
-      {/* breadcrumb */}
       <div className="border-b border-border/40 bg-background/60">
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2 px-4 py-3 text-xs text-muted-foreground sm:px-6">
           <Link to="/markets" className="hover:text-foreground transition">Markets</Link>
@@ -186,7 +172,6 @@ function MarketDetailView({ loaderData }: { loaderData: MarketDetailLoaderData }
   );
 }
 
-/* ─── MarketHeader ───────────────────────────────────── */
 
 function MarketHeader({ market }: { market: MarketDto }) {
   const yesPct = Math.round(market.yesPrice * 100);
@@ -256,7 +241,6 @@ function MarketHeader({ market }: { market: MarketDto }) {
   );
 }
 
-/* ─── ChartCard ──────────────────────────────────────── */
 
 function ChartCard({
   data,
@@ -359,7 +343,6 @@ function Legend({ color, label, value }: { color: string; label: string; value: 
   );
 }
 
-/* ─── StatsRow ───────────────────────────────────────── */
 
 function StatsRow({ market }: { market: MarketDto }) {
   const liquidity = (market.volumeRaw + 200).toLocaleString('pt-PT', { minimumFractionDigits: 2 });
@@ -388,7 +371,6 @@ function StatsRow({ market }: { market: MarketDto }) {
   );
 }
 
-/* ─── OutcomesTable ──────────────────────────────────── */
 
 function OutcomesTable({ market }: { market: MarketDto }) {
   const rows = [
@@ -445,7 +427,6 @@ function OutcomesTable({ market }: { market: MarketDto }) {
   );
 }
 
-/* ─── RecentActivity ─────────────────────────────────── */
 
 function RecentActivity({ activity }: { activity: ActivityEntry[] }) {
   return (
@@ -509,7 +490,6 @@ function RecentActivity({ activity }: { activity: ActivityEntry[] }) {
   );
 }
 
-/* ─── TradePanel ─────────────────────────────────────── */
 
 const quickAdds = [1, 5, 10, 50, 100];
 
@@ -574,7 +554,6 @@ function TradePanel({
         )}
       </div>
 
-      {/* outcome selector */}
       <div className="mt-4 grid grid-cols-2 gap-2">
         <button
           onClick={() => setBetSide('YES')}
@@ -606,7 +585,6 @@ function TradePanel({
         </button>
       </div>
 
-      {/* amount */}
       <div className="mt-5">
         <div className="flex items-baseline justify-between">
           <label className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Amount (xp)</label>
@@ -636,7 +614,6 @@ function TradePanel({
         </div>
       </div>
 
-      {/* estimates */}
       <div className="mt-5 space-y-2 rounded-xl border border-border/40 bg-surface/60 p-3 text-sm">
         <div className="flex justify-between">
           <span className="text-muted-foreground">Est. Shares</span>
@@ -709,12 +686,9 @@ function TradePanel({
   );
 }
 
-/* ─── MarketInfoCard ─────────────────────────────────── */
 
 function MarketInfoCard({ market }: { market: MarketDto }) {
   const root = useRouteLoaderData('root') as any;
-  // GET /bettor/me nests the account under `.user` — role lives at
-  // data.user.role, not data.role.
   const role: string | undefined = root?.data?.user?.role;
   const isAdmin = role === 'admin';
   const isModerator = role === 'moderator';
@@ -724,8 +698,6 @@ function MarketInfoCard({ market }: { market: MarketDto }) {
   const [resolving, setResolving] = useState(false);
   const [resolveError, setResolveError] = useState<string | null>(null);
 
-  // Manual markets are settled only by their creator (backend enforces the
-  // same); exam markets resolve themselves when the exam ends.
   const myNick: string | undefined = root?.data?.nick;
   const canResolve =
     (isAdmin || isModerator) &&
@@ -789,7 +761,6 @@ function MarketInfoCard({ market }: { market: MarketDto }) {
         </div>
       </dl>
 
-      {/* creator-only resolve — never for markets owned by the automatic exam pipeline */}
       {canResolve && (
         <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-3">
           {resolveConfirm ? (

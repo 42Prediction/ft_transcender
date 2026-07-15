@@ -6,15 +6,6 @@ import {
 } from '@willsoto/nestjs-prometheus';
 import { HttpMetricsMiddleware } from './http-metrics.middleware';
 
-/**
- * Exposes application metrics for Prometheus.
- *
- * - `GET /metrics` (registered by PrometheusModule) serves the exposition
- *   format Prometheus scrapes, including default Node.js process metrics
- *   (event loop lag, heap, GC, CPU).
- * - `HttpMetricsMiddleware` adds custom request throughput/latency series for
- *   every request.
- */
 @Module({
   imports: [
     PrometheusModule.register({

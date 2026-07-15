@@ -27,19 +27,8 @@ import { avataaarsNeutral } from '@dicebear/collection';
 export class MarketService {
   private readonly logger = new Logger(MarketService.name);
 
-  /**
-   * House rake: the fraction of the losing side's total stake that the market
-   * creator (admin) collects on each resolution. Carved out of the pool before
-   * winners are paid, so winners split the pool net of rake.
-   */
   private static readonly HOUSE_RAKE_RATE = 0.05;
 
-  /**
-   * Initial liquidity seeded into each side of a new market's pool. The admin
-   * funds it from their own wallet on creation (see `create`), so the seed that
-   * winners ultimately collect at resolution is real, ledgered money rather
-   * than currency minted from nowhere.
-   */
   private static readonly MARKET_SEED_PER_SIDE = 100;
 
   constructor(
@@ -219,17 +208,12 @@ export class MarketService {
     const market = await this.marketRepo.findOne({ where: { id } });
     if (!market) throw new NotFoundException('Market not found');
 
-    // Exam-sourced markets belong exclusively to the automatic pipeline: they
-    // resolve on their own the moment the exam window ends (100 → YES, anything
-    // else → NO). Nobody resolves them by hand.
     if (market.examId != null) {
       throw new BadRequestException(
         'This market is sourced from a 42 exam and resolves automatically when the exam ends.',
       );
     }
 
-    // Manual markets can only be settled by whoever created them — being an
-    // admin or moderator is not enough on its own.
     const bettor = await this.bettorRepo.findOne({ where: { user: { id: userId } } });
     if (!bettor || market.creatorId !== bettor.id) {
       throw new ForbiddenException('Only the creator of this market can resolve it.');
@@ -308,11 +292,6 @@ export class MarketService {
     }
 
 
-    // Credit the creator. Normally that's just the house rake carved from the
-    // losing side. But when there are no winning positions (nobody bet, or every
-    // bet landed on the losing side) the loop above distributes nothing, so the
-    // whole pool — the admin's seed liquidity plus any forfeited losing stakes —
-    // would otherwise be stranded and lost. Hand it all back to the creator.
     const noWinners = totalWinShares === 0;
     const creatorCredit = noWinners ? totalPool : rake;
     if (creatorCredit > 0) {
@@ -848,8 +827,6 @@ export class MarketService {
 
   computeStatus(closesAt: Date, now: Date, createdAt?: Date): MarketStatus {
     const diff = closesAt.getTime() - now.getTime();
-    // Once the close time has passed the event is under way: betting is shut but
-    // the market isn't resolved until a grade/verdict arrives (see resolveMarket).
     if (diff <= 0) return MarketStatus.CLOSED;
     if (diff < 24 * 60 * 60 * 1000) return MarketStatus.CLOSING;
     if (createdAt) {

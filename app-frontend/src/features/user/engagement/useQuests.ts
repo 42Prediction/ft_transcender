@@ -12,7 +12,6 @@ export function useQuests() {
     try {
       setData(await engagementApi.getQuests());
     } catch {
-      /* not logged in / transient */
     } finally {
       setLoading(false);
     }
@@ -28,7 +27,7 @@ export function useQuests() {
     try {
       await engagementApi.claimQuests();
       await load();
-      revalidator.revalidate(); // refresh navbar wallet balance
+      revalidator.revalidate(); 
     } catch {
       await load();
     } finally {

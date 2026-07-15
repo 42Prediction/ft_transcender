@@ -19,7 +19,6 @@ interface Friend {
 }
 
 const MENTION_SPLIT_RE = /(@[A-Za-z0-9_.-]+)/g;
-/** The partial "@..." token being typed at the caret, if any. */
 const ACTIVE_MENTION_RE = /(^|\s)@([A-Za-z0-9_.-]*)$/;
 const MAX_SUGGESTIONS = 6;
 

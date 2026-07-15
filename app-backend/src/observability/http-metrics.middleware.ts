@@ -3,18 +3,6 @@ import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import type { NextFunction, Request, Response } from 'express';
 import { Counter, Histogram } from 'prom-client';
 
-/**
- * Records one sample per HTTP request into Prometheus metrics.
- *
- * Implemented as Express-level middleware (rather than a Nest interceptor) so
- * that *every* request is counted — including 404s on unmatched paths and 401s
- * rejected by guards, which never reach a controller and are exactly the
- * failures the error-rate alerts need to see.
- *
- * We label by the matched route pattern (e.g. `/market/:id`), read on the
- * response's `finish` event once Express has populated `req.route`, to keep
- * metric cardinality bounded and reflect the final status code.
- */
 @Injectable()
 export class HttpMetricsMiddleware implements NestMiddleware {
   constructor(

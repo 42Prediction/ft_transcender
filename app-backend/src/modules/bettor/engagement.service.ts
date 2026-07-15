@@ -6,7 +6,6 @@ import { BettorQuest } from './entities/bettor-quest.entity';
 import { WalletService } from '../wallet/wallet.service';
 import { TransactionType } from '../wallet/entities/transaction.entity';
 
-/** One-time onboarding quests. Rewards are bounded (each pays once, ever). */
 const QUESTS: { key: string; title: string; description: string; reward: number }[] = [
   { key: 'first_bet', title: 'Place your first bet', description: 'Back a prediction on any market.', reward: 100 },
   { key: 'add_friend', title: 'Make your first friend', description: 'Get a friend request accepted.', reward: 50 },
@@ -31,7 +30,6 @@ export class EngagementService {
     private readonly dataSource: DataSource,
   ) {}
 
-  /** Whole UTC calendar day for a timestamp, so same-day claims collide. */
   private utcDay(date: Date): number {
     return Math.floor(date.getTime() / EngagementService.MS_PER_DAY);
   }
@@ -41,7 +39,6 @@ export class EngagementService {
     return EngagementService.DAILY_BASE + bonusDays * EngagementService.DAILY_STEP;
   }
 
-  /** The streak the next claim would land on, given the last claim day. */
   private nextStreak(lastDay: number | null, todayDay: number, currentStreak: number): number {
     if (lastDay !== null && todayDay - lastDay === 1) return currentStreak + 1;
     return 1;
@@ -96,7 +93,6 @@ export class EngagementService {
     return { claimed: true, reward, streak };
   }
 
-  /** Evaluates a quest against the bettor's current state (results, not clicks). */
   private async isMet(key: string, bettorId: string): Promise<boolean> {
     let sql: string;
     switch (key) {

@@ -15,8 +15,6 @@ export function Navbar() {
   const revalidator = useRevalidator();
   const data = useRouteLoaderData('root') as any;
   const profile = data?.data;
-  // GET /bettor/me nests the account under `.user` — role lives at
-  // profile.user.role, not profile.role.
   const isAdmin = profile?.user?.role === 'admin';
   const location = useLocation();
   const from = location;

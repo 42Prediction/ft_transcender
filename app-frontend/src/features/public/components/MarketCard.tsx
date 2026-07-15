@@ -28,8 +28,6 @@ function timeUntil(closes: string): string {
 
 export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => void }) {
   const root = useRouteLoaderData('root') as any;
-  // GET /bettor/me nests the account under `.user` — role lives at
-  // data.user.role, not data.role.
   const role: string | undefined = root?.data?.user?.role;
   const revalidator = useRevalidator();
   const navigate = useNavigate();
@@ -44,8 +42,6 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
   const canBet = !isSettled && new Date(m.closes).getTime() > Date.now();
   const isAdmin = role === 'admin';
   const isModerator = role == 'moderator';
-  // Manual markets are settled only by their creator (backend enforces the
-  // same); exam markets resolve themselves when the exam ends — no button.
   const myNick: string | undefined = root?.data?.nick;
   const canResolve =
     (isAdmin || isModerator) &&
@@ -134,7 +130,6 @@ export function MarketCard({ m, onRefresh }: { m: MarketDto; onRefresh?: () => v
           </button>
         </div>
 
-        {/* Admin resolve section */}
         {canResolve && (
           <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
             {resolveConfirm ? (

@@ -88,7 +88,6 @@ export function FriendsMenu() {
         }
     }, [fetchFriendsData]);
 
-    // Refresh when the panel opens so pending requests are always current.
     useEffect(() => {
         if (open) void silentRefresh();
         else {
@@ -108,7 +107,6 @@ export function FriendsMenu() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Debounced platform-wide bettor search for the add-friend flow.
     useEffect(() => {
         const q = query.trim();
         if (q.length < MIN_QUERY_LENGTH) {
@@ -152,7 +150,6 @@ export function FriendsMenu() {
         return result;
     }, [friends, query]);
 
-    // Platform results that aren't already a friend or a pending request.
     const addableResults = useMemo(() => {
         const known = new Set(friends.map(f => f.nick.toLowerCase()));
         return platformResults.filter(b => !known.has(b.nick.toLowerCase()));

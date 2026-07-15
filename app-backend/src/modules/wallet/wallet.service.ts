@@ -9,9 +9,6 @@ import { CreditWalletDto } from "./dto/credit.dto";
 import { DebitWalletDto } from "./dto/debit.dto";
 
 const INITIAL_BALANCE = 1000;
-// The single admin acts as the house: it funds every market's seed liquidity
-// and collects the rake. It therefore starts with a large treasury rather than
-// the regular new-user bonus.
 export const ADMIN_TREASURY_BALANCE = 1_000_000;
 
 @Injectable()
@@ -76,11 +73,6 @@ export class WalletService {
         return transactions.map(this.toTransactionDto);
     }
 
-    /**
-     * Credits a wallet. Pass `externalManager` to run inside a caller-owned
-     * transaction (so the credit and the caller's own writes commit atomically);
-     * omit it to run in its own transaction.
-     */
     async credit(
         idBettor: string,
         dto: CreditWalletDto,

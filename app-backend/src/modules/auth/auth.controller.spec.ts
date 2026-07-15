@@ -278,7 +278,7 @@ describe('AuthController – signin / signup / signout', () => {
     jest.clearAllMocks();
     mockAuthService = makeMockAuthService();
     mockConfigService = makeMockConfigService();
-    mockConfigService.get.mockReturnValue('development'); // NODE_ENV
+    mockConfigService.get.mockReturnValue('development');
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],

@@ -43,7 +43,6 @@ describe('ExamMarketSyncService.autoResolveExamMarkets', () => {
   let marketService: { resolveMarket: jest.Mock };
 
   beforeEach(async () => {
-    // Short-circuit onModuleInit's startup sync (and its 5s timer).
     process.env.SEED_MODE = 'true';
 
     marketRepo = { find: jest.fn() };
@@ -72,9 +71,9 @@ describe('ExamMarketSyncService.autoResolveExamMarkets', () => {
 
   it('resolves every market once the exam ends — 100 is YES, anything else (even ungraded) is NO', async () => {
     marketRepo.find.mockResolvedValue([
-      pendingMarket('fmacau'), // graded 0, but 42 still reports in_progress
-      pendingMarket('alice'), //  graded 100, status finished
-      pendingMarket('bob'), //    no mark at all (absent / never graded)
+      pendingMarket('fmacau'),
+      pendingMarket('alice'),
+      pendingMarket('bob'),
     ]);
     school42.getExam.mockResolvedValue(exam());
     school42.getExamRoster.mockResolvedValue([
@@ -85,10 +84,8 @@ describe('ExamMarketSyncService.autoResolveExamMarkets', () => {
 
     await service.autoResolveExamMarkets();
 
-    // fmacau's 0 resolves NO (only 100 is YES) — no longer stranded for the admin.
     expect(marketService.resolveMarket).toHaveBeenCalledWith('m-fmacau', MarketResolution.NO, 0);
     expect(marketService.resolveMarket).toHaveBeenCalledWith('m-alice', MarketResolution.YES, 100);
-    // bob never got a mark — the exam is over, so he resolves NO with no grade.
     expect(marketService.resolveMarket).toHaveBeenCalledWith('m-bob', MarketResolution.NO, undefined);
     expect(marketService.resolveMarket).toHaveBeenCalledTimes(3);
   });

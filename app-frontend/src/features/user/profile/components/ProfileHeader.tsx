@@ -29,7 +29,6 @@ export function ProfileHeader({ bettor, isOwn, stats }: Props) {
     <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-card p-4 sm:p-6 md:p-8">
       <div className="relative grid gap-6 md:grid-cols-[auto_1fr_auto] md:items-center">
 
-        {/* Avatar */}
         <div className="relative">
           <div className="absolute inset-0 rounded-3xl bg-gradient-brand opacity-50" />
           <div className="relative grid h-28 w-28 place-items-center rounded-3xl border-2 border-primary/60 bg-surface p-1">
@@ -41,7 +40,6 @@ export function ProfileHeader({ bettor, isOwn, stats }: Props) {
           </div>
         </div>
 
-        {/* Identity */}
         <div className="space-y-3">
           <div>
             <h1 className="font-display text-3xl font-bold tracking-tight md:text-4xl">
@@ -77,7 +75,6 @@ export function ProfileHeader({ bettor, isOwn, stats }: Props) {
           </div>
         </div>
 
-        {/* Actions */}
         {isOwn && (
           <div className="flex flex-col gap-2">
             <Link

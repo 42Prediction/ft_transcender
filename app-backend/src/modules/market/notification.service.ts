@@ -7,7 +7,6 @@ import { Notification, NotificationType } from './entities/notification.entity';
 import { MarketGateway } from './market.gateway';
 
 const INBOX_LIMIT = 30;
-/** Nicks mentioned in a chat message, e.g. "@ana gg" -> ["ana"]. */
 const MENTION_RE = /(?:^|\s)@([A-Za-z0-9_.-]+)/g;
 
 interface NewNotification {

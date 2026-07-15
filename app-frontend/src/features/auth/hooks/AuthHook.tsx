@@ -1,4 +1,3 @@
-// app/hooks/useAuthModalRoute.ts
 import { useLocation, useNavigate, useOutlet } from "react-router-dom";
 import { getAuthTab } from "../utils/getAuthTab";
 import type { Tab } from "../components/AuthModal";

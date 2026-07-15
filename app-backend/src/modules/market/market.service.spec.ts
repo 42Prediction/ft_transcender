@@ -11,8 +11,6 @@ import { TransactionType } from '../wallet/entities/transaction.entity';
 import { MarketGateway } from './market.gateway';
 import { NotificationService } from './notification.service';
 
-// The admin seeds MARKET_SEED_PER_SIDE (100) into each side on creation, so
-// every fresh market starts with a 200₳ pool funded from the admin's wallet.
 const SEED_TOTAL = 200;
 
 function makeMarket(overrides: Partial<Market> = {}): Market {
@@ -85,7 +83,6 @@ describe('MarketService.resolveMarket — creator seed handling', () => {
     service = module.get(MarketService);
   });
 
-  /** All credit(...) calls that landed on the market creator's wallet. */
   function creatorCredits() {
     return walletService.credit.mock.calls.filter(([bettorId]) => bettorId === 'admin');
   }
@@ -96,7 +93,6 @@ describe('MarketService.resolveMarket — creator seed handling', () => {
 
     const result = await service.resolveMarket('m1', MarketResolution.YES);
 
-    // The whole (seed-only) pool goes back to the creator — not lost.
     expect(walletService.credit).toHaveBeenCalledTimes(1);
     expect(walletService.credit).toHaveBeenCalledWith(
       'admin',
@@ -110,8 +106,7 @@ describe('MarketService.resolveMarket — creator seed handling', () => {
   });
 
   it('returns the full pool to the creator when every bet was on the losing side', async () => {
-    // One NO bet of 50; market resolves YES, so there are no winners.
-    const market = makeMarket({ noPool: 150 }); // 100 seed + 50 stake
+    const market = makeMarket({ noPool: 150 });
     marketRepo.findOne.mockResolvedValue(market);
     positionRepo.find.mockResolvedValue([
       makePosition({ id: 'p-no', bettorId: 'loser', side: BetSide.NO, amount: 50, shares: 50 }),
@@ -119,17 +114,14 @@ describe('MarketService.resolveMarket — creator seed handling', () => {
 
     await service.resolveMarket('m1', MarketResolution.YES);
 
-    // Loser gets nothing; the creator reclaims seed + forfeited stake (250).
     expect(walletService.credit).toHaveBeenCalledTimes(1);
     expect(creatorCredits()).toEqual([
       ['admin', expect.objectContaining({ amount: 250, type: TransactionType.COMMISSION })],
     ]);
-    // The losing position is settled with a zero payout.
     expect(positionRepo.save).toHaveBeenCalledWith(expect.objectContaining({ id: 'p-no', payout: 0 }));
   });
 
   it('pays winners and credits the creator only the rake when there is a winning side', async () => {
-    // YES and NO each bet 100 → pools become yes 200 / no 200, totalPool 400.
     const market = makeMarket({ yesPool: 200, noPool: 200 });
     marketRepo.findOne.mockResolvedValue(market);
     positionRepo.find.mockResolvedValue([
@@ -139,7 +131,6 @@ describe('MarketService.resolveMarket — creator seed handling', () => {
 
     await service.resolveMarket('m1', MarketResolution.YES);
 
-    // Rake = 5% of the 100 losing stake = 5. Winner splits pool net of rake = 395.
     expect(walletService.credit).toHaveBeenCalledWith(
       'winner',
       expect.objectContaining({ amount: 395, type: TransactionType.PAYOUT }),
@@ -147,7 +138,6 @@ describe('MarketService.resolveMarket — creator seed handling', () => {
     expect(creatorCredits()).toEqual([
       ['admin', expect.objectContaining({ amount: 5, type: TransactionType.COMMISSION })],
     ]);
-    // The loser is not credited at all.
     expect(walletService.credit).not.toHaveBeenCalledWith('loser', expect.anything());
   });
 
@@ -166,7 +156,7 @@ describe('MarketService.resolveMarket — creator seed handling', () => {
     });
 
     it('rejects a requester who is not the market creator, even admin/moderator', async () => {
-      marketRepo.findOne.mockResolvedValue(makeMarket()); // creatorId 'admin'
+      marketRepo.findOne.mockResolvedValue(makeMarket());
       bettorRepo.findOne.mockResolvedValue({ id: 'someone-else' });
 
       await expect(

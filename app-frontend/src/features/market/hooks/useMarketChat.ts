@@ -13,11 +13,6 @@ export interface ChatMessage {
 
 const CHAT_HISTORY_LIMIT = 50;
 
-/**
- * Joins the market's chat room over the shared /market socket. The join ack
- * carries the rolling history; `chat:message` keeps it live. Rejoins
- * transparently after a socket reconnect.
- */
 export function useMarketChat(marketId: string | undefined) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 

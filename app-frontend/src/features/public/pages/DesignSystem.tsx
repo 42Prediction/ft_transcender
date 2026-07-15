@@ -92,7 +92,6 @@ export function DesignSystemPage() {
         components built once and reused everywhere.
       </p>
 
-      {/* Colors */}
       <section className="mt-10">
         <h2 className="font-display text-xl font-semibold">Color palette</h2>
         <p className="text-sm text-muted-foreground">
@@ -106,7 +105,6 @@ export function DesignSystemPage() {
         </div>
       </section>
 
-      {/* Typography */}
       <section className="mt-10">
         <h2 className="font-display text-xl font-semibold">Typography</h2>
         <div className="mt-4 space-y-4 rounded-2xl border border-border/60 bg-gradient-card p-6 shadow-card">
@@ -125,7 +123,6 @@ export function DesignSystemPage() {
         </div>
       </section>
 
-      {/* Icons */}
       <section className="mt-10">
         <h2 className="font-display text-xl font-semibold">Icons</h2>
         <p className="text-sm text-muted-foreground">lucide-react, used consistently at h-4 w-4 in UI chrome.</p>
@@ -141,7 +138,6 @@ export function DesignSystemPage() {
         </div>
       </section>
 
-      {/* Buttons */}
       <section className="mt-10">
         <h2 className="font-display text-xl font-semibold">Buttons</h2>
         <p className="text-sm text-muted-foreground">All 6 variants of the shared Button component.</p>
@@ -158,7 +154,6 @@ export function DesignSystemPage() {
         </div>
       </section>
 
-      {/* Badges */}
       <section className="mt-10">
         <h2 className="font-display text-xl font-semibold">Badges</h2>
         <p className="text-sm text-muted-foreground">All 5 variants of the shared Badge component.</p>
@@ -171,7 +166,6 @@ export function DesignSystemPage() {
         </div>
       </section>
 
-      {/* Form controls */}
       <section className="mt-10">
         <h2 className="font-display text-xl font-semibold">Form controls</h2>
         <p className="text-sm text-muted-foreground">Shared Input and Avatar, used across every form and profile in the app.</p>
@@ -181,7 +175,6 @@ export function DesignSystemPage() {
         </div>
       </section>
 
-      {/* Card */}
       <section className="mt-10">
         <h2 className="font-display text-xl font-semibold">Card</h2>
         <p className="text-sm text-muted-foreground">Header/Content/Footer slots used for bordered content blocks.</p>
@@ -196,7 +189,6 @@ export function DesignSystemPage() {
         </Card>
       </section>
 
-      {/* Component catalog */}
       <section className="mt-10 mb-16">
         <h2 className="font-display text-xl font-semibold">Reusable components</h2>
         <p className="text-sm text-muted-foreground">

@@ -11,8 +11,6 @@ export const protectedRoute = [
         children: [
             ...settingsRoute,
             {
-                // /user/portfolio was merged into the profile page — keep old
-                // links/bookmarks working by bouncing to the viewer's profile.
                 path: 'portfolio',
                 loader: ({ context }: LoaderFunctionArgs) => {
                     const me = context.get(dataContext);
