@@ -30,7 +30,7 @@ export function Trending() {
   useMarketUpdates(handleMarketUpdate, handleMarketRemove);
 
   return (
-    <section className="mx-auto max-w-[1400px] px-6 py-16">
+    <section className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 sm:py-16">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <span className="inline-flex items-center gap-2 rounded-full border border-warning/30 bg-warning/10 px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-warning">

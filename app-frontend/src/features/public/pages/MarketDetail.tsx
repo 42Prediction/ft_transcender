@@ -147,7 +147,7 @@ function MarketDetailView({ loaderData }: { loaderData: MarketDetailLoaderData }
     <div>
       {/* breadcrumb */}
       <div className="border-b border-border/40 bg-background/60">
-        <div className="mx-auto flex max-w-[1400px] items-center gap-2 px-6 py-3 text-xs text-muted-foreground">
+        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2 px-4 py-3 text-xs text-muted-foreground sm:px-6">
           <Link to="/markets" className="hover:text-foreground transition">Markets</Link>
           <span>/</span>
           <span className="text-foreground/80">{market.category}</span>
@@ -156,7 +156,7 @@ function MarketDetailView({ loaderData }: { loaderData: MarketDetailLoaderData }
         </div>
       </div>
 
-      <main className="mx-auto max-w-[1400px] px-6 py-8">
+      <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-8">
         <MarketHeader market={market} />
 
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
@@ -223,7 +223,7 @@ function MarketHeader({ market }: { market: MarketDto }) {
                 : 'Resolved'}
             </span>
           </div>
-          <h1 className="mt-2 font-display text-3xl font-bold tracking-tight md:text-4xl">
+          <h1 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
             Will <span className="text-brand">@{market.handle}</span> score 100 on{' '}
             {market.project.split(' — ')[0]}?
           </h1>
@@ -296,7 +296,7 @@ function ChartCard({
         </div>
       </div>
 
-      <div className="h-[340px] w-full">
+      <div className="h-[240px] w-full sm:h-[340px]">
         <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 500, height: 340 }}>
           <AreaChart data={data} margin={{ top: 10, right: 8, left: -10, bottom: 0 }}>
             <defs>

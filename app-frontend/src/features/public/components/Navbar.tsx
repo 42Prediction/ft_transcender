@@ -49,12 +49,12 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-6 px-6">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="relative h-15 w-15">
+      <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:gap-6">
+        <Link to="/" className="flex shrink-0 items-center gap-2">
+          <div className="relative h-10 w-10 sm:h-15 sm:w-15">
             <Logo />
           </div>
-          <span className="font-display text-xl text-brand font-bold tracking-tight">
+          <span className="hidden font-display text-xl text-brand font-bold tracking-tight sm:inline">
             Prediction
           </span>
         </Link>
@@ -64,10 +64,10 @@ export function Navbar() {
           <Link to="/leaderboard" className="rounded-lg px-3 py-1.5 transition hover:bg-surface hover:text-foreground">Leaderboard</Link>
         </nav>
 
-        <div className="ml-auto flex flex-1 items-center gap-3 lg:flex-initial">
+        <div className="ml-auto flex min-w-0 flex-1 items-center gap-3 lg:flex-initial">
           {
             profile &&
-            <SearchBox />
+            <SearchBox className="hidden sm:block" />
           }
         </div>
         {isAdmin && (
@@ -91,7 +91,12 @@ export function Navbar() {
       </div>
 
       {mobileOpen && (
-        <nav className="border-t border-border/40 px-6 py-3 lg:hidden">
+        <nav className="border-t border-border/40 px-4 py-3 sm:px-6 lg:hidden">
+          {profile && (
+            <div className="mb-3 sm:hidden">
+              <SearchBox />
+            </div>
+          )}
           <div className="flex flex-col gap-1 text-sm">
             <Link to="/markets" className="rounded-lg px-3 py-2 text-muted-foreground transition hover:bg-surface hover:text-foreground">Markets</Link>
             <Link to="/leaderboard" className="rounded-lg px-3 py-2 text-muted-foreground transition hover:bg-surface hover:text-foreground">Leaderboard</Link>
@@ -175,7 +180,7 @@ function UserInfo(
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setOpen(!open)}
-          className="flex h-10 max-w-[180px] items-center gap-2 rounded-xl bg-gradient-brand px-4 text-sm font-semibold text-primary-foreground shadow-glow transition hover:opacity-90"
+          className="flex h-10 max-w-[180px] items-center gap-2 rounded-xl bg-gradient-brand px-3 text-sm font-semibold text-primary-foreground shadow-glow transition hover:opacity-90 sm:px-4"
         >
           <span className="hidden truncate sm:inline">{profile?.nick}</span>
           <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />

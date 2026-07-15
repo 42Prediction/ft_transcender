@@ -42,7 +42,7 @@ export function Leaderboard() {
     (useLoaderData() as LeaderboardLoaderData | undefined) ?? { leaderboard: [], activity: [] };
 
   return (
-    <div className="mx-auto max-w-[1400px] px-6 py-12">
+    <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 sm:py-12">
       <div className="mb-8">
         <span className="inline-flex items-center gap-2 rounded-full border border-warning/30 bg-warning/10 px-3 py-1 font-mono text-[11px] uppercase tracking-wider text-warning">
           <Crown className="h-3 w-3" /> Rankings

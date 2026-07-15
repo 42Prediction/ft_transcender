@@ -26,7 +26,7 @@ export function ProfileHeader({ bettor, isOwn, stats }: Props) {
   ];
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-card p-6 md:p-8">
+    <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-card p-4 sm:p-6 md:p-8">
       <div className="relative grid gap-6 md:grid-cols-[auto_1fr_auto] md:items-center">
 
         {/* Avatar */}

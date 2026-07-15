@@ -14,7 +14,7 @@ function avatarFor(seed: string, avatar: string | null) {
   return avatar || `https://api.dicebear.com/9.x/identicon/svg?seed=${encodeURIComponent(seed)}`;
 }
 
-export function SearchBox() {
+export function SearchBox({ className = "" }: { className?: string }) {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -127,7 +127,7 @@ export function SearchBox() {
   const marketsCount = results?.markets.length ?? 0;
 
   return (
-    <div ref={containerRef} className="relative flex-1 lg:w-80 lg:flex-initial">
+    <div ref={containerRef} className={`relative min-w-0 flex-1 lg:w-80 lg:flex-initial ${className}`}>
       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <input
         ref={inputRef}
