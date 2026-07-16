@@ -1,4 +1,4 @@
-m_This project has been created as part of the 42 curriculum by ajacinto, nfigueir, gudos-sa, marccarv, almanuel._
+_This project has been created as part of the 42 curriculum by ajacinto, nfigueir, gudos-sa, marccarv, almanuel._
 
 # ft_transcendence — 42 Prediction (Prediction Market)
 
@@ -118,7 +118,7 @@ AI assistance (Claude Code) was used during the later stages of development, alw
 
 - Writing/fixing unit tests broken by refactors (e.g., the "always return HTTP 200 + `ApiResponse`" standardization).
 - Running and interpreting `tsc`, `jest`, ESLint and headless-Chrome (Playwright) checks against a live local instance to verify each change before considering it done — including the app-wide responsiveness audit (measuring `scrollWidth` vs `clientWidth` at 360/768/1280 px).
-- Auditing the project against the `en.subject.pdf` module list and drafting `MODULES_PROGRESS.md`, this `README.md` (feature/module attribution derived from `git log`), and the platform documentation (betting rules, payout formula, observability pipeline).
+- Auditing the project against the subject's module list and drafting this `README.md` (feature/module attribution derived from `git log`) and the platform documentation (betting rules, payout formula, observability pipeline).
 - Targeted fixes: suppressing browser-console errors on wrong 2FA codes by extending the `ApiResponse` pattern to the 2FA endpoints, responsive layout fixes (navbar, settings page), and removing non-informative code comments with an AST-based script.
 
 All AI-assisted changes were reviewed, tested, and committed by a human team member — AI was used as a pair-programming and research tool, not as an unreviewed autonomous contributor.
@@ -138,7 +138,7 @@ All AI-assisted changes were reviewed, tested, and committed by a human team mem
 ## Project Management
 
 - **Task distribution**: work was split by feature/module, each owned end-to-end (backend + frontend) by one or two people — see the Features List below for the exact mapping (derived from `git log`).
-- **Tools**: GitHub (branches, Pull Requests with mandatory reviews) as the single source of truth; this repository's own `MODULES_PROGRESS.md` as a running checklist against the subject's module list (✅/🟡/❌/🚫 per module), reviewed and updated as work landed.
+- **Tools**: GitHub (branches, Pull Requests with mandatory reviews) as the single source of truth, tracked against the subject's module list, reviewed and updated as work landed.
 - **Process enforcement**: Pull requests are gated by `.github/workflows/pr-rules.yml` — branch naming `feat/*`/`fix/*` → `dev` → `main`, commit messages prefixed `feat:`/`fix:`, 1 review to merge into `dev` and 2 into `main` (see `PR_RULES.md`) — and `.github/workflows/pr-tests.yml` runs the full backend test suite (`make test-all`) on every PR.
 - **Integration flow**: feature branches (`feat/wallet`, `feat/marteket`, `feat/2fa`, `feat/admin_page`, `feat/friends_frontend-marccarv`, `feat/implement_devops`, …) merged into `dev` after review, then `dev` → `master`.
 - **Communication channels**: GitHub PR reviews for technical discussion; _[team to confirm the day-to-day channel — e.g. WhatsApp/Discord — and meeting cadence, not derivable from the repository]_.
@@ -177,7 +177,7 @@ users ──1:1── bettors ──1:1── wallet ──1:N── transaction
 | `friend`           | `id` (uuid, PK), `sender_id`/`receiver_id` (FK → `bettors`), `status` (enum: `PENDING`/`ACCEPTED`/`REJECTED`), unique (`sender`, `receiver`) | Friend requests; accepted requests are additionally reflected in the `bettor_friends` M:N join table. |
 | `wallet`           | `id` (uuid, PK), `id_bettor` (FK → `bettors`, unique/1:1), `balance` (decimal), `created_at`, `updated_at` | One wallet per bettor. |
 | `transaction`      | `id` (uuid, PK), `id_wallet` (FK → `wallet`), `amount`, `type` (enum: `DEPOSIT`/`WITHDRAW`/`BET`/`PAYOUT`/`COMMISSION`/`MARKET_SEED`/`SCHOOL42_REWARD`/`ENGAGEMENT_REWARD`), `status`, `balance_before`, `balance_after`, `description`, `created_at` | Full ledger — every wallet mutation is an immutable row. |
-| `markets`          | `id` (uuid, PK), `exam_id` (nullable, unique with `subject_login`), `subject_login`, `subject_name`, `subject_avatar`, `project`, `category` (enum: `Exam 02`…`Exam 06`), `status` (enum: `new`/`live`/`closing`/`closed`/`resolved`/`cancelled`), `yes_pool`/`no_pool` (decimal — pool pricing), `closes_at`, `resolved_at`, `resolution` (enum: `YES`/`NO`), `final_grade`, `creator_id` (FK → `bettors`) | One market per (exam, cadet) when auto-generated. |
+| `markets`          | `id` (uuid, PK), `exam_id` (nullable, unique with `subject_login`), `subject_login`, `subject_name`, `subject_avatar`, `project`, `category` (enum: `Exam 02`…`Exam 06`), `status` (enum: `new`/`live`/`closing`/`closed`/`resolved`/`cancelled`), `yes_pool`/`no_pool` (decimal — pool pricing), `closes_at`, `exam_ends_at` (nullable — real exam end time from the 42 API, drives auto-resolution), `resolved_at`, `resolution` (enum: `YES`/`NO`), `final_grade`, `creator_id` (FK → `bettors`), `created_at`, `updated_at` | One market per (exam, cadet) when auto-generated. |
 | `market_positions` | `id` (uuid, PK), `market_id` (FK → `markets`), `bettor_id` (FK → `bettors`), `side` (enum: `YES`/`NO`), `amount`, `shares`, `entry_price`, `payout` (nullable until resolved), `created_at` | One row per bet. `payout = (shares / Σ winning shares) × (total pool − 5% rake)`. |
 | `notifications`    | `id` (uuid, PK), `bettor_id` (FK → `bettors`), `type` (enum: `bet_resolved`/`bet_cancelled`/`chat_mention`/`friend_request_received`/`friend_request_accepted`), `market_id` (nullable), `data` (**jsonb**, type-specific payload), `is_read`, `created_at` | Persistent inbox, pushed live over the `MarketGateway` WebSocket. |
 | `bettor_quests`    | `id` (uuid, PK), `bettor_id` (FK → `bettors`), `quest_key`, `reward`, `completed_at`, unique (`bettor_id`, `quest_key`) | One row per completed/paid onboarding quest — its presence is the "claimed" flag. |
@@ -213,7 +213,7 @@ Ownership derived from `git log` (author of the feature's commits; reviewers/mer
 
 ## Modules
 
-Point calculation per `en.subject.pdf` (Chapter IV): **Major = 2 pts, Minor = 1 pt**. Full status tracking lives in [`MODULES_PROGRESS.md`](./MODULES_PROGRESS.md); summarized here with justification as required by Chapter VII.
+Point calculation per the subject (Chapter IV): **Major = 2 pts, Minor = 1 pt**; summarized here with justification as required by Chapter VII.
 
 ### Core modules (14 pts minimum)
 
@@ -285,7 +285,7 @@ Built the **wallet module** end-to-end (service, migration, unit tests, REST hyg
 
 ### `marccarv` — Developer
 
-Built the **friends system** end-to-end: `friend.api.ts`, the friends list UI, request validation and user feedback, unit + e2e tests for nickname existence, and the PT→EN naming cleanup. Added the **moderator role** (guards, migration, read-only admin view), the **analytics dashboard**, the friend-request **notification types**, and the bonus round of **GDPR export**, **personal activity insights** and the **design system page**. Made all footer/static pages functional and wrote `MODULES_PROGRESS.md` and the services guide.
+Built the **friends system** end-to-end: `friend.api.ts`, the friends list UI, request validation and user feedback, unit + e2e tests for nickname existence, and the PT→EN naming cleanup. Added the **moderator role** (guards, migration, read-only admin view), the **analytics dashboard**, the friend-request **notification types**, and the bonus round of **GDPR export**, **personal activity insights** and the **design system page**. Made all footer/static pages functional and wrote the services guide.
 
 *Challenge:* the friend-request state machine (duplicate/stale requests racing between two users) produced 409s and ghost entries — solved by re-fetching the authoritative state before every accept/reject/cancel action and reconciling the UI from it.
 
@@ -295,8 +295,4 @@ Built **two-factor authentication** end-to-end: the TOTP backend (`otplib`), QR-
 
 *Challenge:* wiring the 2FA challenge into three different login paths (credentials, Google, 42) while `dev` kept moving — resolved through successive merges of `dev` into the `feat/2fa` branch and a final integration pass (`feat: merge feat/2fa to feat/devops`).
 
-## Known limitations
 
-- The public REST API has no API-key/rate-limit layer or OpenAPI docs (the corresponding module was not selected).
-- No i18n — the UI is English-only.
-- `MODULES_PROGRESS.md` predates the 2FA completion; the module tables above are the up-to-date source.
