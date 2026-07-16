@@ -165,7 +165,7 @@ describe('Auth - 42School OAuth', () => {
         _42SCHOOL_API_URL_AUTHORIRIZE: 'https://api.intra.42.fr/oauth/authorize',
         _42SCHOOL_CLIENT_ID: 'e2e-client-id',
         _42SCHOOL_CLIENT_SECRET: 'e2e-client-secret',
-        _42SCHOOL_CALLBACK_URL: 'http://localhost:3000/auth/42luanda/callback',
+        _42SCHOOL_CALLBACK_URL: 'https://localhost:3000/auth/42luanda/callback',
         _42SCHOOL_API_URL_TOKEN: 'https://api.intra.42.fr/oauth/token',
         _42SCHOOL_API_URL_OAUTH_PROFILE: 'https://api.intra.42.fr/v2/me',
       };

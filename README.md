@@ -1,4 +1,4 @@
-_This project has been created as part of the 42 curriculum by ajacinto, nfigueir, gudos-sa, marccarv, almanuel._
+m_This project has been created as part of the 42 curriculum by ajacinto, nfigueir, gudos-sa, marccarv, almanuel._
 
 # ft_transcendence — 42 Prediction (Prediction Market)
 
@@ -74,18 +74,22 @@ make logs-prod     # follow all logs
 make down-prod     # stop the stack   ·   make fclean-prod  (also removes volumes)
 ```
 
+`make up-prod` also generates (once, idempotently) a self-signed TLS certificate under `certs/` via `make certs`, used by both nginx (frontend) and the backend so the whole app is served over **HTTPS**. Browsers will show a "not private" warning on first visit to `localhost` — that's expected for a self-signed dev/demo cert; accept/proceed once per browser.
+
 Endpoints once up:
 
 | Service | URL | Credentials |
 |---|---|---|
-| Frontend | http://localhost:5173 | — |
-| Backend API | http://localhost:3000 | — |
-| Backend metrics | http://localhost:3000/metrics | — |
+| Frontend | https://localhost:5173 | — |
+| Backend API | https://localhost:3000 | — |
+| Backend metrics | https://localhost:3000/metrics | — |
 | Kibana (logs) | http://localhost:5601 | `elastic` / `ELASTIC_PASSWORD` |
 | Grafana (dashboards) | http://localhost:3001 | `admin` / `GRAFANA_ADMIN_PASSWORD` |
 | Prometheus | http://localhost:9090 | — |
 
 In Kibana, create a data view for `transcendence-logs-*` to explore the ingested logs. Don't run `make up-prod` and `make dev` at the same time — they bind the same host ports (Postgres 5432, backend 3000, frontend 5173).
+
+> **OAuth redirect URIs**: the containerized stack overrides `GOOGLE_CALLBACK_URL`/`_42SCHOOL_CALLBACK_URL` to their `https://localhost:3000/...` form (see `docker-compose.yml`). If you use Google/42 login against this stack, add those exact HTTPS URIs as authorized redirect URIs in the Google Cloud Console / 42 Intra API app settings — the HTTP versions used by `make dev` won't work here since the backend only listens on HTTPS once a cert is present.
 
 ### Running per app (when iterating on one side)
 

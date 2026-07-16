@@ -7,7 +7,13 @@ rule_files:
 
 scrape_configs:
   # The NestJS backend exposes app + default Node.js metrics at /metrics.
+  # Backend is HTTPS-only in the prod stack (self-signed cert), so scrape
+  # over https and skip verification — same trust model as the browser
+  # accepting the cert warning.
   - job_name: backend
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
     metrics_path: /metrics
     static_configs:
       - targets: ["backend:3000"]

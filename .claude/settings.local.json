@@ -69,7 +69,9 @@
       "Bash(docker run *)",
       "Bash(grep -nE '^#{1,4} |Devops|DevOps|Observability|Deployment|Getting Started|docker|Docker' README.md)",
       "Bash(echo \"exit: $?\")",
-      "Bash(make up-prod *)"
+      "Bash(make up-prod *)",
+      "Bash(make certs *)",
+      "Bash(openssl x509 *)"
     ]
   }
 }

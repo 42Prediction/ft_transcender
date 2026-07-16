@@ -190,7 +190,7 @@ describe('AuthController – 42 School OAuth', () => {
       expect(parsed.origin + parsed.pathname).toBe('https://api.intra.42.fr/oauth/authorize');
       expect(parsed.searchParams.get('client_id')).toBe('fake-client-id');
       expect(parsed.searchParams.get('redirect_uri')).toBe(
-        'http://localhost:3000/auth/42luanda/callback',
+        'https://localhost:3000/auth/42luanda/callback',
       );
       expect(parsed.searchParams.get('scope')).toBe('public');
       expect(parsed.searchParams.get('response_type')).toBe('code');
