@@ -1,0 +1,55 @@
+groups:
+  - name: transcendence-availability
+    rules:
+      - alert: BackendDown
+        expr: up{job="backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend is down"
+          description: "Prometheus has not been able to scrape the backend for over 1 minute."
+
+      - alert: PostgresDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "The postgres-exporter target has been unreachable for over 1 minute."
+
+  - name: transcendence-performance
+    rules:
+      - alert: HighHttpErrorRate
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m]))
+            / sum(rate(http_requests_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High 5xx error rate"
+          description: "More than 5% of HTTP responses have been 5xx over the last 5 minutes."
+
+      - alert: HighRequestLatencyP95
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High request latency (p95 > 1s)"
+          description: "95th-percentile HTTP request latency has exceeded 1 second for 5 minutes."
+
+      - alert: HighProcessMemory
+        expr: process_resident_memory_bytes{job="backend"} > 800e6
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Backend memory usage high"
+          description: "Backend RSS has been above 800 MB for 10 minutes."

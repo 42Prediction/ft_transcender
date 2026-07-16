@@ -1,0 +1,4 @@
+http.host: "0.0.0.0"
+# We don't run the Elastic monitoring cluster for this project; disable the
+# self-monitoring shipper to keep the pipeline quiet and lightweight.
+xpack.monitoring.enabled: false

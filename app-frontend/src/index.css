@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -66,7 +65,6 @@
 :root, .dark {
   --radius: 1rem;
 
-  /* Deep navy/violet base inspired by BC.Game */
   --background: oklch(0.16 0.04 270);
   --foreground: oklch(0.97 0.01 250);
 
@@ -78,8 +76,7 @@
   --popover: oklch(0.22 0.05 270);
   --popover-foreground: oklch(0.97 0.01 250);
 
-  /* Electric lime/chartreuse primary (BC.Game energy) */
-  --primary: oklch(0.88 0.22 130);
+  --primary: oklch(0.8356 0.2038 154.04);
   --primary-foreground: oklch(0.15 0.04 270);
 
   --secondary: oklch(0.28 0.06 275);
@@ -88,7 +85,6 @@
   --muted: oklch(0.26 0.045 270);
   --muted-foreground: oklch(0.68 0.03 265);
 
-  /* Cyan accent */
   --accent: oklch(0.78 0.16 210);
   --accent-foreground: oklch(0.15 0.04 270);
 
@@ -101,7 +97,6 @@
   --warning: oklch(0.82 0.17 75);
   --warning-foreground: oklch(0.15 0.04 270);
 
-  /* Yes/No market colors */
   --yes: oklch(0.78 0.20 150);
   --no: oklch(0.68 0.22 18);
 
@@ -109,7 +104,6 @@
   --input: oklch(0.28 0.05 270);
   --ring: oklch(0.88 0.22 130);
 
-  /* Brand gradients */
   --gradient-brand: linear-gradient(135deg, oklch(0.88 0.22 130) 0%, oklch(0.78 0.16 210) 100%);
   --gradient-hero: radial-gradient(ellipse at top, oklch(0.35 0.18 290 / 0.6), transparent 60%),
                    radial-gradient(ellipse at bottom right, oklch(0.45 0.20 200 / 0.4), transparent 60%),
@@ -141,12 +135,19 @@
 
 @layer utilities {
   .bg-gradient-brand { background-image: var(--gradient-brand); }
+  .bg-brand { background-color: var(--primary); }
   .bg-gradient-hero { background-image: var(--gradient-hero); }
   .bg-gradient-card { background-image: var(--gradient-card); }
   .bg-gradient-glow { background-image: var(--gradient-glow); }
   .bg-gradient-violet { background-image: var(--gradient-violet); }
   .text-gradient-brand {
     background-image: var(--gradient-brand);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+  .text-brand {
+    background-color: var(--primary);
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;

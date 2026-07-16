@@ -1,4 +1,5 @@
 COMPOSE = docker compose -f docker-compose.dev.yml
+PROD_COMPOSE = docker compose -f docker-compose.yml
 PROJECT_ROOT = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 DATA_DIR = /home/$(USER)/data
 FRONT_DIR = $(PROJECT_ROOT)/app-frontend
@@ -13,21 +14,46 @@ BACK_PORT ?= 3000
 FRONT_PORT ?= 5173
 BACK_URL ?= http://localhost:$(BACK_PORT)
 FRONT_URL ?= http://localhost:$(FRONT_PORT)/
+CERT_DIR = $(PROJECT_ROOT)/certs
 
 all: help
 
 help:
-	@echo "Available commands:"
-	@echo "  make dev        - Pull image if needed, start DB container, start backend and frontend"
-	@echo "  make dev-stop   - Stop backend/frontend and stop DB container"
-	@echo "  make dev-status - Show backend/frontend process IDs"
-	@echo "  make migrate    - Run backend migrations"
-	@echo "  make seed       - Run backend seeds"
-	@echo "  make clean      - Stop apps and remove containers, volumes, and data dir"
-	@echo "  make fclean     - clean + remove images"
-	@echo "  make re         - clean + make dev"
+	@echo "ft_transcendence - available commands:"
+	@echo ""
+	@echo "Local dev (Postgres in Docker, apps as host processes):"
+	@echo "  make dev            - Start DB container, then backend and frontend"
+	@echo "  make dev-stop       - Stop backend/frontend and stop DB container"
+	@echo "  make dev-status     - Show backend/frontend process IDs"
+	@echo ""
+	@echo "Database:"
+	@echo "  make migrate-run      - Run backend TypeORM migrations"
+	@echo "  make migrate-generate - Run migrations, then generate the next one"
+	@echo "  make seed             - Run backend seeds"
+	@echo ""
+	@echo "Tests:"
+	@echo "  make test           - Backend unit + e2e tests (CI entry point)"
+	@echo "  make test-frontend  - Frontend build + lint"
+	@echo ""
+	@echo "Full containerized stack (app + ELK + Prometheus/Grafana):"
+	@echo "  make certs          - Generate the self-signed TLS cert used by up-prod (auto-run by it)"
+	@echo "  make up-prod        - Build and start the whole stack (one command)"
+	@echo "  make down-prod      - Stop the whole stack"
+	@echo "  make logs-prod      - Follow logs (make logs-prod SERVICE=backend for one service)"
+	@echo "  make ps-prod        - Show stack container status"
+	@echo "  make fclean-prod    - Stop stack and remove its volumes"
+	@echo ""
+	@echo "Teardown:"
+	@echo "  make clean          - Stop apps, remove dev containers/volumes and data dir"
+	@echo "  make fclean         - clean + remove images"
+	@echo "  make re             - clean + make dev"
 
-up:
+# Fail early with a clear message if .env is missing: docker compose interpolates
+# DB_*, and the prod stack also needs ELASTIC_PASSWORD / GRAFANA_ADMIN_PASSWORD.
+require-env:
+	@test -f .env || { echo "ERROR: .env not found at repo root. Copy .env.example to .env and fill it in first."; exit 1; }
+
+up: require-env
 	mkdir -p $(DATA_DIR)/postgresql
 	$(COMPOSE) up -d --pull missing
 
@@ -39,37 +65,35 @@ wait-db: up
 	done; \
 	echo " ready"
 
-migrate:
-	@if [ -z "$$($(COMPOSE) ps -q postgres 2>/dev/null)" ]; then \
-		echo "Database container is not running. Run 'make dev' first."; \
-		exit 1; \
-	fi
-	@if ! $(COMPOSE) exec -T postgres pg_isready -U $${DB_USER:-postgres} -d $${DB_NAME:-transcendence_db} >/dev/null 2>&1; then \
-		echo "Database is not ready. Check if PostgreSQL is up and accepting connections."; \
-		exit 1; \
-	fi
-	@if ! $(COMPOSE) exec -T postgres psql -U $${DB_USER:-postgres} -d $${DB_NAME:-transcendence_db} -c "\\q" >/dev/null 2>&1; then \
-		echo "Database '$${DB_NAME:-transcendence_db}' does not exist or credentials are invalid."; \
-		exit 1; \
-	fi
-	@cd $(BACK_DIR) && { [ -d node_modules ] || npm install; }
+migrate-generate:
+	@echo "Generating migration..."
+	@cd $(BACK_DIR) && \
+	npm run migration:run &&\
+	NAME=migration && \
+	COUNT=$$(ls -1 src/migrations/*.ts 2>/dev/null | wc -l | tr -d ' ') && \
+	NEXT=$$((COUNT + 1)) && \
+	npm run migration:generate -- "src/migrations/$${NAME}$${NEXT}"
+
+migrate-run:
+	@echo "Running migrations..."
 	@cd $(BACK_DIR) && npm run migration:run
+	@echo "Migrations complete"
+
+# Backward-compatible alias.
+migrate: migrate-run
 
 seed:
-	@if [ -z "$$($(COMPOSE) ps -q postgres 2>/dev/null)" ]; then \
-		echo "Database container is not running. Run 'make dev' first."; \
-		exit 1; \
-	fi
-	@if ! $(COMPOSE) exec -T postgres pg_isready -U $${DB_USER:-postgres} -d $${DB_NAME:-transcendence_db} >/dev/null 2>&1; then \
-		echo "Database is not ready. Check if PostgreSQL is up and accepting connections."; \
-		exit 1; \
-	fi
-	@if ! $(COMPOSE) exec -T postgres psql -U $${DB_USER:-postgres} -d $${DB_NAME:-transcendence_db} -c "\\q" >/dev/null 2>&1; then \
-		echo "Database '$${DB_NAME:-transcendence_db}' does not exist or credentials are invalid."; \
-		exit 1; \
-	fi
-	@cd $(BACK_DIR) && { [ -d node_modules ] || npm install; }
 	@cd $(BACK_DIR) && npm run seed:run
+
+test-backend: wait-db
+	@cd $(BACK_DIR) && npm ci
+	@cd $(BACK_DIR) && npm test
+	@cd $(BACK_DIR) && npm run test:e2e
+
+test-all: test-backend
+	@echo "All project tests and checks passed"
+
+test: test-all
 
 dev: wait-db
 	@echo "Starting backend and frontend..."
@@ -83,12 +107,12 @@ dev: wait-db
 	@if command -v fuser >/dev/null 2>&1; then fuser -k -n tcp $(BACK_PORT) 2>/dev/null || true; else listeners=$$(lsof -t -i:$(BACK_PORT) 2>/dev/null || true); if [ -n "$$listeners" ]; then kill -9 $$listeners 2>/dev/null || true; fi; fi
 	@# Limpeza garantida da porta do frontend antes de subir o frontend
 	@if command -v fuser >/dev/null 2>&1; then fuser -k -n tcp $(FRONT_PORT) 2>/dev/null || true; else listeners=$$(lsof -t -i:$(FRONT_PORT) 2>/dev/null || true); if [ -n "$$listeners" ]; then kill -9 $$listeners 2>/dev/null || true; fi; fi
-	@cd $(BACK_DIR) && { [ -d node_modules ] || npm install; }
+	@cd $(BACK_DIR) && npm install
 	@# Executa o backend em background
-	@(cd $(BACK_DIR) && NO_COLOR=true npm run start:dev > "$(LOG_DIR)/backend.log" 2>&1 & echo $$! > "$(BACK_PID_FILE)")
+	@(cd $(BACK_DIR) && NO_COLOR=true  SYN=true npm run start:dev > "$(LOG_DIR)/backend.log" 2>&1 & echo $$! > "$(BACK_PID_FILE)")
 	@sleep 2
 	@lsof -t -i:$(BACK_PORT) > "$(BACK_CHILD_PID_FILE)" 2>/dev/null || true
-	@cd $(FRONT_DIR) && { [ -d node_modules ] || npm install; }
+	@cd $(FRONT_DIR) && npm install
 	@(cd $(FRONT_DIR) && NO_COLOR=true npm run dev -- --port $(FRONT_PORT) --strictPort > "$(LOG_DIR)/frontend.log" 2>&1 & echo $$! > "$(FRONT_PID_FILE)")
 	@sleep 2
 	@lsof -t -i:$(FRONT_PORT) > "$(FRONT_CHILD_PID_FILE)" 2>/dev/null || true
@@ -110,6 +134,44 @@ dev-stop:
 	@$(COMPOSE) stop
 	@echo "Backend and frontend stopped; DB container stopped"
 
+# Self-signed cert (dev/demo only) shared by nginx (frontend) and Nest
+# (backend) so the whole prod stack is served over HTTPS. Idempotent — skips
+# generation if a cert/key pair already exists.
+certs:
+	@mkdir -p $(CERT_DIR)
+	@if [ -f $(CERT_DIR)/cert.pem ] && [ -f $(CERT_DIR)/key.pem ]; then \
+		echo "Self-signed cert already exists in $(CERT_DIR)/ — skipping."; \
+	else \
+		echo "Generating self-signed TLS cert for localhost in $(CERT_DIR)/..."; \
+		openssl req -x509 -nodes -newkey rsa:2048 -days 825 \
+			-keyout $(CERT_DIR)/key.pem -out $(CERT_DIR)/cert.pem \
+			-subj "/CN=localhost" \
+			-addext "subjectAltName=DNS:localhost,IP:127.0.0.1"; \
+	fi
+
+# ---- Containerized full stack (app + observability) - single command ----
+# On boot the backend container runs pending migrations and seeds the admin
+# account (docker-entrypoint.sh, idempotent), so no separate migrate/seed step
+# is needed here.
+up-prod: require-env certs
+	@$(PROD_COMPOSE) up -d --build
+	@echo "Stack starting. Frontend: https://localhost:5173 | Backend: https://localhost:3000"
+	@echo "Kibana: http://localhost:5601 | Grafana: http://localhost:3001 | Prometheus: http://localhost:9090"
+	@echo "Self-signed cert: browsers will warn 'not private' on first visit — that's expected, accept/proceed once per browser."
+
+down-prod:
+	@$(PROD_COMPOSE) down
+
+# Follow all services, or a single one: make logs-prod SERVICE=backend
+logs-prod:
+	@$(PROD_COMPOSE) logs -f $(SERVICE)
+
+ps-prod:
+	@$(PROD_COMPOSE) ps
+
+fclean-prod:
+	@$(PROD_C OMPOSE) down -v --remove-orphans
+
 clean: dev-stop
 	@$(COMPOSE) down -v --remove-orphans
 	@sudo rm -rf $(DATA_DIR)
@@ -119,4 +181,6 @@ fclean: clean
 
 re: fclean dev
 
-.PHONY: all help up down wait-db migrate seed dev dev-status dev-stop clean fclean re
+.PHONY: all help require-env up wait-db migrate migrate-run migrate-generate seed \
+	test test-all test-backend test-frontend dev dev-status dev-stop \
+	certs up-prod down-prod logs-prod ps-prod fclean-prod clean fclean re

@@ -1,5 +1,6 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn, ManyToMany, JoinTable } from "typeorm";
 import { User } from "../../user/entities/user.entity";
+import { Wallet } from "../../wallet/entities/wallet.entity";
 
 @Entity('bettors')
 export class Bettor {
@@ -27,14 +28,30 @@ export class Bettor {
     })
     isNickSetted!: boolean;
 
+    @Column({
+        type: 'text',
+        nullable: true
+    })
+    campus?: string;
+
+   
+    @Column({ name: 'school42_login', type: 'varchar', nullable: true })
+    school42Login?: string;
+
+
+    @Column({ name: 'school42_level', type: 'decimal', precision: 6, scale: 2, nullable: true })
+    school42Level?: number;
+
+
+    @Column({ name: 'daily_streak', type: 'int', default: 0 })
+    dailyStreak!: number;
+
+    @Column({ name: 'last_daily_claim_at', type: 'timestamptz', nullable: true })
+    lastDailyClaimAt?: Date;
+
     @OneToOne(()=> User, {onDelete: 'CASCADE'})
     @JoinColumn({ name: 'user_id' })
     user!: User;
-
-    /* ========================================================================== */
-    /* [MARCO] - SISTEMA DE AMIZADES                                              */
-    /* Relação auto-referenciada de amizade puramente dentro do perfil Bettor     */
-    /* ========================================================================== */
 
     @ManyToMany(() => Bettor)
     @JoinTable({
@@ -43,10 +60,9 @@ export class Bettor {
         inverseJoinColumn: { name: 'friend_id', referencedColumnName: 'id' }
     })
     friends!: Bettor[];
-    
-    /* ========================================================================== */
-    /* [MARCO] - FIM DO BLOCO                                                     */
-    /* ========================================================================== */
+
+    @OneToOne(() => Wallet, (wallet) => wallet.bettor)
+    wallet!: Wallet;
 
     @CreateDateColumn({name: 'created_at'})
     createdAt!: Date;

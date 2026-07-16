@@ -1,7 +1,9 @@
 secrets/
+certs/
 .env
-en.subject.pdf
 logs/
 .pids/
 app-backend/node_modules
 app-frontend/node_modules
+coverage
+uploads

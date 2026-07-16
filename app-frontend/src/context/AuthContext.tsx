@@ -1,86 +1,65 @@
-import {
-  createContext,
-  useEffect,
-  useContext,
-  useState,
-  type ReactNode,
-} from "react";
-import { bettor } from "../api/bettor/bettor.api";
-import { auth } from "../api/auth/auth.api";
+import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react';
 
-interface User{
-    sub: string;
-    email: string;
-    role: string;
+export type AuthUser = {
+  sub: string;
+  email: string;
+  role: string;
+  campus?: string | null;
+};
+
+type AuthContextValue = {
+  user: AuthUser | null;
+  login: (user: AuthUser) => void;
+  logout: () => void;
+};
+
+const authStorageKey = 'ft_transcender_auth_user';
+
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+function readStoredUser(): AuthUser | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const raw = window.localStorage.getItem(authStorageKey);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as AuthUser;
+  } catch {
+    return null;
+  }
 }
 
-interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  isAuthenticated: boolean;
-  login: (user: User) => void;
-  logout: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | null>(null);
-
-export function AuthProvider({children}:{children: ReactNode}){
-
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+export function AuthProvider({ children }: PropsWithChildren) {
+  const [user, setUser] = useState<AuthUser | null>(() => readStoredUser());
 
   useEffect(() => {
-    bettor.getMe()
-      .then(({ data }) => {
-        setUser({
-          sub: data.user.id,
-          email: data.user.email,
-          role: data.user.role,
-        });
-      })
-      .catch(() => {
-        setUser(null);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
-
-  function login(userData: User) {
-    setUser(userData);
-  }
-
-  async function logout() {
-    try {
-      await auth.logout();
-    } finally {
-    setUser(null);
+    if (user) {
+      window.localStorage.setItem(authStorageKey, JSON.stringify(user));
+    } else {
+      window.localStorage.removeItem(authStorageKey);
     }
-  }
+  }, [user]);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        login,
-        logout,
-        isAuthenticated: !!user,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  const login = (nextUser: AuthUser) => {
+    setUser(nextUser);
+  };
+
+  const logout = () => {
+    setUser(null);
+  };
+
+  return <AuthContext.Provider value={{ user, login, logout }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
-
   if (!context) {
-    throw new Error(
-      "useAuth deve estar dentro do AuthProvider"
-    );
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-
   return context;
 }
