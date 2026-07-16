@@ -170,7 +170,7 @@ describe('AuthService_2', () => {
         _42SCHOOL_API_URL_TOKEN: 'https://api.intra.42.fr/oauth/token',
         _42SCHOOL_CLIENT_ID: 'fake-client-id',
         _42SCHOOL_CLIENT_SECRET: 'fake-client-secret',
-        _42SCHOOL_CALLBACK_URL: 'http://localhost:3000/auth/42luanda/callback',
+        _42SCHOOL_CALLBACK_URL: 'https://localhost:3000/auth/42luanda/callback',
         _42SCHOOL_API_URL_OAUTH_PROFILE: 'https://api.intra.42.fr/v2/me',
       };
       if (!map[key])
@@ -316,7 +316,7 @@ describe('AuthService_2', () => {
         expect(body.get('client_secret')).toBe('fake-client-secret');
         expect(body.get('code')).toBe('my-code');
         expect(body.get('redirect_uri')).toBe(
-          'http://localhost:3000/auth/42luanda/callback',
+          'https://localhost:3000/auth/42luanda/callback',
         );
       });
     });

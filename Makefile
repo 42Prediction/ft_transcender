@@ -14,6 +14,7 @@ BACK_PORT ?= 3000
 FRONT_PORT ?= 5173
 BACK_URL ?= http://localhost:$(BACK_PORT)
 FRONT_URL ?= http://localhost:$(FRONT_PORT)/
+CERT_DIR = $(PROJECT_ROOT)/certs
 
 all: help
 
@@ -35,6 +36,7 @@ help:
 	@echo "  make test-frontend  - Frontend build + lint"
 	@echo ""
 	@echo "Full containerized stack (app + ELK + Prometheus/Grafana):"
+	@echo "  make certs          - Generate the self-signed TLS cert used by up-prod (auto-run by it)"
 	@echo "  make up-prod        - Build and start the whole stack (one command)"
 	@echo "  make down-prod      - Stop the whole stack"
 	@echo "  make logs-prod      - Follow logs (make logs-prod SERVICE=backend for one service)"
@@ -132,14 +134,30 @@ dev-stop:
 	@$(COMPOSE) stop
 	@echo "Backend and frontend stopped; DB container stopped"
 
+# Self-signed cert (dev/demo only) shared by nginx (frontend) and Nest
+# (backend) so the whole prod stack is served over HTTPS. Idempotent — skips
+# generation if a cert/key pair already exists.
+certs:
+	@mkdir -p $(CERT_DIR)
+	@if [ -f $(CERT_DIR)/cert.pem ] && [ -f $(CERT_DIR)/key.pem ]; then \
+		echo "Self-signed cert already exists in $(CERT_DIR)/ — skipping."; \
+	else \
+		echo "Generating self-signed TLS cert for localhost in $(CERT_DIR)/..."; \
+		openssl req -x509 -nodes -newkey rsa:2048 -days 825 \
+			-keyout $(CERT_DIR)/key.pem -out $(CERT_DIR)/cert.pem \
+			-subj "/CN=localhost" \
+			-addext "subjectAltName=DNS:localhost,IP:127.0.0.1"; \
+	fi
+
 # ---- Containerized full stack (app + observability) - single command ----
 # On boot the backend container runs pending migrations and seeds the admin
 # account (docker-entrypoint.sh, idempotent), so no separate migrate/seed step
 # is needed here.
-up-prod: require-env
+up-prod: require-env certs
 	@$(PROD_COMPOSE) up -d --build
-	@echo "Stack starting. Frontend: http://localhost:5173 | Backend: http://localhost:3000"
+	@echo "Stack starting. Frontend: https://localhost:5173 | Backend: https://localhost:3000"
 	@echo "Kibana: http://localhost:5601 | Grafana: http://localhost:3001 | Prometheus: http://localhost:9090"
+	@echo "Self-signed cert: browsers will warn 'not private' on first visit — that's expected, accept/proceed once per browser."
 
 down-prod:
 	@$(PROD_COMPOSE) down
@@ -152,7 +170,7 @@ ps-prod:
 	@$(PROD_COMPOSE) ps
 
 fclean-prod:
-	@$(PROD_COMPOSE) down -v --remove-orphans
+	@$(PROD_C OMPOSE) down -v --remove-orphans
 
 clean: dev-stop
 	@$(COMPOSE) down -v --remove-orphans
@@ -165,4 +183,4 @@ re: fclean dev
 
 .PHONY: all help require-env up wait-db migrate migrate-run migrate-generate seed \
 	test test-all test-backend test-frontend dev dev-status dev-stop \
-	up-prod down-prod logs-prod ps-prod fclean-prod clean fclean re
+	certs up-prod down-prod logs-prod ps-prod fclean-prod clean fclean re

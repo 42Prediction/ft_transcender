@@ -7,7 +7,7 @@ RUN npm ci
 
 COPY . .
 # Baked into the bundle at build time; the browser calls the backend directly.
-ARG VITE_API_URL=http://localhost:3000
+ARG VITE_API_URL=https://localhost:3000
 ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
@@ -16,4 +16,4 @@ FROM nginx:1.27-alpine AS runner
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-EXPOSE 80
+EXPOSE 80 443
