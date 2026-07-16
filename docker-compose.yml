@@ -72,6 +72,7 @@ services:
       - ./certs:/certs:ro
     ports:
       - "5173:443"
+      - "80:80"
     depends_on:
       - backend
     networks: [transcendence]
@@ -144,6 +145,11 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=kibana_system
       - ELASTICSEARCH_PASSWORD=${KIBANA_SYSTEM_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:5601/api/status | grep -q '\"level\":\"available\"'"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
     ports:
       - "5601:5601"
     depends_on:
@@ -151,6 +157,22 @@ services:
         condition: service_healthy
       elk-setup:
         condition: service_completed_successfully
+    networks: [transcendence]
+
+  # One-shot: creates the Kibana data view for the log indices (see
+  # observability/setup/kibana-setup.sh). Separate from elk-setup because it
+  # needs Kibana itself up, and Kibana's own startup depends on elk-setup.
+  kibana-setup:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: transcendence-kibana-setup
+    environment:
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+    volumes:
+      - ./observability/setup/kibana-setup.sh:/kibana-setup.sh:ro
+    command: ["bash", "/kibana-setup.sh"]
+    depends_on:
+      kibana:
+        condition: service_healthy
     networks: [transcendence]
 
   # --------------------------------------------------------- Monitoring tier
